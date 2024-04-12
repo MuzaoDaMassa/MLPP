@@ -1,8 +1,8 @@
 #include "catch.hpp"
 #include "../src/mlpp.hpp"
-#include "Tests.hpp"
+#include "testUtils.hpp"
 
-using namespace Tests;
+using namespace Benchmark;
 using namespace DataAnalysis;
 
 TEST_CASE ("Data Analysis Unit Testing")

@@ -5,7 +5,7 @@
 
 // Methods to help with testing 
 
-namespace Tests
+namespace Benchmark
 {
     enum TimeUnit 
     {
