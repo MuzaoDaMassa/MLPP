@@ -6,7 +6,7 @@ using namespace std;
 
 int main()
 {
-    auto data = readCSV<double>("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+    auto data = readCSV<string>("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
 
     // Print the matrix
     
@@ -18,8 +18,7 @@ int main()
         }
         std::cout << std::endl;
     } 
-    
-    
+
     //header(data, 5);
     //bottom(data, 5);
 

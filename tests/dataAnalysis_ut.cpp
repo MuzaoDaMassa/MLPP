@@ -50,9 +50,9 @@ TEST_CASE ("Data Analysis Unit Testing")
         auto data2 = readCSV<float>("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
         auto data3 = readCSV<double>("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv"); 
 
-        REQUIRE(data1.size() > 0); 
-        REQUIRE(data2.size() > 0); 
-        REQUIRE(data3.size() > 0); 
+        REQUIRE(!data1.empty()); 
+        REQUIRE(!data2.empty()); 
+        REQUIRE(!data3.empty()); 
 
         SECTION("FIND METHOD")
         {
@@ -71,7 +71,19 @@ TEST_CASE ("Data Analysis Unit Testing")
 
         SECTION("FIND BY POSITION METHOD")
         {
-            
+            // Create vector to hold positions to search
+            std::vector<int> pos1 {44, 4};
+            std::vector<int> pos2 {5555, 5};
+            std::vector<int> pos3 {66666, 6};
+
+            // Return element from method
+            auto el1 = findByPos<std::string>(data1, pos1);
+            auto el2 = findByPos<float>(data2, pos2);
+            auto el3 = findByPos<double>(data3, pos3);
+
+            REQUIRE(!el1.empty());
+            REQUIRE(el2 >= 0);
+            REQUIRE(el3 >= 0);
         }
 
         SECTION("FIND ALL METHODS")
@@ -108,7 +120,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
 
             REQUIRE(data.size() > 0);
             std::cout << "100 ROW DATABASE READ CSV - STRING" << std::endl;
-            std::cout << getDuration(start, stop, Microseconds) << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
             std::cout << "-----------------------------------------------" << std::endl;
         }
 
@@ -120,7 +132,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
 
             REQUIRE(data.size() > 0);
             std::cout << "100 ROW DATABASE READ CSV - FLOAT" << std::endl;
-            std::cout << getDuration(start, stop, Microseconds) << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
             std::cout << "-----------------------------------------------" << std::endl;
         }
 
@@ -132,7 +144,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
 
             REQUIRE(data.size() > 0);
             std::cout << "100 ROW DATABASE READ CSV - DOUBLE" << std::endl;
-            std::cout << getDuration(start, stop, Microseconds) << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
             std::cout << "-----------------------------------------------" << std::endl;
         }
 
@@ -144,7 +156,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
 
             REQUIRE(data.size() > 0);
             std::cout << "10 000 ROW DATABASE READ CSV - STRING" << std::endl;
-            std::cout << getDuration(start, stop, Microseconds) << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
             std::cout << "-----------------------------------------------" << std::endl;
         }
 
@@ -156,7 +168,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
 
             REQUIRE(data.size() > 0);
             std::cout << "10 000 ROW DATABASE READ CSV - FLOAT" << std::endl;
-            std::cout << getDuration(start, stop, Microseconds) << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
             std::cout << "-----------------------------------------------" << std::endl;
         }
 
@@ -168,7 +180,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
 
             REQUIRE(data.size() > 0);
             std::cout << "10 000 ROW DATABASE READ CSV - DOUBLE" << std::endl;
-            std::cout << getDuration(start, stop, Microseconds) << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
             std::cout << "-----------------------------------------------" << std::endl;
         }
 
@@ -180,7 +192,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
 
             REQUIRE(data.size() > 0);
             std::cout << "100 000 ROW DATABASE READ CSV - STRING" << std::endl;
-            std::cout << getDuration(start, stop, Microseconds) << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
             std::cout << "-----------------------------------------------" << std::endl;
         }
 
@@ -192,7 +204,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
 
             REQUIRE(data.size() > 0);
             std::cout << "100 000 ROW DATABASE READ CSV - FLOAT" << std::endl;
-            std::cout << getDuration(start, stop, Microseconds) << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
             std::cout << "-----------------------------------------------" << std::endl;
         }
 
@@ -204,7 +216,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
 
             REQUIRE(data.size() > 0);
             std::cout << "100 000 ROW DATABASE READ CSV - DOUBLE" << std::endl;
-            std::cout << getDuration(start, stop, Microseconds) << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
             std::cout << "-----------------------------------------------" << std::endl;
         }
 
@@ -229,7 +241,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(pos[1] != 0);
 
                 std::cout << "100 ROW DATABASE FIND - STRING" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
 
@@ -248,7 +260,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(pos[1] != 0);
 
                 std::cout << "100 ROW DATABASE FIND - FLOAT" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
 
@@ -266,7 +278,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(pos[1] != 0);
 
                 std::cout << "100 ROW DATABASE FIND - DOUBLE" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
 
@@ -285,7 +297,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(pos[1] != 0);
 
                 std::cout << "10 000 ROW DATABASE FIND - STRING" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
 
@@ -304,7 +316,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(pos[1] != 0);
 
                 std::cout << "10 000 ROW DATABASE FIND - FLOAT" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
 
@@ -322,7 +334,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(pos[1] != 0);
 
                 std::cout << "10 000 ROW DATABASE FIND - DOUBLE" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
 
@@ -341,7 +353,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(pos[1] != 0);
 
                 std::cout << "100 000 ROW DATABASE FIND - STRING" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
 
@@ -360,7 +372,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(pos[1] != 0);
 
                 std::cout << "100 000 ROW DATABASE FIND - FLOAT" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
 
@@ -378,10 +390,175 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(pos[1] != 0);
 
                 std::cout << "100 000 ROW DATABASE FIND - DOUBLE" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
            
+        }
+
+        SECTION("FIND BY POSITION METHOD BENCHMARKS")
+        {
+            SECTION("100 ROWS FIND BY POSITION METHOD - STRING")
+            {
+                auto data = readCSV<std::string>("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+                std::vector<int> pos {44, 4};
+
+                REQUIRE(data.size() > 0);
+
+                auto start = startBenchmark();
+                auto el = findByPos<std::string>(data, pos);
+                auto stop = stopBenchmark();
+
+                REQUIRE(!el.empty());
+
+                std::cout << "100 ROW DATABASE FIND BY POSITION - STRING" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION("100 ROWS FIND BY POSITION METHOD - FLOAT")
+            {
+                auto data = readCSV<float>("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+                std::vector<int> pos {55, 5};
+
+                REQUIRE(data.size() > 0);
+
+                auto start = startBenchmark();
+                auto el = findByPos<float>(data, pos);
+                auto stop = stopBenchmark();
+
+                REQUIRE(el >= 0);
+
+                std::cout << "100 ROW DATABASE FIND BY POSITION - FLOAT" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION("100 ROWS FIND BY POSITION METHOD - DOUBLE")
+            {
+                auto data = readCSV<double>("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+                std::vector<int> pos {66, 6};
+
+                REQUIRE(data.size() > 0);
+
+                auto start = startBenchmark();
+                auto el = findByPos<double>(data, pos);
+                auto stop = stopBenchmark();
+
+                REQUIRE(el >= 0);
+
+                std::cout << "100 ROW DATABASE FIND BY POSITION - DOUBLE" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION("10 000 ROWS FIND BY POSITION METHOD - STRING")
+            {
+                auto data = readCSV<std::string>("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+                std::vector<int> pos {4444, 4};
+
+                REQUIRE(data.size() > 0);
+
+                auto start = startBenchmark();
+                auto el = findByPos<std::string>(data, pos);
+                auto stop = stopBenchmark();
+
+                REQUIRE(!el.empty());
+
+                std::cout << "10 000 ROW DATABASE FIND BY POSITION - STRING" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION("10 000 ROWS FIND BY POSITION METHOD - FLOAT")
+            {
+                auto data = readCSV<float>("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+                std::vector<int> pos {5555, 5};
+
+                REQUIRE(data.size() > 0);
+
+                auto start = startBenchmark();
+                auto el = findByPos<float>(data, pos);
+                auto stop = stopBenchmark();
+
+                REQUIRE(el >= 0);
+
+                std::cout << "10 000 ROW DATABASE FIND BY POSITION - FLOAT" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION("10 000 ROWS FIND BY POSITION METHOD - DOUBLE")
+            {
+                auto data = readCSV<double>("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+                std::vector<int> pos {6666, 6};
+
+                REQUIRE(data.size() > 0);
+
+                auto start = startBenchmark();
+                auto el = findByPos<double>(data, pos);
+                auto stop = stopBenchmark();
+
+                REQUIRE(el >= 0);
+
+                std::cout << "10 000 ROW DATABASE FIND BY POSITION - DOUBLE" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION("100 000 ROWS FIND BY POSITION METHOD - STRING")
+            {
+                auto data = readCSV<std::string>("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+                std::vector<int> pos {44444, 4};
+
+                REQUIRE(data.size() > 0);
+
+                auto start = startBenchmark();
+                auto el = findByPos<std::string>(data, pos);
+                auto stop = stopBenchmark();
+
+                REQUIRE(!el.empty());
+
+                std::cout << "100 000 ROW DATABASE FIND BY POSITION - STRING" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION("100 000 ROWS FIND BY POSITION METHOD - FLOAT")
+            {
+                auto data = readCSV<float>("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+                std::vector<int> pos {55555, 5};
+
+                REQUIRE(data.size() > 0);
+
+                auto start = startBenchmark();
+                auto el = findByPos<float>(data, pos);
+                auto stop = stopBenchmark();
+
+                REQUIRE(el >= 0);
+
+                std::cout << "100 000 ROW DATABASE FIND BY POSITION - FLOAT" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION("100 000 ROWS FIND BY POSITION METHOD - DOUBLE")
+            {
+                auto data = readCSV<double>("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+                std::vector<int> pos {66666, 6};
+
+                REQUIRE(data.size() > 0);
+
+                auto start = startBenchmark();
+                auto el = findByPos<double>(data, pos);
+                auto stop = stopBenchmark();
+
+                REQUIRE(el >= 0);
+
+                std::cout << "100 000 ROW DATABASE FIND BY POSITION - DOUBLE" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
         }
 
         SECTION("FIND ALL METHOD BENCHMARKS")
@@ -399,7 +576,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(!pos.empty());
 
                 std::cout << "100 ROW DATABASE FIND ALL - STRING" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "NUMBER OF TIMES ELEMENT WAS FOUND: " << pos.size() << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
@@ -418,7 +595,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(!pos.empty());
 
                 std::cout << "100 ROW DATABASE FIND ALL - FLOAT" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "NUMBER OF TIMES ELEMENT WAS FOUND: " << pos.size() << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
@@ -437,7 +614,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(!pos.empty());
 
                 std::cout << "100 ROW DATABASE FIND ALL - DOUBLE" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "NUMBER OF TIMES ELEMENT WAS FOUND: " << pos.size() << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
@@ -456,7 +633,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(!pos.empty());
 
                 std::cout << "10 000 ROW DATABASE FIND ALL - STRING" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "NUMBER OF TIMES ELEMENT WAS FOUND: " << pos.size() << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
@@ -475,7 +652,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(!pos.empty());
 
                 std::cout << "10 000 ROW DATABASE FIND ALL - FLOAT" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "NUMBER OF TIMES ELEMENT WAS FOUND: " << pos.size() << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
@@ -494,7 +671,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(!pos.empty());
 
                 std::cout << "10 000 ROW DATABASE FIND ALL - DOUBLE" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "NUMBER OF TIMES ELEMENT WAS FOUND: " << pos.size() << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
@@ -513,7 +690,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(!pos.empty());
 
                 std::cout << "100 000 ROW DATABASE FIND ALL - STRING" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "NUMBER OF TIMES ELEMENT WAS FOUND: " << pos.size() << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
@@ -532,7 +709,7 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(!pos.empty());
 
                 std::cout << "100 000 ROW DATABASE FIND ALL - FLOAT" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "NUMBER OF TIMES ELEMENT WAS FOUND: " << pos.size() << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
@@ -551,11 +728,12 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 CHECK(!pos.empty());
 
                 std::cout << "100 000 ROW DATABASE FIND ALL - DOUBLE" << std::endl;
-                std::cout << getDuration(start, stop, Microseconds) << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
                 std::cout << "NUMBER OF TIMES ELEMENT WAS FOUND: " << pos.size() << std::endl;
                 std::cout << "-----------------------------------------------" << std::endl;
             }
         }
+     
     }
 }
         

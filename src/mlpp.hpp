@@ -88,7 +88,16 @@ namespace DataAnalysis
         return pos;
     };
 
-    // Find by pos method, return position on 2d Matrix
+    // Find by pos method, return element at requqested position on 2d Matrix
+    template <typename T> T findByPos(const Mat2d<T>& dataMatrix, std::vector<int>& pos)
+    {
+        if (!dataMatrix.empty())
+        {
+            return dataMatrix[pos[0]][pos[1]];
+        }
+
+        return NULL;       
+    }
 
     // Find all method, return vector of positions
     template <typename T> Mat2d<int> findAll(const Mat2d<T>& dataMatrix, const T& desiredElemet)
