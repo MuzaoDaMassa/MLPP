@@ -14,11 +14,11 @@ template <typename T> using Mat2d = std::vector<std::vector<T>>;
 
 namespace DataAnalysis
 {
-    // Declaring template method to read CSV files
-    template <typename T> Mat2d<T> readCSV(const std::string& filePath)
+    // Declaring method to read CSV files into 2d string matrix
+    Mat2d<std::string> readCSV(const std::string& filePath)
     {
         // Create 2d matrix to store date in whatever type T comes
-        Mat2d<T> data;
+        Mat2d<std::string> data;
 
         // Open CSV file from path provided 
         std::ifstream file(filePath);
@@ -35,16 +35,16 @@ namespace DataAnalysis
         std::string line;
         while (std::getline(file, line))
         {
-            std::vector<T> row;
+            std::vector<std::string> row;
             std::stringstream ss(line);
             std::string cell;
 
             // Tokenize line by comma
             while (std::getline(ss, cell, ','))
             {
-                // Checks cell string stream, and converts declared type T
+                // Checks cell string stream, and pass through val to row
                 std::istringstream iss(cell);
-                T val;
+                std::string val;
                 iss >> val;
                 row.push_back(val);
             }
@@ -58,6 +58,43 @@ namespace DataAnalysis
 
         // Return final 2d matrix data of type T
         return data;     
+    };
+
+    // Convert string to differnt data type, returns new 2d matrix with passed type
+    template <typename T> Mat2d<T> matrixConverter(const Mat2d<std::string>& stringMatrix)
+    {   
+        // Create 2d matrix of new typing
+        Mat2d<T> convertedMatrix;
+
+        if (stringMatrix.empty())
+        {
+            std::cerr << "Passed matrix is empty!" << std::endl;
+            return convertedMatrix;
+        }
+
+        else
+        {
+            // Loop through all elements changing their typing
+            for (const auto& row : stringMatrix) 
+            {
+                std::vector<T> convertedRow;
+
+                for (const auto& element : row) 
+                {
+                    // Convert string to type T
+                    std::stringstream ss(element);
+                    T convertedElement;
+                    ss >> convertedElement;
+                    convertedRow.push_back(convertedElement);
+                }
+                
+                // Add converted element to new 2d matrix
+                convertedMatrix.push_back(convertedRow);
+            } 
+
+            return convertedMatrix;
+        }
+        
     };
 
     // Find method, return first position found
@@ -81,8 +118,7 @@ namespace DataAnalysis
                     }              
                 }           
             }  
-        }
-            
+        }         
 
         // Until better error handling comes pos 0,0 will be the error 
         return pos;
@@ -91,12 +127,15 @@ namespace DataAnalysis
     // Find by pos method, return element at requqested position on 2d Matrix
     template <typename T> T findByPos(const Mat2d<T>& dataMatrix, std::vector<int>& pos)
     {
+        T element;
+
         if (!dataMatrix.empty())
         {
-            return dataMatrix[pos[0]][pos[1]];
+            element = dataMatrix[pos[0]][pos[1]];
+            return element;
         }
 
-        return NULL;       
+        return element;       
     }
 
     // Find all method, return vector of positions
@@ -124,6 +163,9 @@ namespace DataAnalysis
         // Until better error handling comes empty position matrix will be the error
         return pos;
     };
+
+    // Remove rows for better data analysis, return formated matrix
+
 
     // Display first five rows method, prints first 5 rows + header row
     void header(const Mat2d<std::string>& dataMatrix, int rowsToPrint = 5)
@@ -168,6 +210,5 @@ namespace DataAnalysis
             std::cerr << "Data is empty" << std::endl;
         }
     }
-
-    // Remove categorical rows for better data analysis, return purely numerical 2d Matrix
+  
 }

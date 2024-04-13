@@ -6,21 +6,27 @@ using namespace std;
 
 int main()
 {
-    auto data = readCSV<string>("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+    auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+    auto pos1 = find<std::string>(data, "http://watkins.info/");
+    auto pos2 = findAll<std::string>(data, "http://www.hatfield-saunders.net/");
 
-    // Print the matrix
     
-    for (const auto& row : data) 
+    
+    // Print the data
+    /*
+    for (auto &&row : data)
     {
-        for (const auto& element : row) 
+        for (auto &&cell : row)
         {
-            std::cout << element << " ";
+            cout << cell << " ";
         }
-        std::cout << std::endl;
-    } 
-
-    //header(data, 5);
-    //bottom(data, 5);
+        cout << endl;
+    }
+    */
+    
+    cout << "========================================" << endl;
+    header(data, 5);
+    bottom(data, 5);
 
     return 0;
 }

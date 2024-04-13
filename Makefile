@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra
+CXXFLAGS = -std=c++17 
 
 SRCDIR = src
 TESTDIR = tests
@@ -14,9 +14,13 @@ OBJECTS := $(SOURCES:$(SRCDIR)/%.cpp=$(BINDIR)/%.o)
 TEST_SOURCES := $(wildcard $(TESTDIR)/*.cpp)
 TEST_OBJECTS := $(TEST_SOURCES:$(TESTDIR)/%.cpp=$(BINDIR)/%.o)
 
-.PHONY: all clean
+.PHONY: all clean compile_src compile_tests
 
-all: $(MAIN) $(TESTS)
+all: compile_src compile_tests
+
+compile_src: $(MAIN)
+
+compile_tests: $(TESTS)
 
 $(MAIN): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
