@@ -2,6 +2,7 @@
 #include "../src/mlpp.hpp"
 #include "testUtils.hpp"
 
+using namespace Utils;
 using namespace Benchmark;
 using namespace DataAnalysis;
 
@@ -151,6 +152,149 @@ TEST_CASE ("Data Analysis Unit Testing")
         }
     }
 
+    SECTION("MATRIX FORMATTER METHODS")
+    {
+        auto data1 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+        auto data2 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+        auto data3 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv"); 
+
+        REQUIRE(data1.size() > 0); 
+        REQUIRE(data2.size() > 0); 
+        REQUIRE(data3.size() > 0); 
+
+        SECTION("100 ROWS DATASET REMOVE SINGLE METHODS")
+        {
+            int rowToRemove = 50;
+            int columnToRemove = 6;
+            Mat2d<int> racToRemove = {{rowToRemove - 1}, {columnToRemove - 1}};
+            auto oData = data1;
+
+            // Remove single row
+            matrixFormatter(data1, ROW, rowToRemove);
+            auto fData1 = data1;
+            REQUIRE(fData1.size() < oData.size());
+            // Remove single column
+            matrixFormatter(data1, COLUMN, columnToRemove);
+            auto fData2 = data1;
+            REQUIRE(fData2[0].size() < oData[0].size());
+            // Remove single row and column
+            matrixFormatter(data1, ROWANDCOLUMN, racToRemove);
+            REQUIRE(data1.size() < fData1.size());
+            REQUIRE(data1[0].size() < fData2[0].size());
+        }
+
+        SECTION("100 ROWS DATASET REMOVE MULTIPLE METHODS")
+        {
+            std::vector<int> rowsToRemove {10, 20, 30, 40, 50};
+            std::vector<int> columnsToRemove  {2, 4, 6};
+            auto oData = data1;
+
+            // Remove multiple rows
+            matrixFormatter(data1, ROW, rowsToRemove);
+            auto fData1 = data1;
+            REQUIRE(fData1.size() < oData.size());
+            // Remove multiple columns 
+            matrixFormatter(data1, COLUMN, columnsToRemove);
+            auto fData2 = data1;
+            REQUIRE(fData2[0].size() < oData[0].size());
+            // Remove multiple rows and columns 
+            subtractAllElements(rowsToRemove, 1);
+            subtractAllElements(columnsToRemove, 1);
+            Mat2d<int> racToRemove = {{rowsToRemove}, {columnsToRemove}};
+            matrixFormatter(data1, ROWANDCOLUMN, racToRemove);
+            REQUIRE(data1.size() < fData1.size());
+            REQUIRE(data1[0].size() < fData2[0].size());
+        }
+
+        SECTION("10 000 ROWS DATASET REMOVE SINGLE METHODS")
+        {
+            int rowToRemove = 5000;
+            int columnToRemove = 6;
+            Mat2d<int> racToRemove = {{rowToRemove - 1000}, {columnToRemove - 1}};
+            auto oData = data2;
+
+            // Remove single row
+            matrixFormatter(data2, ROW, rowToRemove);
+            auto fData1 = data2;
+            REQUIRE(fData1.size() < oData.size());
+            // Remove single column
+            matrixFormatter(data2, COLUMN, columnToRemove);
+            auto fData2 = data2;
+            REQUIRE(fData2[0].size() < oData[0].size());
+            // Remove single row and column
+            matrixFormatter(data2, ROWANDCOLUMN, racToRemove);
+            REQUIRE(data2.size() < fData1.size());
+            REQUIRE(data2[0].size() < fData2[0].size());
+        }
+
+        SECTION("10 000 ROWS DATASET REMOVE MULTIPLE METHODS")
+        {
+            std::vector<int> rowsToRemove {1000, 2000, 3000, 4000, 5000};
+            std::vector<int> columnsToRemove  {2, 4, 6};
+            auto oData = data2;
+
+            // Remove multiple rows
+            matrixFormatter(data2, ROW, rowsToRemove);
+            auto fData1 = data2;
+            REQUIRE(fData1.size() < oData.size());
+            // Remove multiple columns 
+            matrixFormatter(data2, COLUMN, columnsToRemove);
+            auto fData2 = data2;
+            REQUIRE(fData2[0].size() < oData[0].size());
+            // Remove multiple rows and columns 
+            subtractAllElements(rowsToRemove, 1);
+            subtractAllElements(columnsToRemove, 1);
+            Mat2d<int> racToRemove = {{rowsToRemove}, {columnsToRemove}};
+            matrixFormatter(data2, ROWANDCOLUMN, racToRemove);
+            REQUIRE(data2.size() < fData1.size());
+            REQUIRE(data2[0].size() < fData2[0].size());
+        }
+
+        SECTION("100 000 ROWS DATASET REMOVE SINGLE METHODS")
+        {
+            int rowToRemove = 50000;
+            int columnToRemove = 6;
+            Mat2d<int> racToRemove = {{rowToRemove - 10000}, {columnToRemove - 1}};
+            auto oData = data3;
+
+            // Remove single row
+            matrixFormatter(data3, ROW, rowToRemove);
+            auto fData1 = data3;
+            REQUIRE(fData1.size() < oData.size());
+            // Remove single column
+            matrixFormatter(data3, COLUMN, columnToRemove);
+            auto fData2 = data3;
+            REQUIRE(fData2[0].size() < oData[0].size());
+            // Remove single row and column
+            matrixFormatter(data3, ROWANDCOLUMN, racToRemove);
+            REQUIRE(data3.size() < fData1.size());
+            REQUIRE(data3[0].size() < fData2[0].size());
+        }
+
+        SECTION("100 000 ROWS DATASET REMOVE MULTIPLE METHODS")
+        {
+            std::vector<int> rowsToRemove {10000, 20000, 30000, 40000, 50000};
+            std::vector<int> columnsToRemove  {2, 4, 6};
+            auto oData = data1;
+
+            // Remove multiple rows
+            matrixFormatter(data3, ROW, rowsToRemove);
+            auto fData1 = data3;
+            REQUIRE(fData1.size() < oData.size());
+            // Remove multiple columns 
+            matrixFormatter(data3, COLUMN, columnsToRemove);
+            auto fData2 = data3;
+            REQUIRE(fData2[0].size() < oData[0].size());
+            // Remove multiple rows and columns 
+            subtractAllElements(rowsToRemove, 1);
+            subtractAllElements(columnsToRemove, 1);
+            Mat2d<int> racToRemove = {{rowsToRemove}, {columnsToRemove}};
+            matrixFormatter(data3, ROWANDCOLUMN, racToRemove);
+            REQUIRE(data3.size() < fData1.size());
+            REQUIRE(data1[0].size() < fData2[0].size());
+        }
+    }
+
     SECTION("FIND METHODS")
     {
         auto data1 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
@@ -218,7 +362,7 @@ TEST_CASE ("Data Analysis Unit Testing")
     }
 }
 
-TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
+TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmarks]")
 {
     SECTION("ASSORTED READ METHODS BENCHMARKS")
     {
@@ -228,7 +372,6 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
             auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
             auto stop = stopBenchmark();
 
-            REQUIRE(data.size() > 0);
             std::cout << "100 ROW DATABASE READ CSV - STRING" << std::endl;
             std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
             std::cout << "-----------------------------------------------" << std::endl;
@@ -240,7 +383,6 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
             auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
             auto stop = stopBenchmark();
 
-            REQUIRE(data.size() > 0);
             std::cout << "10 000 ROW DATABASE READ CSV" << std::endl;
             std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
             std::cout << "-----------------------------------------------" << std::endl;
@@ -252,7 +394,6 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
             auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
             auto stop = stopBenchmark();
 
-            REQUIRE(data.size() > 0);
             std::cout << "100 000 ROW DATABASE READ CSV" << std::endl;
             std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
             std::cout << "-----------------------------------------------" << std::endl;
@@ -265,10 +406,6 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
         auto data1 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
         auto data2 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
         auto data3 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv"); 
-
-        REQUIRE(data1.size() > 0); 
-        REQUIRE(data2.size() > 0); 
-        REQUIRE(data3.size() > 0); 
 
         SECTION("100 ROWS DATASET CONVERSION TO FLOAT")
         {
@@ -355,6 +492,260 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
         }
     }
 
+    SECTION("MATRIX FORMATTER METHODS BENCHMARKS")
+    {
+        auto data1 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+        auto data2 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+        auto data3 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+
+        SECTION("100 ROWS DATASET REMOVE SINGLE METHODS BENCHMARKS")
+        {
+            int rowToRemove = 50;
+            int columnToRemove = 6;
+            Mat2d<int> racToRemove = {{rowToRemove - 1}, {columnToRemove - 1}};
+
+            SECTION ("REMOVE SINGLE ROW BENCHMARK")
+            {
+                auto start = startBenchmark();
+                matrixFormatter(data1, ROW, rowToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "100 ROW REMOVE SINGLE ROW BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION ("REMOVE SINGLE COLUMN BENCHMARK")
+            {
+                auto start = startBenchmark();
+                matrixFormatter(data1, COLUMN, columnToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "100 ROW REMOVE SINGLE COLUMN BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION ("REMOVE SINGLE ROW AND COLUMN BENCHMARK")
+            {
+                auto start = startBenchmark();
+                matrixFormatter(data1, ROWANDCOLUMN, racToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "100 ROW REMOVE SINGLE ROW AND COLUMN BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+            
+        }
+
+        SECTION("100 ROWS DATASET REMOVE MULTIPLE METHODS BENCHMARKS")
+        {
+            std::vector<int> rowsToRemove{10, 20, 30, 40, 50};
+            std::vector<int> columnsToRemove{2, 4, 6};
+
+            SECTION ("REMOVE MULTIPLE ROWS BENCHMARK")
+            {
+                auto start = startBenchmark();
+                matrixFormatter(data1, ROW, rowsToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "100 ROW REMOVE MULTIPLE ROWS BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION ("REMOVE MULTIPLE COLUMNS BENCHMARK")
+            {
+                auto start = startBenchmark();
+                matrixFormatter(data1, COLUMN, columnsToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "100 ROW REMOVE MULTIPLE COLUMNS BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION ("REMOVE MULTIPLE ROWS AND COLUMNS BENCHMARK")
+            {
+                subtractAllElements(rowsToRemove, 1);
+                subtractAllElements(columnsToRemove, 1);
+                Mat2d<int> racToRemove = {{rowsToRemove}, {columnsToRemove}};
+                auto start = startBenchmark();
+                matrixFormatter(data1, ROWANDCOLUMN, racToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "100 ROW REMOVE MULTIPLE ROWS AND COLUMNS BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+        }
+
+        SECTION("10 000 ROWS DATASET REMOVE SINGLE METHODS BENCHMARKS")
+        {
+            int rowToRemove = 5000;
+            int columnToRemove = 6;
+            Mat2d<int> racToRemove = {{rowToRemove - 1000}, {columnToRemove - 1}};
+
+            SECTION ("REMOVE SINGLE ROW BENCHMARK")
+            {
+                auto start = startBenchmark();
+                matrixFormatter(data2, ROW, rowToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "10 000 ROW REMOVE SINGLE ROW BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION ("REMOVE SINGLE COLUMN BENCHMARK")
+            {
+                auto start = startBenchmark();
+                matrixFormatter(data2, COLUMN, columnToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "10 000 ROW REMOVE SINGLE COLUMN BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION ("REMOVE SINGLE ROW AND COLUMN BENCHMARK")
+            {
+                auto start = startBenchmark();
+                matrixFormatter(data2, ROWANDCOLUMN, racToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "10 000 ROW REMOVE SINGLE ROW AND COLUMN BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+        }
+
+        SECTION("10 000 ROWS DATASET REMOVE MULTIPLE METHODS BENCHMARKS")
+        {
+            std::vector<int> rowsToRemove{1000, 2000, 3000, 4000, 5000};
+            std::vector<int> columnsToRemove{2, 4, 6};
+
+            SECTION ("REMOVE MULTIPLE ROWS BENCHMARK")
+            {
+                auto start = startBenchmark();
+                matrixFormatter(data2, ROW, rowsToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "10 000 ROW REMOVE MULTIPLE ROWS BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION ("REMOVE MULTIPLE COLUMNS BENCHMARK")
+            {
+                auto start = startBenchmark();
+                matrixFormatter(data2, COLUMN, columnsToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "10 000 ROW REMOVE MULTIPLE COLUMNS BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION ("REMOVE MULTIPLE ROWS AND COLUMNS BENCHMARK")
+            {
+                subtractAllElements(rowsToRemove, 1);
+                subtractAllElements(columnsToRemove, 1);
+                Mat2d<int> racToRemove = {{rowsToRemove}, {columnsToRemove}};
+                auto start = startBenchmark();
+                matrixFormatter(data2, ROWANDCOLUMN, racToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "10 000 ROW REMOVE MULTIPLE ROWS AND COLUMNS BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+        }
+
+        SECTION("100 000 ROWS DATASET REMOVE SINGLE METHODS BENCHMARKS")
+        {
+            int rowToRemove = 50000;
+            int columnToRemove = 6;
+            Mat2d<int> racToRemove = {{rowToRemove - 10000}, {columnToRemove - 1}};
+
+            SECTION ("REMOVE SINGLE ROW BENCHMARK")
+            {
+                auto start = startBenchmark();
+                matrixFormatter(data3, ROW, rowToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "100 000 ROW REMOVE SINGLE ROW BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION ("REMOVE SINGLE COLUMN BENCHMARK")
+            {
+                auto start = startBenchmark();
+                matrixFormatter(data3, COLUMN, columnToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "100 000 ROW REMOVE SINGLE COLUMN BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION ("REMOVE SINGLE ROW AND COLUMN BENCHMARK")
+            {
+                auto start = startBenchmark();
+                matrixFormatter(data3, ROWANDCOLUMN, racToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "100 000 ROW REMOVE SINGLE ROW AND COLUMN BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+        }
+
+        SECTION("100 000 ROWS DATASET REMOVE MULTIPLE METHODS BENCHMARKS")
+        {
+            std::vector<int> rowsToRemove{10000, 20000, 30000, 40000, 50000};
+            std::vector<int> columnsToRemove{2, 4, 6};
+
+            SECTION ("REMOVE MULTIPLE ROWS BENCHMARK")
+            {
+                auto start = startBenchmark();
+                matrixFormatter(data3, ROW, rowsToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "100 000 ROW REMOVE MULTIPLE ROWS BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION ("REMOVE MULTIPLE COLUMNS BENCHMARK")
+            {
+                auto start = startBenchmark();
+                matrixFormatter(data3, COLUMN, columnsToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "100 000 ROW REMOVE MULTIPLE COLUMNS BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+
+            SECTION ("REMOVE MULTIPLE ROWS AND COLUMNS BENCHMARK")
+            {
+                subtractAllElements(rowsToRemove, 1);
+                subtractAllElements(columnsToRemove, 1);
+                Mat2d<int> racToRemove = {{rowsToRemove}, {columnsToRemove}};
+                auto start = startBenchmark();
+                matrixFormatter(data3, ROWANDCOLUMN, racToRemove);
+                auto stop = stopBenchmark();
+
+                std::cout << "100 000 ROW REMOVE MULTIPLE ROWS AND COLUMNS BENCHMARK" << std::endl;
+                std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+                std::cout << "-----------------------------------------------" << std::endl;
+            }
+        }
+    }
+
     SECTION("ASSORTED FIND METHODS BENCHMARKS")
     {
         SECTION("FIND METHOD BENCHMARKS")
@@ -364,14 +755,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 // For testing purposes, the desired element will always be the last possible
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
 
-                REQUIRE(data.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = find<std::string>(data, "http://www.hatfield-saunders.net/");
                 auto stop = stopBenchmark();
-
-                CHECK(pos[0] != 0);
-                CHECK(pos[1] != 0);
 
                 std::cout << "100 ROW DATABASE FIND" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -384,14 +770,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
                 auto cData = matrixConverter<float>(data);
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = find<float>(cData, 783.639F);
                 auto stop = stopBenchmark();
-
-                CHECK(pos[0] != 0);
-                CHECK(pos[1] != 0);
 
                 std::cout << "100 ROW DATABASE FIND - FLOAT" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -404,14 +785,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
                 auto cData = matrixConverter<double>(data);
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = find<double>(cData, 783.639);
                 auto stop = stopBenchmark();
-
-                CHECK(pos[0] != 0);
-                CHECK(pos[1] != 0);
 
                 std::cout << "100 ROW DATABASE FIND - DOUBLE" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -423,14 +799,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 // For testing purposes, the desired element will always be the last possible
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
 
-                REQUIRE(data.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = find<std::string>(data, "http://nixon.net/");
                 auto stop = stopBenchmark();
-
-                CHECK(pos[0] != 0);
-                CHECK(pos[1] != 0);
 
                 std::cout << "10 000 ROW DATABASE FIND - STRING" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -443,14 +814,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
                 auto cData = matrixConverter<float>(data);
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = find<float>(cData, 423.632F);
                 auto stop = stopBenchmark();
-
-                CHECK(pos[0] != 0);
-                CHECK(pos[1] != 0);
 
                 std::cout << "10 000 ROW DATABASE FIND - FLOAT" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -463,14 +829,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
                 auto cData = matrixConverter<double>(data);
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = find<double>(cData, 423.632);
                 auto stop = stopBenchmark();
-
-                CHECK(pos[0] != 0);
-                CHECK(pos[1] != 0);
 
                 std::cout << "10 000 ROW DATABASE FIND - DOUBLE" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -482,14 +843,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 // For testing purposes, the desired element will always be the last possible
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
 
-                REQUIRE(data.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = find<std::string>(data, "https://www.walter.com/");
                 auto stop = stopBenchmark();
-
-                CHECK(pos[0] != 0);
-                CHECK(pos[1] != 0);
 
                 std::cout << "100 000 ROW DATABASE FIND - STRING" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -502,14 +858,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
                 auto cData = matrixConverter<float>(data);
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = find<float>(cData, 157.189F);
                 auto stop = stopBenchmark();
-
-                CHECK(pos[0] != 0);
-                CHECK(pos[1] != 0);
 
                 std::cout << "100 000 ROW DATABASE FIND - FLOAT" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -522,14 +873,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
                 auto cData = matrixConverter<double>(data);
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = find<double>(cData, 157.189);
                 auto stop = stopBenchmark();
-
-                CHECK(pos[0] != 0);
-                CHECK(pos[1] != 0);
 
                 std::cout << "100 000 ROW DATABASE FIND - DOUBLE" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -545,13 +891,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
                 std::vector<int> pos {44, 4};
 
-                REQUIRE(data.size() > 0);
-
                 auto start = startBenchmark();
                 auto el = findByPos<std::string>(data, pos);
                 auto stop = stopBenchmark();
-
-                REQUIRE(!el.empty());
 
                 std::cout << "100 ROW DATABASE FIND BY POSITION - STRING" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -564,13 +906,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto cData = matrixConverter<float>(data);
                 std::vector<int> pos {55, 5};
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto el = findByPos<float>(cData, pos);
                 auto stop = stopBenchmark();
-
-                REQUIRE(el >= 0);
 
                 std::cout << "100 ROW DATABASE FIND BY POSITION - FLOAT" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -583,13 +921,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto cData = matrixConverter<double>(data);
                 std::vector<int> pos {66, 6};
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto el = findByPos<double>(cData, pos);
                 auto stop = stopBenchmark();
-
-                REQUIRE(el >= 0);
 
                 std::cout << "100 ROW DATABASE FIND BY POSITION - DOUBLE" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -601,13 +935,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
                 std::vector<int> pos {4444, 4};
 
-                REQUIRE(data.size() > 0);
-
                 auto start = startBenchmark();
                 auto el = findByPos<std::string>(data, pos);
                 auto stop = stopBenchmark();
-
-                REQUIRE(!el.empty());
 
                 std::cout << "10 000 ROW DATABASE FIND BY POSITION - STRING" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -620,13 +950,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto cData = matrixConverter<float>(data);
                 std::vector<int> pos {5555, 5};
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto el = findByPos<float>(cData, pos);
                 auto stop = stopBenchmark();
-
-                REQUIRE(el >= 0);
 
                 std::cout << "10 000 ROW DATABASE FIND BY POSITION - FLOAT" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -639,13 +965,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto cData = matrixConverter<double>(data);
                 std::vector<int> pos {6666, 6};
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto el = findByPos<double>(cData, pos);
                 auto stop = stopBenchmark();
-
-                REQUIRE(el >= 0);
 
                 std::cout << "10 000 ROW DATABASE FIND BY POSITION - DOUBLE" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -657,13 +979,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
                 std::vector<int> pos {44444, 4};
 
-                REQUIRE(data.size() > 0);
-
                 auto start = startBenchmark();
                 auto el = findByPos<std::string>(data, pos);
                 auto stop = stopBenchmark();
-
-                REQUIRE(!el.empty());
 
                 std::cout << "100 000 ROW DATABASE FIND BY POSITION - STRING" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -676,13 +994,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto cData = matrixConverter<float>(data);
                 std::vector<int> pos {55555, 5};
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto el = findByPos<float>(cData, pos);
                 auto stop = stopBenchmark();
-
-                REQUIRE(el >= 0);
 
                 std::cout << "100 000 ROW DATABASE FIND BY POSITION - FLOAT" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -695,13 +1009,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto cData = matrixConverter<double>(data);
                 std::vector<int> pos {66666, 6};
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto el = findByPos<double>(cData, pos);
                 auto stop = stopBenchmark();
-
-                REQUIRE(el >= 0);
 
                 std::cout << "100 000 ROW DATABASE FIND BY POSITION - DOUBLE" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -715,13 +1025,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
             {
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
 
-                REQUIRE(data.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = findAll<std::string>(data, "Netherlands");
                 auto stop = stopBenchmark();
-
-                CHECK(!pos.empty());
 
                 std::cout << "100 ROW DATABASE FIND ALL - STRING" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -734,13 +1040,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
                 auto cData = matrixConverter<float>(data);
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = findAll<float>(cData, 2020.0F);
                 auto stop = stopBenchmark();
-
-                CHECK(!pos.empty());
 
                 std::cout << "100 ROW DATABASE FIND ALL - FLOAT" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -753,13 +1055,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
                 auto cData = matrixConverter<double>(data);
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = findAll<double>(cData, 2021.0);
                 auto stop = stopBenchmark();
-
-                CHECK(!pos.empty());
 
                 std::cout << "100 ROW DATABASE FIND ALL - DOUBLE" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -771,13 +1069,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
             {
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
 
-                REQUIRE(data.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = findAll<std::string>(data, "Netherlands");
                 auto stop = stopBenchmark();
-
-                CHECK(!pos.empty());
 
                 std::cout << "10 000 ROW DATABASE FIND ALL - STRING" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -790,13 +1084,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
                 auto cData = matrixConverter<float>(data);
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = findAll<float>(cData, 2020.0F);
                 auto stop = stopBenchmark();
-
-                CHECK(!pos.empty());
 
                 std::cout << "10 000 ROW DATABASE FIND ALL - FLOAT" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -809,13 +1099,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
                 auto cData = matrixConverter<double>(data);
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = findAll<double>(cData, 2021.0);
                 auto stop = stopBenchmark();
-
-                CHECK(!pos.empty());
 
                 std::cout << "10 000 ROW DATABASE FIND ALL - DOUBLE" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -827,13 +1113,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
             {
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
 
-                REQUIRE(data.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = findAll<std::string>(data, "Netherlands");
                 auto stop = stopBenchmark();
-
-                CHECK(!pos.empty());
 
                 std::cout << "100 000 ROW DATABASE FIND ALL - STRING" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -846,13 +1128,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
                 auto cData = matrixConverter<float>(data);
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = findAll<float>(cData, 2020.0F);
                 auto stop = stopBenchmark();
-
-                CHECK(!pos.empty());
 
                 std::cout << "100 000 ROW DATABASE FIND ALL - FLOAT" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
@@ -865,13 +1143,9 @@ TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmark]")
                 auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
                 auto cData = matrixConverter<double>(data);
 
-                REQUIRE(cData.size() > 0);
-
                 auto start = startBenchmark();
                 auto pos = findAll<double>(cData, 2021.0);
                 auto stop = stopBenchmark();
-
-                CHECK(!pos.empty());
 
                 std::cout << "100 000 ROW DATABASE FIND ALL - DOUBLE" << std::endl;
                 std::cout << getDuration(start, stop, Nanoseconds) << std::endl;

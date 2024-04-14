@@ -5,6 +5,19 @@
 
 // Methods to help with testing 
 
+namespace Utils
+{
+    // Subtract all elements of given vector 
+    template <typename T> void subtractAllElements(std::vector<T>& vector, const int& toSubtract)
+    {
+        for (auto &element : vector)
+        {
+            element -= toSubtract;
+        }
+    }
+}
+
+
 namespace Benchmark
 {
     enum TimeUnit 
@@ -48,4 +61,6 @@ namespace Benchmark
             return "Process duration in Microseconds: " + std::to_string(time);
         }
     }
+
+    
 }
