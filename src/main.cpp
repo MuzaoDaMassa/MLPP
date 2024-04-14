@@ -7,31 +7,36 @@ using namespace std;
 int main()
 {
     auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
-    auto pos1 = find<std::string>(data, "http://watkins.info/");
-    auto pos2 = findAll<std::string>(data, "http://www.hatfield-saunders.net/");
-        
+    auto cData = matrixConverter<float>(data);
+
     // Print the data
-    /*
-    for (auto &&row : data)
+    /* 
+    for (auto &row : cData)
     {
-        for (auto &&cell : row)
+        for (auto &cell : row)
         {
-            cout << cell << " ";
+            cout << " " << cell;
         }
         cout << endl;
     }
+
+    for (size_t col = 0; col < data[100].size(); col++)
+    {
+        cout << col << " " << data[100][col] << endl;      
+    } 
     */
-    
-    vector<int> testR {2, 5, 96, 98};
-    //matrixFormatter(data, ROW, testR);
+    //vector<int> pos1 {100, 8};
+    //auto el = findByPos(data, pos1);
 
-    vector<int> testC {1, 3, 5, 7, 12};
-    //matrixFormatter(data, COLUMN, testC);
-
-    Mat2d<int> testRaC {{testR}, {testC}};
-    matrixFormatter(data, ROWANDCOLUMN, testRaC);
+    vector<string> testR {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+    vector<string> testC (data.size(), "0");
+    //matrixFormatter<string>(data, COLUMN, 98, testR);
+    auto pos = find<string>(data, "http://www.hatfield-saunders.net/");
+    //auto pos = find<string>(data, "2020-03-11");    
 
     cout << "========================================" << endl;
+    //cout << el << endl;
+    cout << pos[0] << ", " << pos[1] << endl;
     header(data, 5);
     bottom(data, 5);
 
