@@ -8,36 +8,30 @@ using namespace DataAnalysis;
 
 TEST_CASE("READ CSV METHODS")
 {
-    auto data1 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
-    auto data2 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
-    auto data3 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+    auto data1 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+    auto data2 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+    auto data3 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
 
     REQUIRE(data1.size() > 0);
 
-    for (const auto &row : data1)
-    {
-        for (const auto &element : row)
-        {
+    for (const auto& row : data1) {
+        for (const auto& element : row) {
             CHECK(!element.empty());
         }
     }
 
     REQUIRE(data2.size() > 0);
-
-    for (const auto &row : data2)
-    {
-        for (const auto &element : row)
-        {
+ 
+    for (const auto& row : data2) {
+        for (const auto& element : row) {
             CHECK(!element.empty());
         }
     }
 
     REQUIRE(data3.size() > 0);
 
-    for (const auto &row : data3)
-    {
-        for (const auto &element : row)
-        {
+    for (const auto& row : data3) {
+        for (const auto& element : row) {
             CHECK(!element.empty());
         }
     }
@@ -45,9 +39,9 @@ TEST_CASE("READ CSV METHODS")
 
 TEST_CASE("MATRIX CONVERTER METHODS")
 {
-    auto data1 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
-    auto data2 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
-    auto data3 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+    auto data1 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+    auto data2 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+    auto data3 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
 
     REQUIRE(data1.size() > 0);
     REQUIRE(data2.size() > 0);
@@ -55,14 +49,11 @@ TEST_CASE("MATRIX CONVERTER METHODS")
 
     SECTION("100 ROWS DATASET CONVERSION TO FLOAT")
     {
-        auto cData = matrixConverter<float>(data1);
+        auto cData = matrix_converter<float>(data1);
 
-        if (!cData.empty())
-        {
-            for (const auto &row : cData)
-            {
-                for (const auto &element : row)
-                {
+        if (!cData.empty()) {
+            for (const auto& row : cData) {
+                for (const auto& element : row) {
                     REQUIRE(element >= 0);
                 }
             }
@@ -71,14 +62,11 @@ TEST_CASE("MATRIX CONVERTER METHODS")
 
     SECTION("100 ROWS DATASET CONVERSION TO DOUBLE")
     {
-        auto cData = matrixConverter<double>(data1);
+        auto cData = matrix_converter<double>(data1);
 
-        if (!cData.empty())
-        {
-            for (const auto &row : cData)
-            {
-                for (const auto &element : row)
-                {
+        if (!cData.empty()) {
+            for (const auto& row : cData) {
+                for (const auto& element : row) {
                     REQUIRE(element >= 0);
                 }
             }
@@ -87,14 +75,11 @@ TEST_CASE("MATRIX CONVERTER METHODS")
 
     SECTION("10 000 ROWS DATASET CONVERSION TO FLOAT")
     {
-        auto cData = matrixConverter<float>(data2);
+        auto cData = matrix_converter<float>(data2);
 
-        if (!cData.empty())
-        {
-            for (const auto &row : cData)
-            {
-                for (const auto &element : row)
-                {
+        if (!cData.empty()) {
+            for (const auto& row : cData) {
+                for (const auto& element : row) {
                     REQUIRE(element >= 0);
                 }
             }
@@ -103,14 +88,11 @@ TEST_CASE("MATRIX CONVERTER METHODS")
 
     SECTION("10 000  ROWS DATASET CONVERSION TO DOUBLE")
     {
-        auto cData = matrixConverter<double>(data2);
+        auto cData = matrix_converter<double>(data2);
 
-        if (!cData.empty())
-        {
-            for (const auto &row : cData)
-            {
-                for (const auto &element : row)
-                {
+        if (!cData.empty()) {
+            for (const auto& row : cData) {
+                for (const auto& element : row) {
                     REQUIRE(element >= 0);
                 }
             }
@@ -119,14 +101,11 @@ TEST_CASE("MATRIX CONVERTER METHODS")
 
     SECTION("100 000 ROWS DATASET CONVERSION TO FLOAT")
     {
-        auto cData = matrixConverter<float>(data3);
+        auto cData = matrix_converter<float>(data3);
 
-        if (!cData.empty())
-        {
-            for (const auto &row : cData)
-            {
-                for (const auto &element : row)
-                {
+        if (!cData.empty()) {
+            for (const auto& row : cData) {
+                for (const auto& element : row) {
                     REQUIRE(element >= 0);
                 }
             }
@@ -135,14 +114,11 @@ TEST_CASE("MATRIX CONVERTER METHODS")
 
     SECTION("100 000 ROWS DATASET CONVERSION TO DOUBLE")
     {
-        auto cData = matrixConverter<double>(data3);
+        auto cData = matrix_converter<double>(data3);
 
-        if (!cData.empty())
-        {
-            for (const auto &row : cData)
-            {
-                for (const auto &element : row)
-                {
+        if (!cData.empty()) {
+            for (const auto& row : cData) {
+                for (const auto& element : row) {
                     REQUIRE(element >= 0);
                 }
             }
@@ -152,9 +128,9 @@ TEST_CASE("MATRIX CONVERTER METHODS")
 
 TEST_CASE("MATRIX FORMATTER METHODS")
 {
-    auto data1 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
-    auto data2 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
-    auto data3 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+    auto data1 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+    auto data2 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+    auto data3 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
 
     REQUIRE(data1.size() > 0);
     REQUIRE(data2.size() > 0);
@@ -168,15 +144,20 @@ TEST_CASE("MATRIX FORMATTER METHODS")
         auto oData = data1;
 
         // Remove single row
-        matrixFormatter(data1, ROW, rowToRemove);
+        matrix_formatter(data1, ROW, rowToRemove);
         auto fData1 = data1;
+
         REQUIRE(fData1.size() < oData.size());
+
         // Remove single column
-        matrixFormatter(data1, COLUMN, columnToRemove);
+        matrix_formatter(data1, COLUMN, columnToRemove);
         auto fData2 = data1;
+
         REQUIRE(fData2[0].size() < oData[0].size());
+
         // Remove single row and column
-        matrixFormatter(data1, ROWANDCOLUMN, racToRemove);
+        matrix_formatter(data1, ROWANDCOLUMN, racToRemove);
+
         REQUIRE(data1.size() < fData1.size());
         REQUIRE(data1[0].size() < fData2[0].size());
     }
@@ -188,18 +169,23 @@ TEST_CASE("MATRIX FORMATTER METHODS")
         auto oData = data1;
 
         // Remove multiple rows
-        matrixFormatter(data1, ROW, rowsToRemove);
+        matrix_formatter(data1, ROW, rowsToRemove);
         auto fData1 = data1;
+
         REQUIRE(fData1.size() < oData.size());
+
         // Remove multiple columns
-        matrixFormatter(data1, COLUMN, columnsToRemove);
+        matrix_formatter(data1, COLUMN, columnsToRemove);
         auto fData2 = data1;
+
         REQUIRE(fData2[0].size() < oData[0].size());
+
         // Remove multiple rows and columns
         subtractAllElements(rowsToRemove, 1);
         subtractAllElements(columnsToRemove, 1);
         Mat2d<int> racToRemove = {{rowsToRemove}, {columnsToRemove}};
-        matrixFormatter(data1, ROWANDCOLUMN, racToRemove);
+        matrix_formatter(data1, ROWANDCOLUMN, racToRemove);
+
         REQUIRE(data1.size() < fData1.size());
         REQUIRE(data1[0].size() < fData2[0].size());
     }
@@ -212,15 +198,20 @@ TEST_CASE("MATRIX FORMATTER METHODS")
         auto oData = data2;
 
         // Remove single row
-        matrixFormatter(data2, ROW, rowToRemove);
+        matrix_formatter(data2, ROW, rowToRemove);
         auto fData1 = data2;
+
         REQUIRE(fData1.size() < oData.size());
+
         // Remove single column
-        matrixFormatter(data2, COLUMN, columnToRemove);
+        matrix_formatter(data2, COLUMN, columnToRemove);
         auto fData2 = data2;
+
         REQUIRE(fData2[0].size() < oData[0].size());
+
         // Remove single row and column
-        matrixFormatter(data2, ROWANDCOLUMN, racToRemove);
+        matrix_formatter(data2, ROWANDCOLUMN, racToRemove);
+
         REQUIRE(data2.size() < fData1.size());
         REQUIRE(data2[0].size() < fData2[0].size());
     }
@@ -232,18 +223,23 @@ TEST_CASE("MATRIX FORMATTER METHODS")
         auto oData = data2;
 
         // Remove multiple rows
-        matrixFormatter(data2, ROW, rowsToRemove);
+        matrix_formatter(data2, ROW, rowsToRemove);
         auto fData1 = data2;
+
         REQUIRE(fData1.size() < oData.size());
+
         // Remove multiple columns
-        matrixFormatter(data2, COLUMN, columnsToRemove);
+        matrix_formatter(data2, COLUMN, columnsToRemove);
         auto fData2 = data2;
+
         REQUIRE(fData2[0].size() < oData[0].size());
+
         // Remove multiple rows and columns
         subtractAllElements(rowsToRemove, 1);
         subtractAllElements(columnsToRemove, 1);
         Mat2d<int> racToRemove = {{rowsToRemove}, {columnsToRemove}};
-        matrixFormatter(data2, ROWANDCOLUMN, racToRemove);
+        matrix_formatter(data2, ROWANDCOLUMN, racToRemove);
+
         REQUIRE(data2.size() < fData1.size());
         REQUIRE(data2[0].size() < fData2[0].size());
     }
@@ -256,15 +252,20 @@ TEST_CASE("MATRIX FORMATTER METHODS")
         auto oData = data3;
 
         // Remove single row
-        matrixFormatter(data3, ROW, rowToRemove);
+        matrix_formatter(data3, ROW, rowToRemove);
         auto fData1 = data3;
+
         REQUIRE(fData1.size() < oData.size());
+
         // Remove single column
-        matrixFormatter(data3, COLUMN, columnToRemove);
+        matrix_formatter(data3, COLUMN, columnToRemove);
         auto fData2 = data3;
+
         REQUIRE(fData2[0].size() < oData[0].size());
+
         // Remove single row and column
-        matrixFormatter(data3, ROWANDCOLUMN, racToRemove);
+        matrix_formatter(data3, ROWANDCOLUMN, racToRemove);
+
         REQUIRE(data3.size() < fData1.size());
         REQUIRE(data3[0].size() < fData2[0].size());
     }
@@ -276,18 +277,23 @@ TEST_CASE("MATRIX FORMATTER METHODS")
         auto oData = data3;
 
         // Remove multiple rows
-        matrixFormatter(data3, ROW, rowsToRemove);
+        matrix_formatter(data3, ROW, rowsToRemove);
         auto fData1 = data3;
+
         REQUIRE(fData1.size() < oData.size());
+
         // Remove multiple columns
-        matrixFormatter(data3, COLUMN, columnsToRemove);
+        matrix_formatter(data3, COLUMN, columnsToRemove);
         auto fData2 = data3;
+        
         REQUIRE(fData2[0].size() < oData[0].size());
+
         // Remove multiple rows and columns
         subtractAllElements(rowsToRemove, 1);
         subtractAllElements(columnsToRemove, 1);
         Mat2d<int> racToRemove = {{rowsToRemove}, {columnsToRemove}};
-        matrixFormatter(data3, ROWANDCOLUMN, racToRemove);
+        matrix_formatter(data3, ROWANDCOLUMN, racToRemove);
+        
         REQUIRE(data3.size() < fData1.size());
         REQUIRE(data3[0].size() < fData2[0].size());
     }
@@ -295,12 +301,12 @@ TEST_CASE("MATRIX FORMATTER METHODS")
 
 TEST_CASE("FIND METHODS")
 {
-    auto data1 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
-    auto data2 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
-    auto data3 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+    auto data1 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+    auto data2 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+    auto data3 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
 
-    auto cData2 = matrixConverter<float>(data2);
-    auto cData3 = matrixConverter<double>(data3);
+    auto cData2 = matrix_converter<float>(data2);
+    auto cData3 = matrix_converter<double>(data3);
 
     REQUIRE(!data1.empty());
     REQUIRE(!cData2.empty());
@@ -329,9 +335,9 @@ TEST_CASE("FIND METHODS")
         std::vector<int> pos3{66666, 6};
 
         // Return element from method
-        auto el1 = findByPos<std::string>(data1, pos1);
-        auto el2 = findByPos<float>(cData2, pos2);
-        auto el3 = findByPos<double>(cData3, pos3);
+        auto el1 = find_by_pos<std::string>(data1, pos1);
+        auto el2 = find_by_pos<float>(cData2, pos2);
+        auto el3 = find_by_pos<double>(cData3, pos3);
 
         REQUIRE(!el1.empty());
         REQUIRE(el2 >= 0);
@@ -359,17 +365,12 @@ TEST_CASE("FIND METHODS")
     }
 }
 
-TEST_CASE("Data Analysis Unit Benchmarking", "[.benchmarks]")
-{
-    
-}
-
 TEST_CASE("READ METHODS BENCHMARKS", "[.benchmarks]")
 {
     SECTION("100 ROWS READ CSV BENCHMARK")
     {
         auto start = startBenchmark();
-        auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+        auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
         auto stop = stopBenchmark();
 
         std::cout << "100 ROW DATABASE READ CSV - STRING" << std::endl;
@@ -380,7 +381,7 @@ TEST_CASE("READ METHODS BENCHMARKS", "[.benchmarks]")
     SECTION("10 000 ROWS READ CSV BENCHMARK - STRING")
     {
         auto start = startBenchmark();
-        auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+        auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
         auto stop = stopBenchmark();
 
         std::cout << "10 000 ROW DATABASE READ CSV" << std::endl;
@@ -391,7 +392,7 @@ TEST_CASE("READ METHODS BENCHMARKS", "[.benchmarks]")
     SECTION("100 000 ROWS READ CSV BENCHMARK ")
     {
         auto start = startBenchmark();
-        auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+        auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
         auto stop = stopBenchmark();
 
         std::cout << "100 000 ROW DATABASE READ CSV" << std::endl;
@@ -402,14 +403,14 @@ TEST_CASE("READ METHODS BENCHMARKS", "[.benchmarks]")
 
 TEST_CASE("MATRIX CONVERSION METHODS BENCHMARKS", "[.benchmarks]")
 {
-    auto data1 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
-    auto data2 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
-    auto data3 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+    auto data1 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+    auto data2 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+    auto data3 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
 
     SECTION("100 ROWS DATASET CONVERSION TO FLOAT")
     {
         auto start = startBenchmark();
-        auto cData = matrixConverter<float>(data1);
+        auto cData = matrix_converter<float>(data1);
         auto stop = stopBenchmark();
 
         if (!cData.empty())
@@ -423,7 +424,7 @@ TEST_CASE("MATRIX CONVERSION METHODS BENCHMARKS", "[.benchmarks]")
     SECTION("100 ROWS DATASET CONVERSION TO DOUBLE")
     {
         auto start = startBenchmark();
-        auto cData = matrixConverter<double>(data1);
+        auto cData = matrix_converter<double>(data1);
         auto stop = stopBenchmark();
 
         if (!cData.empty())
@@ -437,7 +438,7 @@ TEST_CASE("MATRIX CONVERSION METHODS BENCHMARKS", "[.benchmarks]")
     SECTION("10 000 ROWS DATASET CONVERSION TO FLOAT")
     {
         auto start = startBenchmark();
-        auto cData = matrixConverter<float>(data2);
+        auto cData = matrix_converter<float>(data2);
         auto stop = stopBenchmark();
 
         if (!cData.empty())
@@ -451,7 +452,7 @@ TEST_CASE("MATRIX CONVERSION METHODS BENCHMARKS", "[.benchmarks]")
     SECTION("10 000  ROWS DATASET CONVERSION TO DOUBLE")
     {
         auto start = startBenchmark();
-        auto cData = matrixConverter<double>(data2);
+        auto cData = matrix_converter<double>(data2);
         auto stop = stopBenchmark();
 
         if (!cData.empty())
@@ -465,7 +466,7 @@ TEST_CASE("MATRIX CONVERSION METHODS BENCHMARKS", "[.benchmarks]")
     SECTION("100 000 ROWS DATASET CONVERSION TO FLOAT")
     {
         auto start = startBenchmark();
-        auto cData = matrixConverter<float>(data3);
+        auto cData = matrix_converter<float>(data3);
         auto stop = stopBenchmark();
 
         if (!cData.empty())
@@ -479,7 +480,7 @@ TEST_CASE("MATRIX CONVERSION METHODS BENCHMARKS", "[.benchmarks]")
     SECTION("100 000 ROWS DATASET CONVERSION TO DOUBLE")
     {
         auto start = startBenchmark();
-        auto cData = matrixConverter<double>(data3);
+        auto cData = matrix_converter<double>(data3);
         auto stop = stopBenchmark();
 
         if (!cData.empty())
@@ -493,9 +494,9 @@ TEST_CASE("MATRIX CONVERSION METHODS BENCHMARKS", "[.benchmarks]")
 
 TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
 {
-    auto data1 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
-    auto data2 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
-    auto data3 = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+    auto data1 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+    auto data2 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+    auto data3 = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
 
     SECTION("100 ROWS DATASET REMOVE SINGLE METHODS BENCHMARKS")
     {
@@ -506,7 +507,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("REMOVE SINGLE ROW BENCHMARK")
         {
             auto start = startBenchmark();
-            matrixFormatter(data1, ROW, rowToRemove);
+            matrix_formatter(data1, ROW, rowToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "100 ROW REMOVE SINGLE ROW BENCHMARK" << std::endl;
@@ -517,7 +518,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("REMOVE SINGLE COLUMN BENCHMARK")
         {
             auto start = startBenchmark();
-            matrixFormatter(data1, COLUMN, columnToRemove);
+            matrix_formatter(data1, COLUMN, columnToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "100 ROW REMOVE SINGLE COLUMN BENCHMARK" << std::endl;
@@ -528,7 +529,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("REMOVE SINGLE ROW AND COLUMN BENCHMARK")
         {
             auto start = startBenchmark();
-            matrixFormatter(data1, ROWANDCOLUMN, racToRemove);
+            matrix_formatter(data1, ROWANDCOLUMN, racToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "100 ROW REMOVE SINGLE ROW AND COLUMN BENCHMARK" << std::endl;
@@ -545,7 +546,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("REMOVE MULTIPLE ROWS BENCHMARK")
         {
             auto start = startBenchmark();
-            matrixFormatter(data1, ROW, rowsToRemove);
+            matrix_formatter(data1, ROW, rowsToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "100 ROW REMOVE MULTIPLE ROWS BENCHMARK" << std::endl;
@@ -556,7 +557,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("REMOVE MULTIPLE COLUMNS BENCHMARK")
         {
             auto start = startBenchmark();
-            matrixFormatter(data1, COLUMN, columnsToRemove);
+            matrix_formatter(data1, COLUMN, columnsToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "100 ROW REMOVE MULTIPLE COLUMNS BENCHMARK" << std::endl;
@@ -570,7 +571,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
             subtractAllElements(columnsToRemove, 1);
             Mat2d<int> racToRemove = {{rowsToRemove}, {columnsToRemove}};
             auto start = startBenchmark();
-            matrixFormatter(data1, ROWANDCOLUMN, racToRemove);
+            matrix_formatter(data1, ROWANDCOLUMN, racToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "100 ROW REMOVE MULTIPLE ROWS AND COLUMNS BENCHMARK" << std::endl;
@@ -588,7 +589,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("REMOVE SINGLE ROW BENCHMARK")
         {
             auto start = startBenchmark();
-            matrixFormatter(data2, ROW, rowToRemove);
+            matrix_formatter(data2, ROW, rowToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "10 000 ROW REMOVE SINGLE ROW BENCHMARK" << std::endl;
@@ -599,7 +600,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("REMOVE SINGLE COLUMN BENCHMARK")
         {
             auto start = startBenchmark();
-            matrixFormatter(data2, COLUMN, columnToRemove);
+            matrix_formatter(data2, COLUMN, columnToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "10 000 ROW REMOVE SINGLE COLUMN BENCHMARK" << std::endl;
@@ -610,7 +611,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("REMOVE SINGLE ROW AND COLUMN BENCHMARK")
         {
             auto start = startBenchmark();
-            matrixFormatter(data2, ROWANDCOLUMN, racToRemove);
+            matrix_formatter(data2, ROWANDCOLUMN, racToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "10 000 ROW REMOVE SINGLE ROW AND COLUMN BENCHMARK" << std::endl;
@@ -627,7 +628,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("REMOVE MULTIPLE ROWS BENCHMARK")
         {
             auto start = startBenchmark();
-            matrixFormatter(data2, ROW, rowsToRemove);
+            matrix_formatter(data2, ROW, rowsToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "10 000 ROW REMOVE MULTIPLE ROWS BENCHMARK" << std::endl;
@@ -638,7 +639,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("REMOVE MULTIPLE COLUMNS BENCHMARK")
         {
             auto start = startBenchmark();
-            matrixFormatter(data2, COLUMN, columnsToRemove);
+            matrix_formatter(data2, COLUMN, columnsToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "10 000 ROW REMOVE MULTIPLE COLUMNS BENCHMARK" << std::endl;
@@ -652,7 +653,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
             subtractAllElements(columnsToRemove, 1);
             Mat2d<int> racToRemove = {{rowsToRemove}, {columnsToRemove}};
             auto start = startBenchmark();
-            matrixFormatter(data2, ROWANDCOLUMN, racToRemove);
+            matrix_formatter(data2, ROWANDCOLUMN, racToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "10 000 ROW REMOVE MULTIPLE ROWS AND COLUMNS BENCHMARK" << std::endl;
@@ -670,7 +671,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("REMOVE SINGLE ROW BENCHMARK")
         {
             auto start = startBenchmark();
-            matrixFormatter(data3, ROW, rowToRemove);
+            matrix_formatter(data3, ROW, rowToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "100 000 ROW REMOVE SINGLE ROW BENCHMARK" << std::endl;
@@ -681,7 +682,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("REMOVE SINGLE COLUMN BENCHMARK")
         {
             auto start = startBenchmark();
-            matrixFormatter(data3, COLUMN, columnToRemove);
+            matrix_formatter(data3, COLUMN, columnToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "100 000 ROW REMOVE SINGLE COLUMN BENCHMARK" << std::endl;
@@ -692,7 +693,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("REMOVE SINGLE ROW AND COLUMN BENCHMARK")
         {
             auto start = startBenchmark();
-            matrixFormatter(data3, ROWANDCOLUMN, racToRemove);
+            matrix_formatter(data3, ROWANDCOLUMN, racToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "100 000 ROW REMOVE SINGLE ROW AND COLUMN BENCHMARK" << std::endl;
@@ -709,7 +710,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("REMOVE MULTIPLE ROWS BENCHMARK")
         {
             auto start = startBenchmark();
-            matrixFormatter(data3, ROW, rowsToRemove);
+            matrix_formatter(data3, ROW, rowsToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "100 000 ROW REMOVE MULTIPLE ROWS BENCHMARK" << std::endl;
@@ -720,7 +721,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("REMOVE MULTIPLE COLUMNS BENCHMARK")
         {
             auto start = startBenchmark();
-            matrixFormatter(data3, COLUMN, columnsToRemove);
+            matrix_formatter(data3, COLUMN, columnsToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "100 000 ROW REMOVE MULTIPLE COLUMNS BENCHMARK" << std::endl;
@@ -734,7 +735,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
             subtractAllElements(columnsToRemove, 1);
             Mat2d<int> racToRemove = {{rowsToRemove}, {columnsToRemove}};
             auto start = startBenchmark();
-            matrixFormatter(data3, ROWANDCOLUMN, racToRemove);
+            matrix_formatter(data3, ROWANDCOLUMN, racToRemove);
             auto stop = stopBenchmark();
 
             std::cout << "100 000 ROW REMOVE MULTIPLE ROWS AND COLUMNS BENCHMARK" << std::endl;
@@ -751,7 +752,7 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("100 ROWS FIND METHOD BENCHMARK - STRING")
         {
             // For testing purposes, the desired element will always be the last possible
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
 
             auto start = startBenchmark();
             auto pos = find<std::string>(data, "http://www.hatfield-saunders.net/");
@@ -765,8 +766,8 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("100 ROWS FIND METHOD BENCHMARK - FLOAT")
         {
             // For testing purposes, the desired element will always be the last possible
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
-            auto cData = matrixConverter<float>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+            auto cData = matrix_converter<float>(data);
 
             auto start = startBenchmark();
             auto pos = find<float>(cData, 783.639F);
@@ -780,8 +781,8 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("100 ROWS FIND METHOD BENCHMARK - DOUBLE")
         {
             // For testing purposes, the desired element will always be the last possible
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
-            auto cData = matrixConverter<double>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+            auto cData = matrix_converter<double>(data);
 
             auto start = startBenchmark();
             auto pos = find<double>(cData, 783.639);
@@ -795,7 +796,7 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("10 000 ROWS FIND METHOD BENCHMARK - STRING")
         {
             // For testing purposes, the desired element will always be the last possible
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
 
             auto start = startBenchmark();
             auto pos = find<std::string>(data, "http://nixon.net/");
@@ -809,8 +810,8 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("10 000 ROWS FIND METHOD BENCHMARK - FLOAT")
         {
             // For testing purposes, the desired element will always be the last possible
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
-            auto cData = matrixConverter<float>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+            auto cData = matrix_converter<float>(data);
 
             auto start = startBenchmark();
             auto pos = find<float>(cData, 423.632F);
@@ -824,8 +825,8 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("10 000 ROWS FIND METHOD BENCHMARK - DOUBLE")
         {
             // For testing purposes, the desired element will always be the last possible
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
-            auto cData = matrixConverter<double>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+            auto cData = matrix_converter<double>(data);
 
             auto start = startBenchmark();
             auto pos = find<double>(cData, 423.632);
@@ -839,7 +840,7 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("100 000 ROWS FIND METHOD BENCHMARK - STRING")
         {
             // For testing purposes, the desired element will always be the last possible
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
 
             auto start = startBenchmark();
             auto pos = find<std::string>(data, "https://www.walter.com/");
@@ -853,8 +854,8 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("100 000 ROWS FIND METHOD BENCHMARK - FLOAT")
         {
             // For testing purposes, the desired element will always be the last possible
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
-            auto cData = matrixConverter<float>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+            auto cData = matrix_converter<float>(data);
 
             auto start = startBenchmark();
             auto pos = find<float>(cData, 157.189F);
@@ -868,8 +869,8 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
         SECTION("100 000 ROWS FIND METHOD BENCHMARK - DOUBLE")
         {
             // For testing purposes, the desired element will always be the last possible
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
-            auto cData = matrixConverter<double>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+            auto cData = matrix_converter<double>(data);
 
             auto start = startBenchmark();
             auto pos = find<double>(cData, 157.189);
@@ -885,11 +886,11 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
     {
         SECTION("100 ROWS FIND BY POSITION METHOD - STRING")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
             std::vector<int> pos{44, 4};
 
             auto start = startBenchmark();
-            auto el = findByPos<std::string>(data, pos);
+            auto el = find_by_pos<std::string>(data, pos);
             auto stop = stopBenchmark();
 
             std::cout << "100 ROW DATABASE FIND BY POSITION - STRING" << std::endl;
@@ -899,12 +900,12 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("100 ROWS FIND BY POSITION METHOD - FLOAT")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
-            auto cData = matrixConverter<float>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+            auto cData = matrix_converter<float>(data);
             std::vector<int> pos{55, 5};
 
             auto start = startBenchmark();
-            auto el = findByPos<float>(cData, pos);
+            auto el = find_by_pos<float>(cData, pos);
             auto stop = stopBenchmark();
 
             std::cout << "100 ROW DATABASE FIND BY POSITION - FLOAT" << std::endl;
@@ -914,12 +915,12 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("100 ROWS FIND BY POSITION METHOD - DOUBLE")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
-            auto cData = matrixConverter<double>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+            auto cData = matrix_converter<double>(data);
             std::vector<int> pos{66, 6};
 
             auto start = startBenchmark();
-            auto el = findByPos<double>(cData, pos);
+            auto el = find_by_pos<double>(cData, pos);
             auto stop = stopBenchmark();
 
             std::cout << "100 ROW DATABASE FIND BY POSITION - DOUBLE" << std::endl;
@@ -929,11 +930,11 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("10 000 ROWS FIND BY POSITION METHOD - STRING")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
             std::vector<int> pos{4444, 4};
 
             auto start = startBenchmark();
-            auto el = findByPos<std::string>(data, pos);
+            auto el = find_by_pos<std::string>(data, pos);
             auto stop = stopBenchmark();
 
             std::cout << "10 000 ROW DATABASE FIND BY POSITION - STRING" << std::endl;
@@ -943,12 +944,12 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("10 000 ROWS FIND BY POSITION METHOD - FLOAT")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
-            auto cData = matrixConverter<float>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+            auto cData = matrix_converter<float>(data);
             std::vector<int> pos{5555, 5};
 
             auto start = startBenchmark();
-            auto el = findByPos<float>(cData, pos);
+            auto el = find_by_pos<float>(cData, pos);
             auto stop = stopBenchmark();
 
             std::cout << "10 000 ROW DATABASE FIND BY POSITION - FLOAT" << std::endl;
@@ -958,12 +959,12 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("10 000 ROWS FIND BY POSITION METHOD - DOUBLE")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
-            auto cData = matrixConverter<double>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+            auto cData = matrix_converter<double>(data);
             std::vector<int> pos{6666, 6};
 
             auto start = startBenchmark();
-            auto el = findByPos<double>(cData, pos);
+            auto el = find_by_pos<double>(cData, pos);
             auto stop = stopBenchmark();
 
             std::cout << "10 000 ROW DATABASE FIND BY POSITION - DOUBLE" << std::endl;
@@ -973,11 +974,11 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("100 000 ROWS FIND BY POSITION METHOD - STRING")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
             std::vector<int> pos{44444, 4};
 
             auto start = startBenchmark();
-            auto el = findByPos<std::string>(data, pos);
+            auto el = find_by_pos<std::string>(data, pos);
             auto stop = stopBenchmark();
 
             std::cout << "100 000 ROW DATABASE FIND BY POSITION - STRING" << std::endl;
@@ -987,12 +988,12 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("100 000 ROWS FIND BY POSITION METHOD - FLOAT")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
-            auto cData = matrixConverter<float>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+            auto cData = matrix_converter<float>(data);
             std::vector<int> pos{55555, 5};
 
             auto start = startBenchmark();
-            auto el = findByPos<float>(cData, pos);
+            auto el = find_by_pos<float>(cData, pos);
             auto stop = stopBenchmark();
 
             std::cout << "100 000 ROW DATABASE FIND BY POSITION - FLOAT" << std::endl;
@@ -1002,12 +1003,12 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("100 000 ROWS FIND BY POSITION METHOD - DOUBLE")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
-            auto cData = matrixConverter<double>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+            auto cData = matrix_converter<double>(data);
             std::vector<int> pos{66666, 6};
 
             auto start = startBenchmark();
-            auto el = findByPos<double>(cData, pos);
+            auto el = find_by_pos<double>(cData, pos);
             auto stop = stopBenchmark();
 
             std::cout << "100 000 ROW DATABASE FIND BY POSITION - DOUBLE" << std::endl;
@@ -1020,7 +1021,7 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
     {
         SECTION("100 ROWS FIND ALL METHOD BENCHMARK - STRING")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
 
             auto start = startBenchmark();
             auto pos = findAll<std::string>(data, "Netherlands");
@@ -1034,8 +1035,8 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("100 ROWS FIND ALL METHOD BENCHMARK - FLOAT")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
-            auto cData = matrixConverter<float>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+            auto cData = matrix_converter<float>(data);
 
             auto start = startBenchmark();
             auto pos = findAll<float>(cData, 2020.0F);
@@ -1049,8 +1050,8 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("100 ROWS FIND ALL METHOD BENCHMARK - DOUBLE")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
-            auto cData = matrixConverter<double>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
+            auto cData = matrix_converter<double>(data);
 
             auto start = startBenchmark();
             auto pos = findAll<double>(cData, 2021.0);
@@ -1064,7 +1065,7 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("10 000 ROWS FIND ALL METHOD BENCHMARK - STRING")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
 
             auto start = startBenchmark();
             auto pos = findAll<std::string>(data, "Netherlands");
@@ -1078,8 +1079,8 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("10 000 ROWS FIND ALL METHOD BENCHMARK - FLOAT")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
-            auto cData = matrixConverter<float>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+            auto cData = matrix_converter<float>(data);
 
             auto start = startBenchmark();
             auto pos = findAll<float>(cData, 2020.0F);
@@ -1093,8 +1094,8 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("10 000 ROWS FIND ALL METHOD BENCHMARK - DOUBLE")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
-            auto cData = matrixConverter<double>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
+            auto cData = matrix_converter<double>(data);
 
             auto start = startBenchmark();
             auto pos = findAll<double>(cData, 2021.0);
@@ -1108,7 +1109,7 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("100 000 ROWS FIND ALL METHOD BENCHMARK - STRING")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
 
             auto start = startBenchmark();
             auto pos = findAll<std::string>(data, "Netherlands");
@@ -1122,8 +1123,8 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("100 000 ROWS FIND ALL METHOD BENCHMARK - FLOAT")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
-            auto cData = matrixConverter<float>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+            auto cData = matrix_converter<float>(data);
 
             auto start = startBenchmark();
             auto pos = findAll<float>(cData, 2020.0F);
@@ -1137,8 +1138,8 @@ TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
 
         SECTION("100 000 ROWS FIND ALL METHOD BENCHMARK - DOUBLE")
         {
-            auto data = readCSV("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
-            auto cData = matrixConverter<double>(data);
+            auto data = read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
+            auto cData = matrix_converter<double>(data);
 
             auto start = startBenchmark();
             auto pos = findAll<double>(cData, 2021.0);
