@@ -297,6 +297,195 @@ TEST_CASE("MATRIX FORMATTER METHODS")
         REQUIRE(data3.size() < fData1.size());
         REQUIRE(data3[0].size() < fData2[0].size());
     }
+
+    SECTION("100 ROWS DATASET ADD SINGLE METHODS")
+    {
+        int rowToAdd = 50;
+        int columnToAdd = 6;
+        std::vector<std::string> testR{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testC(data1.size(), "0");
+        Mat2d<int> indexesToAdd = {{rowToAdd}, {columnToAdd - 1}};
+        Mat2d<std::string> racToAdd = {{testR}, {testC}};
+        auto oData = data1;
+
+        // Add single row
+        DataAnalysis::matrix_formatter(data1, ROW, rowToAdd, testR);
+        auto fData1 = data1;
+
+        REQUIRE(fData1.size() > oData.size());
+
+        // Add single column
+        DataAnalysis::matrix_formatter(data1, COLUMN, columnToAdd, testC);
+        auto fData2 = data1;
+
+        REQUIRE(fData2[0].size() > oData[0].size());
+
+        // Add single row and column
+        DataAnalysis::matrix_formatter(data1, ROWANDCOLUMN, indexesToAdd, racToAdd);
+
+        REQUIRE(data1.size() > fData1.size());
+        REQUIRE(data1[0].size() > fData2[0].size());
+    }
+
+    SECTION("100 ROWS DATASET ADD MULTIPLE METHODS")
+    {
+        std::vector<int> rowsToAdd{10, 20, 30, 40, 50};
+        std::vector<int> columnsToAdd{2, 4, 6};
+        std::vector<std::string> testR{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR1{"3", "4", "5", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR2{"6", "7", "8", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR3{"9", "10", "11", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testC(data1.size(), "0");
+        Mat2d<std::string> testAddR {{testR}, {testR1}, {testR2}, {testR3}};
+        Mat2d<std::string> testAddC {{testR}, {testR1}, {testC}};
+        Mat2d<int> indexesToAdd = {{rowsToAdd}, {columnsToAdd}};
+        Mat2d<std::string> racToAdd = {{testR}, {testC}};
+        auto oData = data1;
+
+        // Add multiple rows
+        DataAnalysis::matrix_formatter(data1, ROW, rowsToAdd, testAddR);
+        auto fData1 = data1;
+
+        REQUIRE(fData1.size() > oData.size());
+
+        // Add multiple columns
+        DataAnalysis::matrix_formatter(data1, COLUMN, columnsToAdd, testAddC);
+        auto fData2 = data1;
+
+        REQUIRE(fData2[0].size() > oData[0].size());
+
+        // Add multiple rows and columns
+        DataAnalysis::matrix_formatter(data1, ROWANDCOLUMN, indexesToAdd, racToAdd);
+
+        REQUIRE(data1.size() > fData1.size());
+        REQUIRE(data1[0].size() > fData2[0].size());
+    }
+
+    SECTION("10 000 ROWS DATASET ADD SINGLE METHODS")
+    {
+        int rowToAdd = 50;
+        int columnToAdd = 6;
+        std::vector<std::string> testR{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testC(data2.size(), "0");
+        Mat2d<int> indexesToAdd = {{rowToAdd}, {columnToAdd - 1}};
+        Mat2d<std::string> racToAdd = {{testR}, {testC}};
+        auto oData = data2;
+
+        // Add single row
+        DataAnalysis::matrix_formatter(data2, ROW, rowToAdd, testR);
+        auto fData1 = data2;
+
+        REQUIRE(fData1.size() > oData.size());
+
+        // Add single column
+        DataAnalysis::matrix_formatter(data2, COLUMN, columnToAdd, testC);
+        auto fData2 = data2;
+
+        REQUIRE(fData2[0].size() > oData[0].size());
+
+        // Add single row and column
+        DataAnalysis::matrix_formatter(data2, ROWANDCOLUMN, indexesToAdd, racToAdd);
+
+        REQUIRE(data2.size() > fData1.size());
+        REQUIRE(data2[0].size() > fData2[0].size());
+    }
+
+    SECTION("10 000 ROWS DATASET ADD MULTIPLE METHODS")
+    {
+        std::vector<int> rowsToAdd{10, 20, 30, 40, 50};
+        std::vector<int> columnsToAdd{2, 4, 6};
+        std::vector<std::string> testR{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR1{"3", "4", "5", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR2{"6", "7", "8", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR3{"9", "10", "11", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testC(data2.size(), "0");
+        Mat2d<std::string> testAddR {{testR}, {testR1}, {testR2}, {testR3}};
+        Mat2d<std::string> testAddC {{testR}, {testR1}, {testC}};
+        Mat2d<int> indexesToAdd = {{rowsToAdd}, {columnsToAdd}};
+        Mat2d<std::string> racToAdd = {{testR}, {testC}};
+        auto oData = data2;
+
+        // Add multiple rows
+        DataAnalysis::matrix_formatter(data2, ROW, rowsToAdd, testAddR);
+        auto fData1 = data2;
+
+        REQUIRE(fData1.size() > oData.size());
+
+        // Add multiple columns
+        DataAnalysis::matrix_formatter(data2, COLUMN, columnsToAdd, testAddC);
+        auto fData2 = data2;
+
+        REQUIRE(fData2[0].size() > oData[0].size());
+
+        // Add multiple rows and columns
+        DataAnalysis::matrix_formatter(data2, ROWANDCOLUMN, indexesToAdd, racToAdd);
+
+        REQUIRE(data2.size() > fData1.size());
+        REQUIRE(data2[0].size() > fData2[0].size());
+    }
+
+    SECTION("100 000 ROWS DATASET ADD SINGLE METHODS")
+    {
+        int rowToAdd = 50;
+        int columnToAdd = 6;
+        std::vector<std::string> testR{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testC(data3.size(), "0");
+        Mat2d<int> indexesToAdd = {{rowToAdd}, {columnToAdd - 1}};
+        Mat2d<std::string> racToAdd = {{testR}, {testC}};
+        auto oData = data3;
+
+        // Add single row
+        DataAnalysis::matrix_formatter(data3, ROW, rowToAdd, testR);
+        auto fData1 = data3;
+
+        REQUIRE(fData1.size() > oData.size());
+
+        // Add single column
+        DataAnalysis::matrix_formatter(data3, COLUMN, columnToAdd, testC);
+        auto fData2 = data3;
+
+        REQUIRE(fData2[0].size() > oData[0].size());
+
+        // Add single row and column
+        DataAnalysis::matrix_formatter(data3, ROWANDCOLUMN, indexesToAdd, racToAdd);
+
+        REQUIRE(data3.size() > fData1.size());
+        REQUIRE(data3[0].size() > fData2[0].size());
+    }
+
+    SECTION("100 000 ROWS DATASET ADD MULTIPLE METHODS")
+    {
+        std::vector<int> rowsToAdd{10, 20, 30, 40, 50};
+        std::vector<int> columnsToAdd{2, 4, 6};
+        std::vector<std::string> testR{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR1{"3", "4", "5", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR2{"6", "7", "8", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR3{"9", "10", "11", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testC(data3.size(), "0");
+        Mat2d<std::string> testAddR {{testR}, {testR1}, {testR2}, {testR3}};
+        Mat2d<std::string> testAddC {{testR}, {testR1}, {testC}};
+        Mat2d<int> indexesToAdd = {{rowsToAdd}, {columnsToAdd}};
+        Mat2d<std::string> racToAdd = {{testR}, {testC}};
+        auto oData = data3;
+
+        // Add multiple rows
+        DataAnalysis::matrix_formatter(data3, ROW, rowsToAdd, testAddR);
+        auto fData1 = data3;
+
+        REQUIRE(fData1.size() > oData.size());
+
+        // Add multiple columns
+        DataAnalysis::matrix_formatter(data3, COLUMN, columnsToAdd, testAddC);
+        auto fData2 = data3;
+
+        REQUIRE(fData2[0].size() > oData[0].size());
+
+        // Add multiple rows and columns
+        DataAnalysis::matrix_formatter(data3, ROWANDCOLUMN, indexesToAdd, racToAdd);
+
+        REQUIRE(data3.size() > fData1.size());
+        REQUIRE(data3[0].size() > fData2[0].size());
+    }
 }
 
 TEST_CASE("FIND METHODS")
@@ -739,6 +928,279 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
             auto stop = stopBenchmark();
 
             std::cout << "100 000 ROW REMOVE MULTIPLE ROWS AND COLUMNS BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+    }
+
+    SECTION("100 ROWS DATASET ADD SINGLE METHODS BENCHMARKS")
+    {
+        int rowToAdd = 50;
+        int columnToAdd = 6;
+        std::vector<std::string> testR{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testC(data1.size(), "0");
+        Mat2d<int> indexesToAdd = {{rowToAdd}, {columnToAdd - 1}};
+        Mat2d<std::string> racToAdd = {{testR}, {testC}};
+
+        SECTION("ADD SINGLE ROW BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data1, ROW, rowToAdd, testR);
+            auto stop = stopBenchmark();
+
+            std::cout << "100 ROW ADD SINGLE ROW BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+
+        SECTION("ADD SINGLE COLUMN BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data1, COLUMN, columnToAdd, testC);
+            auto stop = stopBenchmark();
+
+            std::cout << "100 ROW ADD SINGLE COLUMN BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+
+        SECTION("ADD SINGLE ROW AND COLUMN BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data1, ROWANDCOLUMN, indexesToAdd, racToAdd);
+            auto stop = stopBenchmark();
+
+            std::cout << "100 ROW ADD SINGLE ROW AND COLUMN BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+    }
+
+    SECTION("100 ROWS DATASET ADD MULTIPLE METHODS BENCHMARKS")
+    {
+        std::vector<int> rowsToAdd{10, 20, 30, 40, 50};
+        std::vector<int> columnsToAdd{2, 4, 6};
+        std::vector<std::string> testR{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR1{"3", "4", "5", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR2{"6", "7", "8", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR3{"9", "10", "11", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testC(data1.size(), "0");
+        Mat2d<std::string> testAddR {{testR}, {testR1}, {testR2}, {testR3}};
+        Mat2d<std::string> testAddC {{testR}, {testR1}, {testC}};
+        Mat2d<int> indexesToAdd = {{rowsToAdd}, {columnsToAdd}};
+        Mat2d<std::string> racToAdd = {{testR}, {testC}};
+
+        SECTION("ADD MULTIPLE ROWS BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data1, ROW, rowsToAdd, testAddR);
+            auto stop = stopBenchmark();
+
+            std::cout << "100 ROW ADD MULTIPLE ROWS BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+
+        SECTION("ADD MULTIPLE COLUMNS BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data1, COLUMN, columnsToAdd, testAddC);
+            auto stop = stopBenchmark();
+
+            std::cout << "100 ROW ADD MULTIPLE COLUMNS BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+
+        SECTION("ADD MULTIPLE ROWS AND COLUMNS BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data1, ROWANDCOLUMN, indexesToAdd, racToAdd);
+            auto stop = stopBenchmark();
+
+            std::cout << "100 ROW ADD MULTIPLE ROWS AND COLUMNS BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+    }
+
+    SECTION("10 000 ROWS DATASET ADD SINGLE METHODS BENCHMARKS")
+    {
+        int rowToAdd = 50;
+        int columnToAdd = 6;
+        std::vector<std::string> testR{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testC(data2.size(), "0");
+        Mat2d<int> indexesToAdd = {{rowToAdd}, {columnToAdd - 1}};
+        Mat2d<std::string> racToAdd = {{testR}, {testC}};
+
+        SECTION("ADD SINGLE ROW BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data2, ROW, rowToAdd, testR);
+            auto stop = stopBenchmark();
+
+            std::cout << "10 000 ROW ADD SINGLE ROW BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+
+        SECTION("ADD SINGLE COLUMN BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data2, COLUMN, columnToAdd, testC);
+            auto stop = stopBenchmark();
+
+            std::cout << "10 000 ROW ADD SINGLE COLUMN BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+
+        SECTION("ADD SINGLE ROW AND COLUMN BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data2, ROWANDCOLUMN, indexesToAdd, racToAdd);
+            auto stop = stopBenchmark();
+
+            std::cout << "10 000 ROW ADD SINGLE ROW AND COLUMN BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+    }
+
+    SECTION("10 000 ROWS DATASET ADD MULTIPLE METHODS BENCHMARKS")
+    {
+        std::vector<int> rowsToAdd{10, 20, 30, 40, 50};
+        std::vector<int> columnsToAdd{2, 4, 6};
+        std::vector<std::string> testR{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR1{"3", "4", "5", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR2{"6", "7", "8", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR3{"9", "10", "11", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testC(data2.size(), "0");
+        Mat2d<std::string> testAddR {{testR}, {testR1}, {testR2}, {testR3}};
+        Mat2d<std::string> testAddC {{testR}, {testR1}, {testC}};
+        Mat2d<int> indexesToAdd = {{rowsToAdd}, {columnsToAdd}};
+        Mat2d<std::string> racToAdd = {{testR}, {testC}};
+
+        SECTION("ADD MULTIPLE ROWS BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data2, ROW, rowsToAdd, testAddR);
+            auto stop = stopBenchmark();
+
+            std::cout << "10 000 ROW ADD MULTIPLE ROWS BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+
+        SECTION("ADD MULTIPLE COLUMNS BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data2, COLUMN, columnsToAdd, testAddC);
+            auto stop = stopBenchmark();
+
+            std::cout << "10 000 ROW ADD MULTIPLE COLUMNS BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+
+        SECTION("ADD MULTIPLE ROWS AND COLUMNS BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data2, ROWANDCOLUMN, indexesToAdd, racToAdd);
+            auto stop = stopBenchmark();
+
+            std::cout << "10 000 ROW ADD MULTIPLE ROWS AND COLUMNS BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+    }
+
+     SECTION("100 000 ROWS DATASET ADD SINGLE METHODS BENCHMARKS")
+    {
+        int rowToAdd = 50;
+        int columnToAdd = 6;
+        std::vector<std::string> testR{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testC(data3.size(), "0");
+        Mat2d<int> indexesToAdd = {{rowToAdd}, {columnToAdd - 1}};
+        Mat2d<std::string> racToAdd = {{testR}, {testC}};
+
+        SECTION("ADD SINGLE ROW BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data3, ROW, rowToAdd, testR);
+            auto stop = stopBenchmark();
+
+            std::cout << "100 000 ROW ADD SINGLE ROW BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+
+        SECTION("ADD SINGLE COLUMN BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data3, COLUMN, columnToAdd, testC);
+            auto stop = stopBenchmark();
+
+            std::cout << "100 000 ROW ADD SINGLE COLUMN BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+
+        SECTION("ADD SINGLE ROW AND COLUMN BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data3, ROWANDCOLUMN, indexesToAdd, racToAdd);
+            auto stop = stopBenchmark();
+
+            std::cout << "100 000 ROW ADD SINGLE ROW AND COLUMN BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+    }
+
+    SECTION("100 000 ROWS DATASET ADD MULTIPLE METHODS BENCHMARKS")
+    {
+        std::vector<int> rowsToAdd{10, 20, 30, 40, 50};
+        std::vector<int> columnsToAdd{2, 4, 6};
+        std::vector<std::string> testR{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR1{"3", "4", "5", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR2{"6", "7", "8", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testR3{"9", "10", "11", "3", "4", "5", "6", "7", "8", "9"};
+        std::vector<std::string> testC(data3.size(), "0");
+        Mat2d<std::string> testAddR {{testR}, {testR1}, {testR2}, {testR3}};
+        Mat2d<std::string> testAddC {{testR}, {testR1}, {testC}};
+        Mat2d<int> indexesToAdd = {{rowsToAdd}, {columnsToAdd}};
+        Mat2d<std::string> racToAdd = {{testR}, {testC}};
+
+        SECTION("ADD MULTIPLE ROWS BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data3, ROW, rowsToAdd, testAddR);
+            auto stop = stopBenchmark();
+
+            std::cout << "100 000 ROW ADD MULTIPLE ROWS BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+
+        SECTION("ADD MULTIPLE COLUMNS BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data3, COLUMN, columnsToAdd, testAddC);
+            auto stop = stopBenchmark();
+
+            std::cout << "100 000 ROW ADD MULTIPLE COLUMNS BENCHMARK" << std::endl;
+            std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
+            std::cout << "-----------------------------------------------" << std::endl;
+        }
+
+        SECTION("ADD MULTIPLE ROWS AND COLUMNS BENCHMARK")
+        {
+            auto start = startBenchmark();
+            DataAnalysis::matrix_formatter(data3, ROWANDCOLUMN, indexesToAdd, racToAdd);
+            auto stop = stopBenchmark();
+
+            std::cout << "100 000 ROW ADD MULTIPLE ROWS AND COLUMNS BENCHMARK" << std::endl;
             std::cout << getDuration(start, stop, Nanoseconds) << std::endl;
             std::cout << "-----------------------------------------------" << std::endl;
         }

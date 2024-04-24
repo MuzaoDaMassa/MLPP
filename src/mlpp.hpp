@@ -21,47 +21,47 @@ namespace MLPP
     {
     public:
         // Declartaion of method to parse CSV line with quoted fields and blank spaces
-        static std::vector<std::string> parse_csv_line(const std::string &line);
+        static std::vector<std::string> parse_csv_line(const std::string& line);
         // Declaration of method to read CSV files into 2d string matrix
-        static Mat2d<std::string> read_csv_file(const std::string &filePath);
+        static Mat2d<std::string> read_csv_file(const std::string& filePath);
         // Declaration of method to convert string to differnt data type, returns new 2d matrix with passed type
-        template<typename T> static Mat2d<T> matrix_converter(const Mat2d<std::string> &stringMatrix);
+        template<typename T> static Mat2d<T> matrix_converter(const Mat2d<std::string>& stringMatrix);
         // Declaration of method to format data matrix by removing rows and or columns for better data
         // analysis Template for removing single row or column
-        template <typename T> static void matrix_formatter(Mat2d<T> &dataMatrix, Formatter f, const int &toBeRemoved);
+        template <typename T> static void matrix_formatter(Mat2d<T>& dataMatrix, Formatter f, const int& toBeRemoved);
         // Overload to remove multiple row or columns
-        template <typename T> static void matrix_formatter(Mat2d<T> &dataMatrix, Formatter f,
-                                                            const std::vector<int> &rocToRemove);
+        template <typename T> static void matrix_formatter(Mat2d<T>& dataMatrix, Formatter f,
+                                                            const std::vector<int>& rocToRemove);
         // Overload to remove single or multiple row and columns
-        template <typename T> static void matrix_formatter(Mat2d<T> &dataMatrix, Formatter f, 
-                                                            const Mat2d<int> &racToRemove);
+        template <typename T> static void matrix_formatter(Mat2d<T>& dataMatrix, Formatter f, 
+                                                            const Mat2d<int>& racToRemove);
         // Overload to add single row or column
-        template <typename T> static void matrix_formatter(Mat2d<T> &dataMatrix, Formatter f, const int &indexToAdd,
-                                                            const std::vector<T> &dataToAdd);
+        template <typename T> static void matrix_formatter(Mat2d<T>& dataMatrix, Formatter f, const int& indexToAdd,
+                                                            const std::vector<T>& dataToAdd);
         // Overload to add multiple rows or columns
-        template <typename T> static void matrix_formatter(Mat2d<T> &dataMatrix, Formatter f, const std::vector<int> &indexToAdd,
-                                                            const Mat2d<T> &dataToAdd);
+        template <typename T> static void matrix_formatter(Mat2d<T>& dataMatrix, Formatter f, const std::vector<int>& indexesToAdd,
+                                                            const Mat2d<T>& dataToAdd);
         // Overload to add single or multiple rows and columns                                                            
-        template <typename T> static void matrix_formatter(Mat2d<T> &dataMatrix, Formatter f, const Mat2d<int> &indexesToAdd,
-                                                            const Mat2d<T> &dataToAdd);
+        template <typename T> static void matrix_formatter(Mat2d<T>& dataMatrix, Formatter f, const Mat2d<int>& indexesToAdd,
+                                                            const Mat2d<T>& dataToAdd);
         // Method to search data matrix for first appearance of desired element, return first position found
-        template <typename T> static std::vector<int> find(const Mat2d<T> &dataMatrix, const T &desiredElement);
+        template <typename T> static std::vector<int> find(const Mat2d<T>& dataMatrix, const T& desiredElement);
         // Method to search data matrix by position, return element at requqested position on 2d Matrix
-        template <typename T> static T find_by_pos(const Mat2d<T> &dataMatrix, std::vector<int> &pos);
+        template <typename T> static T find_by_pos(const Mat2d<T>& dataMatrix, std::vector<int>& pos);
         // Method to search data matrix for all appearances of desired element, return
         // vector of positions Outside vecotor holds all rows indexes element was found,
         // and inside vector holds all columns indexes element was found
-        template <typename T> static Mat2d<int> findAll(const Mat2d<T> &dataMatrix, const T &desiredElemet);
+        template <typename T> static Mat2d<int> findAll(const Mat2d<T>& dataMatrix, const T& desiredElemet);
         // Method to display all elemenst of data matrix
-        template <typename T> static void displayAll(const Mat2d<T> &dataMatrix);
+        template <typename T> static void displayAll(const Mat2d<T>& dataMatrix);
         // Method to display all elements in given rows
-        template <typename T> static void displayRows(const Mat2d<T> &dataMatrix, const std::vector<int> &rowsToDisplay);
+        template <typename T> static void displayRows(const Mat2d<T>& dataMatrix, const std::vector<int>& rowsToDisplay);
         // Method to display all elements in given columns
-        template <typename T> static void displayColumns(const Mat2d<T> &dataMatrix, const std::vector<int> &colsToDisplay);
+        template <typename T> static void displayColumns(const Mat2d<T>& dataMatrix, const std::vector<int>& colsToDisplay);
         // Method to display first five rows method, Display first 5 rows + displayHead row
-        template <typename T> static void displayHead(const Mat2d<T> &dataMatrix, int rowsToDisplay = 5);
+        template <typename T> static void displayHead(const Mat2d<T>& dataMatrix, int rowsToDisplay = 5);
         // Mehtod to display last five colunms method, Display lastdisplayBfive rows
-        template <typename T> static void displayBottom(const Mat2d<T> &dataMatrix, int rowsToDisplay = 5);
+        template <typename T> static void displayBottom(const Mat2d<T>& dataMatrix, int rowsToDisplay = 5);
 
         // Further methods to be declared
     }; 
@@ -69,7 +69,7 @@ namespace MLPP
     // Further classes to be declared
 
     #pragma region DataAnalysis methods implementations
-    std::vector<std::string> DataAnalysis::parse_csv_line(const std::string &line) 
+    std::vector<std::string> DataAnalysis::parse_csv_line(const std::string& line) 
     {
         std::vector<std::string> row;
 
@@ -113,7 +113,7 @@ namespace MLPP
         return row;
     }
 
-    Mat2d<std::string> DataAnalysis::read_csv_file(const std::string &filePath) 
+    Mat2d<std::string> DataAnalysis::read_csv_file(const std::string& filePath) 
     {
         // Create 2d matrix to store data
         Mat2d<std::string> data;
@@ -141,17 +141,17 @@ namespace MLPP
     }
 
     template <typename T>
-    Mat2d<T> DataAnalysis::matrix_converter(const Mat2d<std::string> &stringMatrix) 
+    Mat2d<T> DataAnalysis::matrix_converter(const Mat2d<std::string>& stringMatrix) 
     {
         // Create 2d matrix of new typing
         Mat2d<T> convertedMatrix;
 
         if (!stringMatrix.empty()) {
             // Loop through all elements changing their typing
-            for (const auto &row : stringMatrix) {
+            for (const auto& row : stringMatrix) {
                 std::vector<T> convertedRow;
 
-                for (const auto &element : row) {
+                for (const auto& element : row) {
                     // Convert string to type T
                     std::stringstream ss(element);
                     T convertedElement;
@@ -174,13 +174,13 @@ namespace MLPP
     // Implementation of matrix formatter
     // Remove single row or column
     template <typename T>
-    void DataAnalysis::matrix_formatter(Mat2d<T> &dataMatrix, Formatter f, const int &toBeRemoved) 
+    void DataAnalysis::matrix_formatter(Mat2d<T>& dataMatrix, Formatter f, const int& toBeRemoved) 
     {
         if (!dataMatrix.empty()) {
             if (f == COLUMN) {
                 if (toBeRemoved >= 0) {
                     // Iterate over each row and erase the element at colIndex
-                    for (auto &row : dataMatrix) {
+                    for (auto& row : dataMatrix) {
                         if (toBeRemoved < row.size()) {
                             row.erase(row.begin() + toBeRemoved);
                             return;
@@ -215,15 +215,14 @@ namespace MLPP
     // Multiple rows and columns
     // rocToRemove = rows or columns to remove, vector will hold all rows or columns to remove
     template <typename T>
-    void DataAnalysis::matrix_formatter(Mat2d<T> &dataMatrix, Formatter f, const std::vector<int> &rocToRemove) 
+    void DataAnalysis::matrix_formatter(Mat2d<T>& dataMatrix, Formatter f, const std::vector<int>& rocToRemove) 
     {
         if (!dataMatrix.empty()) {
             if (f == COLUMN) {
                 if (!rocToRemove.empty()) {
                     // Iterate over each row and erase the element at colIndexexes
                     for (int row = 0; row < dataMatrix.size(); row++) {
-                        for (auto col = rocToRemove.rbegin();
-                            col != rocToRemove.rend(); ++col) {
+                        for (auto col = rocToRemove.rbegin(); col != rocToRemove.rend(); ++col) {
                             size_t colIndex = *col;
                             if (colIndex < dataMatrix[row].size()) {
                                 dataMatrix[row].erase(dataMatrix[row].begin() +
@@ -234,13 +233,12 @@ namespace MLPP
                     return;
                 }
                 // Display error to inform position data is empty
-                std::cerr << "Error: No rows or columns to remove were found"
-                        << std::endl;
-            } else if (f == ROW) {
+                std::cerr << "Error: No rows or columns to remove were found" << std::endl;
+            } 
+            else if (f == ROW) {
                 if (!rocToRemove.empty()) {
                     // Iterate through declared rows to be removed from matrix
-                    for (auto item = rocToRemove.rbegin();
-                        item != rocToRemove.rend(); ++item) {
+                    for (auto item = rocToRemove.rbegin(); item != rocToRemove.rend(); ++item) {
                         size_t rowIndex = *item;
                         if (rowIndex < dataMatrix.size()) {
                             dataMatrix.erase(dataMatrix.begin() + rowIndex);
@@ -249,12 +247,11 @@ namespace MLPP
                     return;
                 }
                 // Display error to inform position data is empty
-                std::cerr << "Error: No rows or columns to remove were found"
-                        << std::endl;
-            } else {
+                std::cerr << "Error: No rows or columns to remove were found" << std::endl;
+            } 
+            else {
                 // Display error to inform wrong formatter enum was passed
-                std::cerr << "Error: Wrong formatter passed (2nd Paramater)"
-                        << std::endl;
+                std::cerr << "Error: Wrong formatter passed (2nd Paramater)" << std::endl;
             }
         }
         // Display error to inform data is empty
@@ -265,7 +262,7 @@ namespace MLPP
     // Single or multiple rows and columns
     // racToRemove = rows and columns to remove, vector will hold all rows or columns to remove
     template <typename T>
-    void DataAnalysis::matrix_formatter(Mat2d<T> &dataMatrix, Formatter f, const Mat2d<int> &racToRemove) 
+    void DataAnalysis::matrix_formatter(Mat2d<T>& dataMatrix, Formatter f, const Mat2d<int>& racToRemove) 
     {
         if (!dataMatrix.empty()) {
             if (f == ROWANDCOLUMN) {
@@ -278,16 +275,16 @@ namespace MLPP
                 std::cerr << "Error: No rows and columns to remove" << std::endl;
             }
             // Display error to inform wrong formatter enum was passed
-            std::cerr << "Error: Wrong formatter passed (2nd Paramater)"
-                    << std::endl;
+            std::cerr << "Error: Wrong formatter passed (2nd Paramater)" << std::endl;
         }
+        std::cerr << "Error: Data is empty" << std::endl;
     }
 
     // Implementation of matrix formatter overload method
     // Add single row or column
     template <typename T>
-    void DataAnalysis::matrix_formatter(Mat2d<T> &dataMatrix, Formatter f, const int &indexToAdd,
-                                        const std::vector<T> &dataToAdd) 
+    void DataAnalysis::matrix_formatter(Mat2d<T>& dataMatrix, Formatter f, const int& indexToAdd,
+                                        const std::vector<T>& dataToAdd) 
     {
         if (!dataMatrix.empty()) {
             if (f == COLUMN) {
@@ -300,21 +297,20 @@ namespace MLPP
                     }
                     return;
                 }
-                std::cerr << "Error: Invalid index to add for inserting column."
-                        << std::endl;
-            } else if (f == ROW) {
+                std::cerr << "Error: Invalid index to add for inserting column." << std::endl;
+            } 
+            else if (f == ROW) {
                 // Check if indexToAdd is valid and within bounds
                 if (indexToAdd >= 0 && indexToAdd <= dataMatrix.size()) {
                     dataMatrix.insert(dataMatrix.begin() + indexToAdd, dataToAdd);
                     return;
                 }
-                std::cerr << "Error: Invalid index to add for inserting row."
-                        << std::endl;
-            } else {
+                std::cerr << "Error: Invalid index to add for inserting row." << std::endl;
+            } 
+            else {
                 // Display error to inform formatter enum error no data was
                 // found
-                std::cerr << "Error: Wrong formatter passed (2nd Paramater)"
-                        << std::endl;
+                std::cerr << "Error: Wrong formatter passed (2nd Paramater)" << std::endl;
             }
         }
         // Display error if no data was found
@@ -324,24 +320,83 @@ namespace MLPP
     // Implementation of matrix formatter overload method
     // Add multiple rows or columns
     template <typename T>
-    void DataAnalysis::matrix_formatter(Mat2d<T> &dataMatrix, Formatter f, const std::vector<int> &indexesToadd,
-                                        const Mat2d<T> &dataToAdd) 
+    void DataAnalysis::matrix_formatter(Mat2d<T>& dataMatrix, Formatter f, const std::vector<int>& indexesToadd,
+                                        const Mat2d<T>& dataToAdd) 
     {
-
+        if (!dataMatrix.empty()) {
+            if (f == COLUMN) {
+                // Check if indexesToAdd is not empty
+                if (!indexesToadd.empty()) {
+                    for (size_t i = 0; i < dataToAdd.size(); i++) {
+                        for (size_t j = 0; j < dataToAdd[i].size(); j++) {
+                            for (size_t k = 0; k < indexesToadd.size(); k++) {
+                                if (indexesToadd[k] < dataMatrix[j].size()) {
+                                    dataMatrix[j].insert(dataMatrix[j].begin() + indexesToadd[k],
+                                                        dataToAdd[i][j]);
+                                }
+                            }
+                        }
+                    }
+                    return;
+                }
+                std::cerr << "Error: Indexes to add column are missing." << std::endl;
+                return;
+            } 
+            else if (f == ROW) {
+                // Check if indexesToAdd is not empty
+                if (!indexesToadd.empty()) {
+                    for (size_t i = 0; i < dataToAdd.size(); i++)
+                    {
+                        if (indexesToadd[i] < dataMatrix.size() && i < dataToAdd.size())
+                        {
+                            dataMatrix.insert(dataMatrix.begin() + indexesToadd[i], dataToAdd[i]);
+                        }                     
+                    }                
+                    return;
+                }
+                std::cerr << "Error: Invalid index to add for inserting row." << std::endl;
+                return;
+            } 
+            else {
+                // Display error to inform formatter enum error no data was
+                // found
+                std::cerr << "Error: Wrong formatter passed (2nd Paramater)" << std::endl;
+                return;
+            }
+        }
+        // Display error if no data was found
+        std::cerr << "Error: Data Matrix is empty" << std::endl;
     }
 
     // Implementation of matrix formatter overload method
     // Add single or multiple rows and columns
     // Indexes to add matrix, first row will hold all row indexes, second will hold all column indexes
     template <typename T>
-    void DataAnalysis::matrix_formatter(Mat2d<T> &dataMatrix, Formatter f, const Mat2d<int> &indexesToAdd,
-                                        const Mat2d<T> &dataToAdd) 
+    void DataAnalysis::matrix_formatter(Mat2d<T>& dataMatrix, Formatter f, const Mat2d<int>& indexesToAdd,
+                                        const Mat2d<T>& dataToAdd) 
     {
-
+        if (!dataMatrix.empty()) {
+            if (f == ROWANDCOLUMN) {
+                if (!dataToAdd.empty()) {
+                    // Still need to figure out how to separate between row and column data
+                    // in dataToAdd matrix
+                    matrix_formatter(dataMatrix, ROW, indexesToAdd[0], dataToAdd);
+                    matrix_formatter(dataMatrix, COLUMN, indexesToAdd[1], dataToAdd);
+                    return;
+                }
+                // Display error if no position data  was found
+                std::cerr << "Error: No rows and columns to remove" << std::endl;
+                return;
+            }
+            // Display error to inform wrong formatter enum was passed
+            std::cerr << "Error: Wrong formatter passed (2nd Paramater)" << std::endl;
+            return;
+        }
+        std::cerr << "Error: Data is empty" << std::endl;
     }
 
     template <typename T>
-    std::vector<int> DataAnalysis::find(const Mat2d<T> &dataMatrix, const T &desiredElement) 
+    std::vector<int> DataAnalysis::find(const Mat2d<T>& dataMatrix, const T& desiredElement) 
     {
         // Creat position vector
         std::vector<int> pos{0, 0};
@@ -369,7 +424,7 @@ namespace MLPP
     }
 
     template <typename T>
-    T DataAnalysis::find_by_pos(const Mat2d<T> &dataMatrix, std::vector<int> &pos) 
+    T DataAnalysis::find_by_pos(const Mat2d<T>& dataMatrix, std::vector<int>& pos) 
     {
         T element;
 
@@ -383,7 +438,7 @@ namespace MLPP
     }
 
     template <typename T>
-    Mat2d<int> DataAnalysis::findAll(const Mat2d<T> &dataMatrix, const T &desiredElemet) 
+    Mat2d<int> DataAnalysis::findAll(const Mat2d<T>& dataMatrix, const T& desiredElemet) 
     {
         // Creat position vector
         Mat2d<int> pos;
@@ -411,11 +466,12 @@ namespace MLPP
         return pos;
     }
 
-    template <typename T> void DataAnalysis::displayAll(const Mat2d<T> &dataMatrix) 
+    template <typename T> 
+    void DataAnalysis::displayAll(const Mat2d<T>& dataMatrix) 
     {
         if (!dataMatrix.empty()) {
-            for (auto &row : dataMatrix) {
-                for (auto &cell : row) {
+            for (auto& row : dataMatrix) {
+                for (auto& cell : row) {
                     std::cout << " " << cell;
                 }
                 std::cout << std::endl;
@@ -427,11 +483,11 @@ namespace MLPP
     }
 
     template <typename T>
-    void DataAnalysis::displayRows(const Mat2d<T> &dataMatrix, const std::vector<int> &rowsToDisplay) 
+    void DataAnalysis::displayRows(const Mat2d<T>& dataMatrix, const std::vector<int>& rowsToDisplay) 
     {
         if (!dataMatrix.empty() && !rowsToDisplay.empty()) {
             for (size_t row = 0; row < rowsToDisplay.size(); row++) {
-                std::cout << rowsToDisplay[row];
+                std::cout << rowsToDisplay[row] << "-";
                 if (rowsToDisplay[row] < dataMatrix.size()) {
                     for (size_t col = 0; col < dataMatrix[row].size(); col++) {
                         std::cout << " " << dataMatrix[row][col];
@@ -449,13 +505,13 @@ namespace MLPP
     }
 
     template <typename T>
-    void DataAnalysis::displayColumns(const Mat2d<T> &dataMatrix, const std::vector<int> &colsToDisplay) 
+    void DataAnalysis::displayColumns(const Mat2d<T>& dataMatrix, const std::vector<int>& colsToDisplay) 
     {
         if (!dataMatrix.empty() && !colsToDisplay.empty()) {
             for (size_t row = 0; row < dataMatrix.size(); row++) {
                 if (colsToDisplay[row] < dataMatrix.size()) {
-                    std::cout << row;
-                    for (auto &col : colsToDisplay) {
+                    std::cout << row << "-";
+                    for (auto& col : colsToDisplay) {
                         std::cout << " " << dataMatrix[row][col];
                     }
                     std::cout << std::endl;
@@ -471,7 +527,7 @@ namespace MLPP
     }
 
     template <typename T>
-    void DataAnalysis::displayHead(const Mat2d<T> &dataMatrix, int rowsToDisplay) 
+    void DataAnalysis::displayHead(const Mat2d<T>& dataMatrix, int rowsToDisplay) 
     {
         if (!dataMatrix.empty()) {
             if (rowsToDisplay >= 0 && rowsToDisplay < dataMatrix.size() - 1) {
@@ -493,7 +549,7 @@ namespace MLPP
     }
 
     template <typename T>
-    void DataAnalysis::displayBottom(const Mat2d<T> &dataMatrix, int rowsToDisplay) 
+    void DataAnalysis::displayBottom(const Mat2d<T>& dataMatrix, int rowsToDisplay) 
     {
         if (!dataMatrix.empty()) {
             if (rowsToDisplay >= 0 && rowsToDisplay < dataMatrix.size() - 1) {
