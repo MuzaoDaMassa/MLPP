@@ -6,25 +6,22 @@ using namespace MLPP;
 
 
 // Mini tests for NumPP unit
-int main()
+int main3()
 {
     auto data = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/hw_100.csv");
-    //auto data2 = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/hw_100.csv");
     auto cData = DataAnalysis::matrix_converter<double>(data);    
-    //auto cData2 = DataAnalysis::matrix_converter<int>(data2);
-
-    Mat2d<int> original = {{1, 2}, {3, 4}, {5, 6}};
 
 
-    Mat2d<float> a = {{0.1, 0.1, 0.1, 0.1}, {0.2, 0.2, 0.2, 0.2}, {0.3, 0.3, 0.3, 0.3}, {0.4, 0.4, 0.4, 0.4}};
-    Mat2d<float> b = {{0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}};
-
-    //Mat2d<float> r = NumPP::rand<float>(20, 15, 20.0, 5.0);
-    Mat2d<int> T = NumPP::transpose(original);
-    Mat2d<int> r1 = NumPP::dot(T, original);
+    Mat2d<float> r = NumPP::rand<float>(20, 15, 20.0, 5.0);
+    Mat2d<double> T = NumPP::transpose(cData);
+    Mat2d<double> r1 = NumPP::dot(T, cData);
 
 
+    DataAnalysis::displayAll(r);
+    std::cout << "-------------------------------------------------------------" << std::endl;
     DataAnalysis::displayAll(r1);
+
+    return 0;
 }
 
 // Mini tests for data analysis unit
@@ -69,7 +66,7 @@ int main1()
     return 0;
 }
 
-/* // Open CV testing
+/* // Open CV Video capture testing
 int main2()
 {
     // Open default camera
@@ -143,3 +140,19 @@ int main2()
     return 0;	
 }
  */
+
+// Open CV Image testing
+int main()
+{
+    cv::Mat image; 
+	image = cv::imread("/MLPP/tests/Images/Pista1.jpg"); 
+	if (!image.data) { 
+		//printf("No image data \n"); 
+		return -1; 
+	} 
+	cv::namedWindow("Display Image", cv::WINDOW_AUTOSIZE); 
+	cv::imshow("Display Image", image); 
+	cv::waitKey(0); 
+
+	return 0; 
+}

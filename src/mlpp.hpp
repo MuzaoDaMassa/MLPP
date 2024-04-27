@@ -11,8 +11,8 @@
 #include <random>
 #include <cstdlib>
 #include <ctime>
-//#include <opencv2/opencv.hpp>
-//#include <opencv2/videoio.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/videoio.hpp>
 #pragma endregion
 
 namespace MLPP 
@@ -68,7 +68,7 @@ namespace MLPP
                             T* r = new T(); // Create smart pointer to store temporary calculation results
                             for (size_t k = 0; k < b.size(); k++) {
                                 *r += a[a_row][k] * b[k][b_col];
-                            }
+                            }           
                             nRow->push_back(*r); // Push final value to new Row
                             delete r; // Delete result smart pointer
                         }
@@ -111,9 +111,6 @@ namespace MLPP
     };
 
     // Class that contains all methods that are needed for Data Analysis
-
-    // !! Need to look into parse_csv_line to see how it's doing with new data sets better
-
     class DataAnalysis 
     {
     public:
@@ -509,7 +506,7 @@ namespace MLPP
             if (!dataMatrix.empty()) {
                 for (auto& row : dataMatrix) {
                     for (auto& cell : row) {
-                        std::cout << " " << cell;
+                        std::cout << " " << std::to_string(cell);
                     }
                     std::cout << std::endl;
                 }
