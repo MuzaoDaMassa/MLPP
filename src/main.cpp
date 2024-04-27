@@ -1,12 +1,34 @@
 #include <iostream>
-
 #include "mlpp.hpp"
 
 using namespace std;
 using namespace MLPP;
 
+
+// Mini tests for NumPP unit
+int main()
+{
+    auto data = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/hw_100.csv");
+    //auto data2 = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/hw_100.csv");
+    auto cData = DataAnalysis::matrix_converter<double>(data);    
+    //auto cData2 = DataAnalysis::matrix_converter<int>(data2);
+
+    Mat2d<int> original = {{1, 2}, {3, 4}, {5, 6}};
+
+
+    Mat2d<float> a = {{0.1, 0.1, 0.1, 0.1}, {0.2, 0.2, 0.2, 0.2}, {0.3, 0.3, 0.3, 0.3}, {0.4, 0.4, 0.4, 0.4}};
+    Mat2d<float> b = {{0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}};
+
+    //Mat2d<float> r = NumPP::rand<float>(20, 15, 20.0, 5.0);
+    Mat2d<int> T = NumPP::transpose(original);
+    Mat2d<int> r1 = NumPP::dot(T, original);
+
+
+    DataAnalysis::displayAll(r1);
+}
+
 // Mini tests for data analysis unit
-int main() 
+int main1() 
 { 
     auto data = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
     auto data2 = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/organizations-100.csv");
@@ -47,4 +69,77 @@ int main()
     return 0;
 }
 
+/* // Open CV testing
+int main2()
+{
+    // Open default camera
+    cv::VideoCapture cap(0);
 
+    // Check if camera opened successfully
+    if (!cap.isOpened())
+    {
+        cerr << "Error opening video stream or file" << endl;
+        return -1;
+    }
+
+    // Create a window to display the video
+    cv::namedWindow("Video Stream", cv::WINDOW_NORMAL);
+    
+	// Set capture resolution
+	cap.set(cv::CAP_PROP_FRAME_WIDTH, 420);
+	cap.set(cv::CAP_PROP_FRAME_HEIGHT, 240);
+
+	// Variables for fps calculation
+    double fps;
+    cv::TickMeter tm;
+
+    while (true)
+    {
+		tm.start();
+
+		// Capture frame-by-frame
+		cv::Mat frame;
+		cap >> frame;
+
+		// If the frame is empty, break immediately
+		if (frame.empty())
+		{
+			break;
+		}
+
+        std::cout << frame.type() << std::endl;
+
+		// Convert the frame to grayscale
+		cv::Mat gray;
+		cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
+
+        std::cout << gray.type() << std::endl;
+
+        // Calculate FPS
+		tm.stop();
+		fps = 1.0 / tm.getTimeSec();
+		tm.reset();
+
+		// Put FPS text on the frame
+		cv::putText(frame, "FPS: " + to_string(fps), cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
+
+		// Dispay the resulting frame
+		cv::imshow("Video Stream", frame);
+
+		// Press q to exit the loop
+		if (cv::waitKey(1) == 'q')
+		{			
+			break;
+		}	
+        break;
+    }
+
+	// Whene everything is done, release the video capture and video writer objects
+	cap.release();
+
+    // Close all windows
+	cv::destroyAllWindows();
+
+    return 0;	
+}
+ */

@@ -1,5 +1,7 @@
 CXX = g++
-CXXFLAGS = -std=c++17 
+CXXFLAGS = -std=c++17 -g -I/usr/local/include/opencv4
+LDFLAGS = -L/usr/local/lib
+LDLIBS = -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_videoio
 
 SRCDIR = src
 TESTDIR = tests
@@ -23,10 +25,10 @@ compile_src: $(MAIN)
 compile_tests: $(TESTS)
 
 $(MAIN): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
 $(TESTS): $(TEST_OBJECTS)
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
 $(BINDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@

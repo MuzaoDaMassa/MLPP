@@ -554,7 +554,7 @@ TEST_CASE("FIND METHODS")
     }
 }
 
-TEST_CASE("READ METHODS BENCHMARKS", "[.benchmarks]")
+TEST_CASE("READ METHODS BENCHMARKS", "[.DataAnalysis_Benchmarks]")
 {
     SECTION("100 ROWS READ CSV BENCHMARK")
     {
@@ -590,7 +590,7 @@ TEST_CASE("READ METHODS BENCHMARKS", "[.benchmarks]")
     }
 }
 
-TEST_CASE("MATRIX CONVERSION METHODS BENCHMARKS", "[.benchmarks]")
+TEST_CASE("MATRIX CONVERSION METHODS BENCHMARKS", "[.DataAnalysis_Benchmarks]")
 {
     auto data1 = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
     auto data2 = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
@@ -681,7 +681,7 @@ TEST_CASE("MATRIX CONVERSION METHODS BENCHMARKS", "[.benchmarks]")
     }
 }
 
-TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
+TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.DataAnalysis_Benchmarks]")
 {
     auto data1 = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
     auto data2 = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
@@ -1207,7 +1207,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.benchmarks]")
     }
 }
 
-TEST_CASE("FIND METHODS BENCHMARKS", "[.benchmarks]")
+TEST_CASE("FIND METHODS BENCHMARKS", "[.DataAnalysis_Benchmarks]")
 {
     SECTION("FIND METHOD BENCHMARKS")
     {
