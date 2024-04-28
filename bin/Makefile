@@ -166,6 +166,30 @@ home/muzaodamassa/MLPP/src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/mlpp.dir/build.make CMakeFiles/mlpp.dir/home/muzaodamassa/MLPP/src/main.cpp.s
 .PHONY : home/muzaodamassa/MLPP/src/main.cpp.s
 
+home/muzaodamassa/MLPP/tests/computerVision_ut.o: home/muzaodamassa/MLPP/tests/computerVision_ut.cpp.o
+.PHONY : home/muzaodamassa/MLPP/tests/computerVision_ut.o
+
+# target to build an object file
+home/muzaodamassa/MLPP/tests/computerVision_ut.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests_mlpp.dir/build.make CMakeFiles/tests_mlpp.dir/home/muzaodamassa/MLPP/tests/computerVision_ut.cpp.o
+.PHONY : home/muzaodamassa/MLPP/tests/computerVision_ut.cpp.o
+
+home/muzaodamassa/MLPP/tests/computerVision_ut.i: home/muzaodamassa/MLPP/tests/computerVision_ut.cpp.i
+.PHONY : home/muzaodamassa/MLPP/tests/computerVision_ut.i
+
+# target to preprocess a source file
+home/muzaodamassa/MLPP/tests/computerVision_ut.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests_mlpp.dir/build.make CMakeFiles/tests_mlpp.dir/home/muzaodamassa/MLPP/tests/computerVision_ut.cpp.i
+.PHONY : home/muzaodamassa/MLPP/tests/computerVision_ut.cpp.i
+
+home/muzaodamassa/MLPP/tests/computerVision_ut.s: home/muzaodamassa/MLPP/tests/computerVision_ut.cpp.s
+.PHONY : home/muzaodamassa/MLPP/tests/computerVision_ut.s
+
+# target to generate assembly for a file
+home/muzaodamassa/MLPP/tests/computerVision_ut.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests_mlpp.dir/build.make CMakeFiles/tests_mlpp.dir/home/muzaodamassa/MLPP/tests/computerVision_ut.cpp.s
+.PHONY : home/muzaodamassa/MLPP/tests/computerVision_ut.cpp.s
+
 home/muzaodamassa/MLPP/tests/dataAnalysis_ut.o: home/muzaodamassa/MLPP/tests/dataAnalysis_ut.cpp.o
 .PHONY : home/muzaodamassa/MLPP/tests/dataAnalysis_ut.o
 
@@ -227,6 +251,9 @@ help:
 	@echo "... home/muzaodamassa/MLPP/src/main.o"
 	@echo "... home/muzaodamassa/MLPP/src/main.i"
 	@echo "... home/muzaodamassa/MLPP/src/main.s"
+	@echo "... home/muzaodamassa/MLPP/tests/computerVision_ut.o"
+	@echo "... home/muzaodamassa/MLPP/tests/computerVision_ut.i"
+	@echo "... home/muzaodamassa/MLPP/tests/computerVision_ut.s"
 	@echo "... home/muzaodamassa/MLPP/tests/dataAnalysis_ut.o"
 	@echo "... home/muzaodamassa/MLPP/tests/dataAnalysis_ut.i"
 	@echo "... home/muzaodamassa/MLPP/tests/dataAnalysis_ut.s"

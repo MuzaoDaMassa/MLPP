@@ -6,7 +6,7 @@ using namespace Utils;
 using namespace Benchmark;
 using namespace MLPP;
 
-TEST_CASE("READ CSV METHODS")
+TEST_CASE("READ_CSV_METHODS")
 {
     auto data1 = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
     auto data2 = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
@@ -37,7 +37,7 @@ TEST_CASE("READ CSV METHODS")
     }
 }
 
-TEST_CASE("MATRIX CONVERTER METHODS")
+TEST_CASE("MATRIX_CONVERTER_METHODS")
 {
     auto data1 = DataAnalysis::DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
     auto data2 = DataAnalysis::DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
@@ -126,7 +126,7 @@ TEST_CASE("MATRIX CONVERTER METHODS")
     }
 }
 
-TEST_CASE("MATRIX FORMATTER METHODS")
+TEST_CASE("MATRIX_FORMATTER_METHODS")
 {
     auto data1 = DataAnalysis::DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
     auto data2 = DataAnalysis::DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
@@ -488,7 +488,7 @@ TEST_CASE("MATRIX FORMATTER METHODS")
     }
 }
 
-TEST_CASE("FIND METHODS")
+TEST_CASE("FIND_METHODS")
 {
     auto data1 = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
     auto data2 = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
@@ -554,7 +554,7 @@ TEST_CASE("FIND METHODS")
     }
 }
 
-TEST_CASE("READ METHODS BENCHMARKS", "[.DataAnalysis_Benchmarks]")
+TEST_CASE("READ_METHODS_BENCHMARKS", "[.DataAnalysis_Benchmarks]")
 {
     SECTION("100 ROWS READ CSV BENCHMARK")
     {
@@ -590,7 +590,7 @@ TEST_CASE("READ METHODS BENCHMARKS", "[.DataAnalysis_Benchmarks]")
     }
 }
 
-TEST_CASE("MATRIX CONVERSION METHODS BENCHMARKS", "[.DataAnalysis_Benchmarks]")
+TEST_CASE("MATRIX_CONVERSION_METHODS_BENCHMARKS", "[.DataAnalysis_Benchmarks]")
 {
     auto data1 = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
     auto data2 = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
@@ -681,7 +681,7 @@ TEST_CASE("MATRIX CONVERSION METHODS BENCHMARKS", "[.DataAnalysis_Benchmarks]")
     }
 }
 
-TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.DataAnalysis_Benchmarks]")
+TEST_CASE("MATRIX_FORMATTER_METHODS_BENCHMARKS", "[.DataAnalysis_Benchmarks]")
 {
     auto data1 = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
     auto data2 = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
@@ -1207,7 +1207,7 @@ TEST_CASE("MATRIX FORMATTER METHODS BENCHMARKS", "[.DataAnalysis_Benchmarks]")
     }
 }
 
-TEST_CASE("FIND METHODS BENCHMARKS", "[.DataAnalysis_Benchmarks]")
+TEST_CASE("FIND_METHODS_BENCHMARKS", "[.DataAnalysis_Benchmarks]")
 {
     SECTION("FIND METHOD BENCHMARKS")
     {

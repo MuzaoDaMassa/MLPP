@@ -29,17 +29,17 @@ namespace Benchmark
     };
 
     // Benchmarking
-    std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::_V2::system_clock::duration> startBenchmark()
+    static std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::_V2::system_clock::duration> startBenchmark()
     {
         return std::chrono::high_resolution_clock::now();
     }
 
-    std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::_V2::system_clock::duration> stopBenchmark()
+    static std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::_V2::system_clock::duration> stopBenchmark()
     {
         return std::chrono::high_resolution_clock::now();
     }
 
-    std::string getDuration(std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::_V2::system_clock::duration>& start,
+    static std::string getDuration(std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::_V2::system_clock::duration>& start,
         std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::_V2::system_clock::duration>& stop, 
             TimeUnit timeUnit = Microseconds)
     {

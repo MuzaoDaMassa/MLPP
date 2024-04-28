@@ -22,8 +22,8 @@ namespace MLPP
     // Outside vector stores row data, inside vector store columns
     template <typename T> using Mat2d = std::vector<std::vector<T>>;
 
-    // Declare specific data structures templates for pixel data, to be used in computer vision applications
-    using ImageMat = std::vector<Mat2d<uint8_t>>;
+    // Declare 3d matrix template where each element is a vector
+    template <typename T> using Mat3d = std::vector<Mat2d<T>>;
 
     // Formatter utility enum to help with method overload
     enum Formatter { ROW, COLUMN, ROWANDCOLUMN };
@@ -616,13 +616,12 @@ namespace MLPP
 
     };
 
-
     // Class that transforms open cv data structures into mine for later analysis
     // This is temporary, I do not plan to use open cv in public release, this is for learning and testing purposes
     class OpencvIntegration
     {
     public:
-        static ImageMat* convert_image(const cv::Mat* image) 
+        static Mat3d<u_int8_t>* convert_image(const cv::Mat* image) 
         {
             if (!image->data) {
                 // Display error that informs data matrix is empty
@@ -630,20 +629,21 @@ namespace MLPP
                 return nullptr; // Return nullptr if image data is empty
             }
 
-            // Create a new ImageMat pointer and allocate memory for it
-            ImageMat *nMatPtr = new ImageMat(image->rows, Mat2d<uint8_t>(image->cols, std::vector<uint8_t>(3)));
-
+            // Create a new Mat3d pointer and allocate memory for it
+            Mat3d<u_int8_t> *nMatPtr = new Mat3d<u_int8_t>(image->rows, Mat2d<uint8_t>(image->cols, std::vector<uint8_t>(3)));
+            // Create pointer to hold open cv pixel values
+            cv::Vec3b* cvPixelPtr = new cv::Vec3b(3);
             // Iterate over each pixel in the given image
             for (int i = 0; i < image->rows; i++) {
                 for (int j = 0; j < image->cols; j++) {
-                    // Access open cv pixel at position i, j
-                    const cv::Vec3b& cvPixel = image->at<cv::Vec3b>(i, j);
-                    // Access the corresponding pixel in the new matrix and copy
-                    // pixel values
-                    (*nMatPtr)[i][j] = {cvPixel[0], cvPixel[1], cvPixel[2]};
+                    // Assing current pixel data to pointer
+                    (*cvPixelPtr) = image->at<cv::Vec3b>(i, j);
+                    // Access the corresponding pixel in the new matrix and copy pixel values
+                    (*nMatPtr)[i][j] = {(*cvPixelPtr)[0], (*cvPixelPtr)[1], (*cvPixelPtr)[2]};
                 }
             }
 
+            delete cvPixelPtr;
             // Return the pointer to the final matrix
             return nMatPtr;
         }

@@ -6,26 +6,6 @@ using namespace std;
 using namespace MLPP;
 using namespace Benchmark;
 
-
-// Mini tests for NumPP unit
-int main3()
-{
-    auto data = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/hw_100.csv");
-    auto cData = DataAnalysis::matrix_converter<double>(data);    
-
-
-    Mat2d<float> r = NumPP::rand<float>(20, 15, 20.0, 5.0);
-    Mat2d<double> T = NumPP::transpose(cData);
-    Mat2d<double> r1 = NumPP::dot(T, cData);
-
-
-    DataAnalysis::displayAll(r);
-    std::cout << "-------------------------------------------------------------" << std::endl;
-    DataAnalysis::displayAll(r1);
-
-    return 0;
-}
-
 // Mini tests for data analysis unit
 int main1() 
 { 
@@ -68,8 +48,65 @@ int main1()
     return 0;
 }
 
-/* // Open CV Video capture testing
+// Mini tests for NumPP unit
 int main2()
+{
+    auto data = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/hw_100.csv");
+    auto cData = DataAnalysis::matrix_converter<double>(data);    
+
+    Mat2d<float> r = NumPP::rand<float>(20, 15, 20.0, 5.0);
+    Mat2d<double> T = NumPP::transpose(cData);
+    Mat2d<double> r1 = NumPP::dot(T, cData);
+
+    DataAnalysis::displayAll(r);
+    std::cout << "-------------------------------------------------------------" << std::endl;
+    DataAnalysis::displayAll(r1);
+
+    return 0;
+}
+
+// Open CV Image testing
+int main()
+{
+    cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
+	if (!imagePtr->data) { 
+		std::cerr << "Error: No image data" << std::endl; 
+		return -1; 
+	} 
+
+    //cv::Mat resizedImage;  
+    //cv::resize(*imagePtr, resizedImage, cv::Size(420, 240));
+    //cv::Mat* rImagePtr = new cv::Mat(resizedImage);
+
+    //cv::Mat grayImage;
+    //cv::cvtColor(*rImagePtr, grayImage, cv::COLOR_BGR2GRAY);
+    //cv::Mat* grayPtr = new cv::Mat(grayImage);
+
+    auto start = startBenchmark();
+    auto nImagePtr = OpencvIntegration::convert_image(imagePtr);
+    auto end = stopBenchmark();
+
+    cout << getDuration(start, end, Seconds) << endl;
+
+    // Access the element at row 'i' and column 'j'
+    std::vector<uint8_t>& pixel = (*nImagePtr)[150][150];
+    cv::Vec3b& cvPixel = imagePtr->at<cv::Vec3b>(150, 150);
+    // Now you can access individual channels of the pixel
+    uint8_t blue = pixel[0];
+    uint8_t green = pixel[1];
+    uint8_t red = pixel[2];
+    
+    cout << cvPixel << endl;
+    cout << "[" << to_string(pixel[0]) << ", " << to_string(pixel[1]) << ", " << to_string(pixel[2]) << "]" << endl;
+    cout << endl;
+
+    delete imagePtr;
+    //delete rImagePtr;
+    return 0;
+}
+
+// Open CV Video capture testing
+int main4()
 {
     // Open default camera
     cv::VideoCapture cap(0);
@@ -98,21 +135,31 @@ int main2()
 
 		// Capture frame-by-frame
 		cv::Mat frame;
-		cap >> frame;
+        cap >> frame;
 
+        cv::Mat* framePtr = new cv::Mat(frame);
+		
 		// If the frame is empty, break immediately
 		if (frame.empty())
 		{
 			break;
 		}
 
-        std::cout << frame.type() << std::endl;
+        auto matPtr = OpencvIntegration::convert_image(framePtr);
+
+        // Access the element at row 'i' and column 'j'
+        std::vector<uint8_t> &pixel = (*matPtr)[150][150];
+
+        // Now you can access individual channels of the pixel
+        uint8_t blue = pixel[0];
+        uint8_t green = pixel[1];
+        uint8_t red = pixel[2];
+        cout << framePtr->at<cv::Vec3b>(150, 150) << endl;
+        cout << "[" << to_string(pixel[0]) << ", " << to_string(pixel[1]) << ", " << to_string(pixel[2]) << "]" << endl;
 
 		// Convert the frame to grayscale
-		cv::Mat gray;
-		cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
-
-        std::cout << gray.type() << std::endl;
+		//cv::Mat gray;
+		//cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
 
         // Calculate FPS
 		tm.stop();
@@ -130,7 +177,6 @@ int main2()
 		{			
 			break;
 		}	
-        break;
     }
 
 	// Whene everything is done, release the video capture and video writer objects
@@ -140,42 +186,4 @@ int main2()
 	cv::destroyAllWindows();
 
     return 0;	
-}
- */
-
-// Open CV Image testing
-int main()
-{
-    cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
-	if (!imagePtr->data) { 
-		std::cerr << "Error: No image data" << std::endl; 
-		return -1; 
-	} 
-    cv::Mat resizedImage;  
-    cv::resize(*imagePtr, resizedImage, cv::Size(420, 240));
-
-    cv::Mat* rImagePtr = new cv::Mat(resizedImage);
-
-    auto start = startBenchmark();
-    auto nImagePtr = OpencvIntegration::convert_image(rImagePtr);
-    auto end = stopBenchmark();
-
-    cout << getDuration(start, end, Seconds) << endl;
-
-    // Access the element at row 'i' and column 'j'
-    std::vector<uint8_t> &pixel = (*nImagePtr)[150][150];
-
-    // Now you can access individual channels of the pixel
-    uint8_t blue = pixel[0];
-    uint8_t green = pixel[1];
-    uint8_t red = pixel[2];
-    cout << rImagePtr->at<cv::Vec3b>(150, 150) << endl;
-    cout << "[" << to_string(pixel[0]) << ", " << to_string(pixel[1]) << ", " << to_string(pixel[2]) << "]" << endl;
-   
-
-    cout << endl;
-
-    delete imagePtr;
-    delete rImagePtr;
-    return 0;
 }
