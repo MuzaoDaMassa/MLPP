@@ -22,6 +22,9 @@ namespace MLPP
     // Outside vector stores row data, inside vector store columns
     template <typename T> using Mat2d = std::vector<std::vector<T>>;
 
+    // Declare specific data structures templates for pixel data, to be used in computer vision applications
+    using ImageMat = std::vector<Mat2d<uint8_t>>;
+
     // Formatter utility enum to help with method overload
     enum Formatter { ROW, COLUMN, ROWANDCOLUMN };
 
@@ -611,6 +614,39 @@ namespace MLPP
     class NeuralNetworks
     {
 
+    };
+
+
+    // Class that transforms open cv data structures into mine for later analysis
+    // This is temporary, I do not plan to use open cv in public release, this is for learning and testing purposes
+    class OpencvIntegration
+    {
+    public:
+        static ImageMat* convert_image(const cv::Mat* image) 
+        {
+            if (!image->data) {
+                // Display error that informs data matrix is empty
+                std::cerr << "Error: Image data empty" << std::endl;
+                return nullptr; // Return nullptr if image data is empty
+            }
+
+            // Create a new ImageMat pointer and allocate memory for it
+            ImageMat *nMatPtr = new ImageMat(image->rows, Mat2d<uint8_t>(image->cols, std::vector<uint8_t>(3)));
+
+            // Iterate over each pixel in the given image
+            for (int i = 0; i < image->rows; i++) {
+                for (int j = 0; j < image->cols; j++) {
+                    // Access open cv pixel at position i, j
+                    const cv::Vec3b& cvPixel = image->at<cv::Vec3b>(i, j);
+                    // Access the corresponding pixel in the new matrix and copy
+                    // pixel values
+                    (*nMatPtr)[i][j] = {cvPixel[0], cvPixel[1], cvPixel[2]};
+                }
+            }
+
+            // Return the pointer to the final matrix
+            return nMatPtr;
+        }
     };
 
     // Further classes to be implemented

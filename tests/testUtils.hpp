@@ -22,6 +22,7 @@ namespace Benchmark
 {
     enum TimeUnit 
     {
+        Seconds,
         Microseconds, 
         Milliseconds,
         Nanoseconds
@@ -42,23 +43,25 @@ namespace Benchmark
         std::chrono::time_point<std::chrono::_V2::system_clock, std::chrono::_V2::system_clock::duration>& stop, 
             TimeUnit timeUnit = Microseconds)
     {
-        if (timeUnit == Nanoseconds)
-        {
+        if (timeUnit == Nanoseconds) {
             auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
-            double time = (duration.count() / 1000000000.0);
+            double time = duration.count();
             return "Process duration in Nanoseconds: " + std::to_string(time);
-        }
-        else if (timeUnit == Milliseconds)
-        {
+        } 
+        else if (timeUnit == Milliseconds) {
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-            double time = (duration.count() / 1000000.0);
+            double time = duration.count();
             return "Process duration in Milliseconds: " + std::to_string(time);
-        }
-        else
-        {
+        } 
+        else if (timeUnit == Microseconds) {
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-            double time = (duration.count() / 1000.0);
+            double time = duration.count();
             return "Process duration in Microseconds: " + std::to_string(time);
+        } 
+        else {
+            auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
+            double time = duration.count() / 1'000'000'000.0; // Convert nanoseconds to seconds
+            return "Process duration in Seconds: " + std::to_string(time);
         }
     }
 

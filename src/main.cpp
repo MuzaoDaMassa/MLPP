@@ -1,8 +1,10 @@
 #include <iostream>
 #include "mlpp.hpp"
+#include "../tests/testUtils.hpp"
 
 using namespace std;
 using namespace MLPP;
+using namespace Benchmark;
 
 
 // Mini tests for NumPP unit
@@ -144,15 +146,36 @@ int main2()
 // Open CV Image testing
 int main()
 {
-    cv::Mat image; 
-	image = cv::imread("/MLPP/tests/Images/Pista1.jpg"); 
-	if (!image.data) { 
-		//printf("No image data \n"); 
+    cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
+	if (!imagePtr->data) { 
+		std::cerr << "Error: No image data" << std::endl; 
 		return -1; 
 	} 
-	cv::namedWindow("Display Image", cv::WINDOW_AUTOSIZE); 
-	cv::imshow("Display Image", image); 
-	cv::waitKey(0); 
+    cv::Mat resizedImage;  
+    cv::resize(*imagePtr, resizedImage, cv::Size(420, 240));
 
-	return 0; 
+    cv::Mat* rImagePtr = new cv::Mat(resizedImage);
+
+    auto start = startBenchmark();
+    auto nImagePtr = OpencvIntegration::convert_image(rImagePtr);
+    auto end = stopBenchmark();
+
+    cout << getDuration(start, end, Seconds) << endl;
+
+    // Access the element at row 'i' and column 'j'
+    std::vector<uint8_t> &pixel = (*nImagePtr)[150][150];
+
+    // Now you can access individual channels of the pixel
+    uint8_t blue = pixel[0];
+    uint8_t green = pixel[1];
+    uint8_t red = pixel[2];
+    cout << rImagePtr->at<cv::Vec3b>(150, 150) << endl;
+    cout << "[" << to_string(pixel[0]) << ", " << to_string(pixel[1]) << ", " << to_string(pixel[2]) << "]" << endl;
+   
+
+    cout << endl;
+
+    delete imagePtr;
+    delete rImagePtr;
+    return 0;
 }
