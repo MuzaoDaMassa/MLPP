@@ -21,10 +21,9 @@ namespace MLPP
     // create 2d Matrix based on parameter type
     // Outside vector stores row data, inside vector store columns
     template <typename T> using Mat2d = std::vector<std::vector<T>>;
-
     // Declare 3d matrix template where each element is a vector
-    template <typename T> using Mat3d = std::vector<Mat2d<T>>;
-
+    template <typename T> using Mat3d = std::vector<Mat2d<T>>;  
+    
     // Formatter utility enum to help with method overload
     enum Formatter { ROW, COLUMN, ROWANDCOLUMN };
 
@@ -88,13 +87,29 @@ namespace MLPP
             std::cerr << "Error: Input empty" << std::endl;
             return result; // Return empty matrix
         }
+        
+        // Method to multiply corresponding elements of 2 2d matrices
+        // Returns sum of all multiplications, matrices must have same size
+        template <typename T> 
+        static T mat_mul_matching_elements(const Mat2d<T>* a, const Mat2d<T>* b)
+        {
+            T r = 0; // Create variable to store results
+            // Iterate through every element in a, and multiply by matching elemnt in b
+            for (size_t i = 0; i < a->size(); i++) {
+                for (size_t j = 0; j < (*a)[i].size(); j++) {
+                    r += (*a)[i][j] * (*b)[i][j];
+                }
+            }
+            return r;
+            
+        }   
 
         // Method that generates random 2d matrix 
         template <typename T>
-        static Mat2d<T> rand(const size_t& rows, const size_t& cols, const double& mean, const double& stddev)
+        static Mat2d<T>* rand(const size_t& rows, const size_t& cols, const double& mean, const double& stddev)
         {
             // Create new 2d matrix object with specified parameters to later return
-            Mat2d<T> result(rows, std::vector<T>(cols));
+            Mat2d<T>* result = new Mat2d<T>(rows, std::vector<T>(cols));
 
             // Initialize random generator - Normal Distribution, receives mean and standard deviation as paramaters
             std::random_device rd;
@@ -102,15 +117,68 @@ namespace MLPP
             std::normal_distribution<double> distribution(mean, stddev);
 
             // Fill matrix with random values
-            for (size_t rows = 0; rows < result.size(); rows++) {
-                for (size_t cols = 0; cols < result[rows].size(); cols++) {
-                    result[rows][cols] = static_cast<T>(distribution(generator));
+            for (size_t rows = 0; rows < result->size(); rows++) {
+                for (size_t cols = 0; cols < (*result)[rows].size(); cols++) {
+                    (*result)[rows][cols] = static_cast<T>(distribution(generator));
                 }
             }
 
             // Return random 2d matrix
             return result;
         }
+
+        // Method that generates square 2d matrix
+        template <typename T>
+        static Mat2d<T>* gen_square_matrix(const size_t& size, const T& value = 0)
+        {
+            // Create new 2d matrix object with specified parameters to later return
+            Mat2d<T>* result = new Mat2d<T>(size, std::vector<T>(size));
+
+            // Fill matrix with specified value
+            for (size_t rows = 0; rows < result->size(); rows++) {
+                for (size_t cols = 0; cols < (*result)[rows].size(); cols++) {
+                    (*result)[rows][cols] = value;
+                }
+            }
+
+            // Return random 2d matrix
+            return result;
+        }
+
+        // Method that returns sum of all elements in vector
+        template <typename T, typename R>
+        static R get_sum_of_vector(std::vector<T>& vec)
+        {
+            R r;
+            for (size_t i = 0; i < vec.size(); i++) {
+                r += static_cast<R>(vec[i]);
+            }
+            return r;
+        }
+
+        // Method that returns center coordinates of given 2d matrix
+        template <typename T>
+        static std::vector<int> get_center(const Mat2d<T>* matPtr)
+        {
+            if (matPtr == nullptr) {
+                std::vector<int> pos {0,0};
+                // Display error that informs data matrix is empty
+                std::cerr << "Error: Null matrix pointer" << std::endl;
+                return pos; // Return empty vector
+            }
+
+            std::vector<int> pos {matPtr->size()/2, (*matPtr)[matPtr->size()/2].size()/2}; // Create vector pointer to store position     
+            return pos;
+        }
+
+        // Overload to get center of 1d matrix, i.e, a vector
+        template <typename T>
+        static int get_center(const std::vector<T>* vecPtr)
+        {
+            return vecPtr->size()/2;
+        }
+
+        // Further methods to be implemented
     };
 
     // Class that contains all methods that are needed for Data Analysis
@@ -475,7 +543,7 @@ namespace MLPP
         // vector of positions Outside vecotor holds all rows indexes element was found,
         // and inside vector holds all columns indexes element was found
         template <typename T> 
-        static Mat2d<int> findAll(const Mat2d<T>& dataMatrix, const T& desiredElemet)
+        static Mat2d<int> find_all(const Mat2d<T>& dataMatrix, const T& desiredElemet)
         {
             // Creat position vector
             Mat2d<int> pos;
@@ -504,7 +572,7 @@ namespace MLPP
         }
         // Method to display all elemenst of data matrix
         template <typename T> 
-        static void displayAll(const Mat2d<T>& dataMatrix)
+        static void display_all(const Mat2d<T>& dataMatrix)
         {
             if (!dataMatrix.empty()) {
                 for (auto& row : dataMatrix) {
@@ -520,7 +588,7 @@ namespace MLPP
         }
         // Method to display all elements in given rows
         template <typename T> 
-        static void displayRows(const Mat2d<T>& dataMatrix, const std::vector<int>& rowsToDisplay)
+        static void display_rows(const Mat2d<T>& dataMatrix, const std::vector<int>& rowsToDisplay)
         {
             if (!dataMatrix.empty() && !rowsToDisplay.empty()) {
                 for (size_t row = 0; row < rowsToDisplay.size(); row++) {
@@ -542,7 +610,7 @@ namespace MLPP
         }
         // Method to display all elements in given columns
         template <typename T> 
-        static void displayColumns(const Mat2d<T>& dataMatrix, const std::vector<int>& colsToDisplay)
+        static void display_columns(const Mat2d<T>& dataMatrix, const std::vector<int>& colsToDisplay)
         {
             if (!dataMatrix.empty() && !colsToDisplay.empty()) {
                 for (size_t row = 0; row < dataMatrix.size(); row++) {
@@ -562,9 +630,9 @@ namespace MLPP
             // Display error that informs data matrix is empty
             std::cerr << "Error: Data Matrix is empty" << std::endl;
         }
-        // Method to display first five rows method, Display first 5 rows + displayHead row
+        // Method to display first five rows method, Display first 5 rows + display_head row
         template <typename T> 
-        static void displayHead(const Mat2d<T>& dataMatrix, int rowsToDisplay = 5)
+        static void display_head(const Mat2d<T>& dataMatrix, int rowsToDisplay = 5)
         {
             if (!dataMatrix.empty()) {
                 if (rowsToDisplay >= 0 && rowsToDisplay < dataMatrix.size() - 1) {
@@ -586,7 +654,7 @@ namespace MLPP
         }
         // Mehtod to display last five colunms method, Display lastdisplayBfive rows
         template <typename T> 
-        static void displayBottom(const Mat2d<T>& dataMatrix, int rowsToDisplay = 5)
+        static void display_bottom(const Mat2d<T>& dataMatrix, int rowsToDisplay = 5)
         {
             if (!dataMatrix.empty()) {
                 if (rowsToDisplay >= 0 && rowsToDisplay < dataMatrix.size() - 1) {
@@ -607,20 +675,119 @@ namespace MLPP
             // Display error that informs data matrix is empty
             std::cerr << "Error: Data Matrix is empty" << std::endl;
         }
+        
         // Further methods to be implemented
     }; 
     
+    // Class that will hold support methods for now, and later will include all methods
+    // Required for computer vision
+    class ComputerVision
+    {
+    public:
+        // Method to convert 3d matrix into 2d matrix, where each element
+        // Will be a sum of R, G and B values
+        static Mat2d<int16_t>* get_sum_all_pixels(const Mat3d<u_int8_t>* mat3dPtr)
+        {
+            if (mat3dPtr == nullptr) {
+                // Display error that informs data matrix is empty
+                std::cerr << "Error: 3d matrix pointer is null" << std::endl;
+                return nullptr; // Return nullptr if image data is empty
+            }
+
+            // Create a new Mat2d pointer and allocate memory for it
+            Mat2d<int16_t> *mat2dPtr = new Mat2d<int16_t>(mat3dPtr->size(), std::vector<int16_t>((*mat3dPtr)[0].size()));
+
+            for (size_t i = 0; i < mat2dPtr->size(); i++) {
+                for (size_t j = 0; j < (*mat2dPtr)[i].size(); j++) {
+                    auto v = (*mat3dPtr)[i][j];
+                    int16_t e = NumPP::get_sum_of_vector<u_int8_t, int16_t>(v);
+                    (*mat2dPtr)[i][j] = e;
+                }
+            }
+
+            return mat2dPtr;
+        }
+
+    };
+
     // Class that contains all methods that are needed for NeuralNetworks usage
     class NeuralNetworks
     {
+    private:
+        // Method to generate kernel matrix, which will be apllied in filter step
+        template <typename T> 
+        static Mat2d<T>* gen_kernel(const int& kernel_size)
+        {
+            return NumPP::rand<T>(kernel_size, kernel_size, 0.0, 1.0);
+        } 
 
+        // Method to return block of data, i.e, NxN matrix from larger matrix to apply filter
+        // !!! Still hard coded, need to optimize !!!
+        template <typename T>
+        static Mat2d<T> get_matrix_block(const Mat2d<T>* matPtr, const int& block_size, const std::vector<int>& center)
+        {
+            Mat2d<T> block(block_size, std::vector<T>(block_size)); // Create 2d matrix block to return later
+            int offset = block_size - 2; // Get offset, number to go back and forward from center 
+            
+            block[0] = {(*matPtr)[center[0]-offset][center[1]-offset], (*matPtr)[center[0] - offset][center[1]], (*matPtr)[center[0]-offset][center[1]+offset]};
+            block[1] = {(*matPtr)[center[0]][center[1]-offset], (*matPtr)[center[0]][center[1]], (*matPtr)[center[0]][center[1]+offset]};
+            block[2] = {(*matPtr)[center[0]+offset][center[1]-offset], (*matPtr)[center[0]+offset][center[1]], (*matPtr)[center[0]+offset][center[1]+offset]};
+
+            return block;
+        }
+    public:
+        // Aplly filter to input, remove unwanted chunks, makes further steps more efficient
+        // !!! STILL NEED TO CHECK IF IT'S WORKING 100% CORRECTLY !!!
+        static Mat2d<int16_t> pre_process_input(const Mat2d<int16_t>* dataPtr, const int& kernel_size)
+        {
+            Mat2d<int16_t> fMat; // Create pointer to store final data
+            Mat2d<int16_t>* block_mat = new Mat2d<int16_t>(kernel_size, std::vector<int16_t>(kernel_size)); // Create memory to store NxN block matrix
+            Mat2d<int16_t>* kMat = gen_kernel<int16_t>(kernel_size); // Generate kernel matrix with passed size
+            DataAnalysis::display_all(*kMat);
+            //Mat2d<int16_t>* kMat = NumPP::gen_square_matrix<int16_t>(3, 1);
+            std::vector<int> center(2);
+            int offset = kernel_size - 2; // Get offset, number to go back and forward from center    
+
+            // Loop through image matrix, centering kernel matrix with block to be analysed
+            for (int center_x = offset; center_x < dataPtr->size() - offset; center_x++) {  
+                std::vector<int16_t> rowData;
+                for (int center_y = offset; center_y < (*dataPtr)[center_x].size() - offset; center_y++) {
+                    center = {center_x, center_y};      
+                    *block_mat = get_matrix_block(dataPtr, kernel_size, center); // Get NxN block of image matrix
+                    int16_t r = NumPP::mat_mul_matching_elements(block_mat, kMat); // Multiply block by kernel matrix
+                    rowData.push_back(r);                
+                }
+                fMat.push_back(rowData);
+            }
+
+            delete kMat, block_mat;
+            return fMat;
+        }
+
+        // Further methods to be implemented
     };
 
     // Class that transforms open cv data structures into mine for later analysis
     // This is temporary, I do not plan to use open cv in public release, this is for learning and testing purposes
     class OpencvIntegration
     {
+    private:
+        // Get sum of a open cv Vec3b data type, returns the sum in declared data type
+        template <typename T>
+        static T get_sum_of_vector(const cv::Vec3b& vec)
+        {
+            T result; // Store result in desired data type
+
+            for (size_t i = 0; i < vec.channels; i++) {
+                result += static_cast<T>(vec[i]);
+            }
+
+            return result;
+
+        }
     public:
+        // Get open cv image matrix and convert it to our 3d matrix data structure
+        // Default format is Blue, Green, Red
         static Mat3d<u_int8_t>* convert_image(const cv::Mat* image) 
         {
             if (!image->data) {
@@ -647,8 +814,32 @@ namespace MLPP
             // Return the pointer to the final matrix
             return nMatPtr;
         }
-    };
 
+        // Convert open cv matrix, to 2d matrix, where each element will be the sum
+        // Of Blue, Green and Red values
+        static Mat2d<int16_t>* get_sum_pixels(const cv::Mat* image)
+        {
+            if (!image->data) {
+                // Display error that informs data matrix is empty
+                std::cerr << "Error: Image data empty" << std::endl;
+                return nullptr; // Return nullptr if image data is empty
+            }
+
+            // Create a new Mat2d pointer and allocate memory for it
+            Mat2d<int16_t> *mat2dPtr = new Mat2d<int16_t>(image->rows, std::vector<int16_t>(image->cols));
+
+            for (size_t i = 0; i < mat2dPtr->size(); i++) {
+                for (size_t j = 0; j < (*mat2dPtr)[i].size(); j++) {
+                    auto v = image->at<cv::Vec3b>(i, j);
+                    int16_t e = get_sum_of_vector<int16_t>(v);
+                    (*mat2dPtr)[i][j] = e;
+                }
+            }
+
+            return mat2dPtr;
+        }
+        // Further methods to be implemented
+    };
     // Further classes to be implemented
     
 }

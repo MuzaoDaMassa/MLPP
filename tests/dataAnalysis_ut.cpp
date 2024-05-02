@@ -536,9 +536,9 @@ TEST_CASE("FIND_METHODS")
     SECTION("FIND ALL METHODS")
     {
         // In find method, matrix returns empty if nothing was found
-        auto pos1 = DataAnalysis::findAll<std::string>(data1, "Netherlands");
-        auto pos2 = DataAnalysis::findAll<float>(cData2, 2020.0F);
-        auto pos3 = DataAnalysis::findAll<double>(cData3, 2021.0);
+        auto pos1 = DataAnalysis::find_all<std::string>(data1, "Netherlands");
+        auto pos2 = DataAnalysis::find_all<float>(cData2, 2020.0F);
+        auto pos3 = DataAnalysis::find_all<double>(cData3, 2021.0);
 
         std::cout << "100 ROW DATABASE" << std::endl;
         REQUIRE(!pos1.empty());
@@ -1486,7 +1486,7 @@ TEST_CASE("FIND_METHODS_BENCHMARKS", "[.DataAnalysis_Benchmarks]")
             auto data = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100.csv");
 
             auto start = startBenchmark();
-            auto pos = DataAnalysis::findAll<std::string>(data, "Netherlands");
+            auto pos = DataAnalysis::find_all<std::string>(data, "Netherlands");
             auto stop = stopBenchmark();
 
             std::cout << "100 ROW DATABASE FIND ALL - STRING" << std::endl;
@@ -1501,7 +1501,7 @@ TEST_CASE("FIND_METHODS_BENCHMARKS", "[.DataAnalysis_Benchmarks]")
             auto cData = DataAnalysis::matrix_converter<float>(data);
 
             auto start = startBenchmark();
-            auto pos = DataAnalysis::findAll<float>(cData, 2020.0F);
+            auto pos = DataAnalysis::find_all<float>(cData, 2020.0F);
             auto stop = stopBenchmark();
 
             std::cout << "100 ROW DATABASE FIND ALL - FLOAT" << std::endl;
@@ -1516,7 +1516,7 @@ TEST_CASE("FIND_METHODS_BENCHMARKS", "[.DataAnalysis_Benchmarks]")
             auto cData = DataAnalysis::matrix_converter<double>(data);
 
             auto start = startBenchmark();
-            auto pos = DataAnalysis::findAll<double>(cData, 2021.0);
+            auto pos = DataAnalysis::find_all<double>(cData, 2021.0);
             auto stop = stopBenchmark();
 
             std::cout << "100 ROW DATABASE FIND ALL - DOUBLE" << std::endl;
@@ -1530,7 +1530,7 @@ TEST_CASE("FIND_METHODS_BENCHMARKS", "[.DataAnalysis_Benchmarks]")
             auto data = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-10000.csv");
 
             auto start = startBenchmark();
-            auto pos = DataAnalysis::findAll<std::string>(data, "Netherlands");
+            auto pos = DataAnalysis::find_all<std::string>(data, "Netherlands");
             auto stop = stopBenchmark();
 
             std::cout << "10 000 ROW DATABASE FIND ALL - STRING" << std::endl;
@@ -1545,7 +1545,7 @@ TEST_CASE("FIND_METHODS_BENCHMARKS", "[.DataAnalysis_Benchmarks]")
             auto cData = DataAnalysis::matrix_converter<float>(data);
 
             auto start = startBenchmark();
-            auto pos = DataAnalysis::findAll<float>(cData, 2020.0F);
+            auto pos = DataAnalysis::find_all<float>(cData, 2020.0F);
             auto stop = stopBenchmark();
 
             std::cout << "10 000 ROW DATABASE FIND ALL - FLOAT" << std::endl;
@@ -1560,7 +1560,7 @@ TEST_CASE("FIND_METHODS_BENCHMARKS", "[.DataAnalysis_Benchmarks]")
             auto cData = DataAnalysis::matrix_converter<double>(data);
 
             auto start = startBenchmark();
-            auto pos = DataAnalysis::findAll<double>(cData, 2021.0);
+            auto pos = DataAnalysis::find_all<double>(cData, 2021.0);
             auto stop = stopBenchmark();
 
             std::cout << "10 000 ROW DATABASE FIND ALL - DOUBLE" << std::endl;
@@ -1574,7 +1574,7 @@ TEST_CASE("FIND_METHODS_BENCHMARKS", "[.DataAnalysis_Benchmarks]")
             auto data = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/customers-100000.csv");
 
             auto start = startBenchmark();
-            auto pos = DataAnalysis::findAll<std::string>(data, "Netherlands");
+            auto pos = DataAnalysis::find_all<std::string>(data, "Netherlands");
             auto stop = stopBenchmark();
 
             std::cout << "100 000 ROW DATABASE FIND ALL - STRING" << std::endl;
@@ -1589,7 +1589,7 @@ TEST_CASE("FIND_METHODS_BENCHMARKS", "[.DataAnalysis_Benchmarks]")
             auto cData = DataAnalysis::matrix_converter<float>(data);
 
             auto start = startBenchmark();
-            auto pos = DataAnalysis::findAll<float>(cData, 2020.0F);
+            auto pos = DataAnalysis::find_all<float>(cData, 2020.0F);
             auto stop = stopBenchmark();
 
             std::cout << "100 000 ROW DATABASE FIND ALL - FLOAT" << std::endl;
@@ -1604,7 +1604,7 @@ TEST_CASE("FIND_METHODS_BENCHMARKS", "[.DataAnalysis_Benchmarks]")
             auto cData = DataAnalysis::matrix_converter<double>(data);
 
             auto start = startBenchmark();
-            auto pos = DataAnalysis::findAll<double>(cData, 2021.0);
+            auto pos = DataAnalysis::find_all<double>(cData, 2021.0);
             auto stop = stopBenchmark();
 
             std::cout << "100 000 ROW DATABASE FIND ALL - DOUBLE" << std::endl;

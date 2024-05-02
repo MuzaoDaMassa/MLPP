@@ -14,13 +14,13 @@ int main1()
     auto cData = DataAnalysis::matrix_converter<float>(data);
     // Print data
     cout << "========================================" << endl;
-    //DataAnalysis::displayAll(data);
+    //DataAnalysis::display_all(data);
     cout << "========================================" << endl;
     vector<int> rows{0, 10, 20, 30, 40, 50, 60, 70, 80, 90};
-    //DataAnalysis::displayRows(data, rows);
+    //DataAnalysis::display_rows(data, rows);
     cout << "========================================" << endl;
     vector<int> cols{2, 4, 6, 8};
-    //DataAnalysis::displayColumns(data, cols);
+    //DataAnalysis::display_columns(data, cols);
     //vector<int> pos1 {100, 8};
     //auto el = find_by_pos(data, pos1);
 
@@ -37,13 +37,13 @@ int main1()
     // auto pos = find<string>(data, "2020-03-11");
 
     cout << "========================================" << endl;
-    DataAnalysis::displayRows(data, rows);
-    //DataAnalysis::displayColumns(data, cols);
+    DataAnalysis::display_rows(data, rows);
+    //DataAnalysis::display_columns(data, cols);
     // cout << el << endl;
     // cout << pos[0] << ", " << pos[1] << endl;
-    //DataAnalysis::displayAll(data);
-    DataAnalysis::displayHead(data, 20);
-    //DataAnalysis::displayBottom(data, 5);
+    //DataAnalysis::display_all(data);
+    DataAnalysis::display_head(data, 20);
+    //DataAnalysis::display_bottom(data, 5);
 
     return 0;
 }
@@ -54,19 +54,31 @@ int main2()
     auto data = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/hw_100.csv");
     auto cData = DataAnalysis::matrix_converter<double>(data);    
 
-    Mat2d<float> r = NumPP::rand<float>(20, 15, 20.0, 5.0);
-    Mat2d<double> T = NumPP::transpose(cData);
-    Mat2d<double> r1 = NumPP::dot(T, cData);
+    //auto r = NumPP::rand<float>(15, 15, 20.0, 5.0);
+    //auto r = NumPP::gen_square_matrix(4, 10);
+    //auto test = NumPP::get_center(r);
+    //Mat2d<double> T = NumPP::transpose(cData);
+    //Mat2d<double> r1 = NumPP::dot(T, cData);
 
-    DataAnalysis::displayAll(r);
+    Mat2d<int16_t> a {{-1,-1,-1}, {0,1,-1}, {0,1,1}};
+    Mat2d<int16_t> b {{0,0,0}, {0,156,155}, {0,153,154}};
+    Mat2d<int16_t>* aPtr = new Mat2d<int16_t>(a);
+    Mat2d<int16_t>* bPtr = new Mat2d<int16_t>(b);
+    auto r = NumPP::mat_mul_matching_elements(aPtr, bPtr);
+    cout << to_string(r) << endl;
+
+    //vector<u_int8_t> v {255, 255, 255};
+    //cout << to_string(NumPP::get_sum_of_vector<u_int8_t, u_int16_t>(v)) << endl;
+
+    //DataAnalysis::display_all(*r);
     std::cout << "-------------------------------------------------------------" << std::endl;
-    DataAnalysis::displayAll(r1);
+    //DataAnalysis::display_all(r1);
 
     return 0;
 }
 
 // Open CV Image testing
-int main()
+int main3()
 {
     cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
 	if (!imagePtr->data) { 
@@ -186,4 +198,43 @@ int main4()
 	cv::destroyAllWindows();
 
     return 0;	
+}
+
+// Mini tests for Neural Network unit
+int main()
+{
+    cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
+	if (!imagePtr->data) { 
+		std::cerr << "Error: No image data" << std::endl; 
+		return -1; 
+	}  
+
+    cv::Mat resizedImage;  
+    cv::resize(*imagePtr, resizedImage, cv::Size(420, 240));
+    cv::Mat* rImagePtr = new cv::Mat(resizedImage);
+
+    //cv::Mat grayImage;
+    //cv::cvtColor(*rImagePtr, grayImage, cv::COLOR_BGR2GRAY);
+    //cv::Mat* grayPtr = new cv::Mat(grayImage);
+
+    //auto nImagePtr = OpencvIntegration::convert_image(imagePtr);
+    auto matPtr = OpencvIntegration::get_sum_pixels(rImagePtr);
+
+    cout << (*matPtr)[4][99] << (*matPtr)[4][100] << (*matPtr)[4][101] << endl;
+    cout << (*matPtr)[5][99] << (*matPtr)[5][100] << (*matPtr)[5][101] << endl;
+    cout << (*matPtr)[6][99] << (*matPtr)[6][100] << (*matPtr)[6][101] << endl;
+
+    auto processedMat = NeuralNetworks::pre_process_input(matPtr, 3);
+    
+    //DataAnalysis::display_head(*matPtr, 2);
+    vector<int> pos {4, 99};
+    cout << DataAnalysis::find_by_pos(processedMat, pos) << endl;
+    //auto pos1 = DataAnalysis::find_all<int16_t>(processedMat, 348);
+    //DataAnalysis::display_all(pos1);
+    cout << "-------------------------------------------------------------" << std::endl;
+    //DataAnalysis::display_head(processedMat, 5);
+    //cout << processedMat.size() << endl;
+    //cout << processedMat[0].size() << endl;
+
+    return 0;
 }
