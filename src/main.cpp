@@ -49,7 +49,7 @@ int main1()
 }
 
 // Mini tests for NumPP unit
-int main2()
+int main()
 {
     auto data = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/hw_100.csv");
     auto cData = DataAnalysis::matrix_converter<double>(data);    
@@ -64,13 +64,14 @@ int main2()
     Mat2d<int16_t> b {{0,0,0}, {0,156,155}, {0,153,154}};
     Mat2d<int16_t>* aPtr = new Mat2d<int16_t>(a);
     Mat2d<int16_t>* bPtr = new Mat2d<int16_t>(b);
-    auto r = NumPP::mat_mul_matching_elements(aPtr, bPtr);
-    cout << to_string(r) << endl;
+    //auto r = NumPP::sum_mat_mul_matching_elements(aPtr, bPtr);
+    Mat2d<double> r = NumPP::scalar_mat_mul<int16_t, double>(aPtr, 2.0);
+    //cout << to_string(r) << endl;
 
     //vector<u_int8_t> v {255, 255, 255};
     //cout << to_string(NumPP::get_sum_of_vector<u_int8_t, u_int16_t>(v)) << endl;
 
-    //DataAnalysis::display_all(*r);
+    DataAnalysis::display_all(r);
     std::cout << "-------------------------------------------------------------" << std::endl;
     //DataAnalysis::display_all(r1);
 
@@ -201,7 +202,7 @@ int main4()
 }
 
 // Mini tests for Neural Network unit
-int main()
+int main5()
 {
     cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
 	if (!imagePtr->data) { 
@@ -220,18 +221,34 @@ int main()
     //auto nImagePtr = OpencvIntegration::convert_image(imagePtr);
     auto matPtr = OpencvIntegration::get_sum_pixels(rImagePtr);
 
-    cout << (*matPtr)[4][99] << (*matPtr)[4][100] << (*matPtr)[4][101] << endl;
-    cout << (*matPtr)[5][99] << (*matPtr)[5][100] << (*matPtr)[5][101] << endl;
-    cout << (*matPtr)[6][99] << (*matPtr)[6][100] << (*matPtr)[6][101] << endl;
+    //cout << (*matPtr)[4][99] << (*matPtr)[4][100] << (*matPtr)[4][101] << endl;
+    //cout << (*matPtr)[5][99] << (*matPtr)[5][100] << (*matPtr)[5][101] << endl;
+    //cout << (*matPtr)[6][99] << (*matPtr)[6][100] << (*matPtr)[6][101] << endl;
 
-    auto processedMat = NeuralNetworks::pre_process_input(matPtr, 3);
+    //auto processedMat = NeuralNetworks::pre_process_input(matPtr, 3);
+    //auto tanhMat = NumPP::tanh(processedMat);
+    //auto sumResult = NumPP::sum(tanhMat);
+    //auto powResult = NumPP::power(tanhMat);
+
+    /* for (auto &&el : sumResult)
+    {
+        cout << to_string(el) << endl;
+    } */
     
     //DataAnalysis::display_head(*matPtr, 2);
-    vector<int> pos {4, 99};
-    cout << DataAnalysis::find_by_pos(processedMat, pos) << endl;
+    //vector<int> pos {4, 99};
+    //cout << DataAnalysis::find_by_pos(processedMat, pos) << endl;
     //auto pos1 = DataAnalysis::find_all<int16_t>(processedMat, 348);
     //DataAnalysis::display_all(pos1);
+    //DataAnalysis::display_head(*tanhMat);
+    //DataAnalysis::display_all(pos1);
     cout << "-------------------------------------------------------------" << std::endl;
+    //DataAnalysis::display_all(powResult);
+    //DataAnalysis::display_bottom(*tanhMat);
+    cout << "-------------------------------------------------------------" << std::endl;
+    //auto pos1 = DataAnalysis::find_all(*tanhMat, (-1.0));
+    //cout << sumResult.size() << endl;
+    //DataAnalysis::display_all(pos1);
     //DataAnalysis::display_head(processedMat, 5);
     //cout << processedMat.size() << endl;
     //cout << processedMat[0].size() << endl;
