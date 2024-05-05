@@ -49,7 +49,7 @@ int main1()
 }
 
 // Mini tests for NumPP unit
-int main()
+int main2()
 {
     auto data = DataAnalysis::read_csv_file("/home/muzaodamassa/MLPP/tests/Datasets/hw_100.csv");
     auto cData = DataAnalysis::matrix_converter<double>(data);    
@@ -65,13 +65,13 @@ int main()
     Mat2d<int16_t>* aPtr = new Mat2d<int16_t>(a);
     Mat2d<int16_t>* bPtr = new Mat2d<int16_t>(b);
     //auto r = NumPP::sum_mat_mul_matching_elements(aPtr, bPtr);
-    Mat2d<double> r = NumPP::scalar_mat_mul<int16_t, double>(aPtr, 2.0);
+    //Mat2d<double> r = NumPP::scalar_mat_mul<int16_t, double>(aPtr, 2.0);
     //cout << to_string(r) << endl;
 
     //vector<u_int8_t> v {255, 255, 255};
     //cout << to_string(NumPP::get_sum_of_vector<u_int8_t, u_int16_t>(v)) << endl;
 
-    DataAnalysis::display_all(r);
+    //DataAnalysis::display_all(r);
     std::cout << "-------------------------------------------------------------" << std::endl;
     //DataAnalysis::display_all(r1);
 
@@ -202,9 +202,9 @@ int main4()
 }
 
 // Mini tests for Neural Network unit
-int main5()
+int main()
 {
-    cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
+    cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Faixa2.jpg"));
 	if (!imagePtr->data) { 
 		std::cerr << "Error: No image data" << std::endl; 
 		return -1; 
@@ -221,37 +221,59 @@ int main5()
     //auto nImagePtr = OpencvIntegration::convert_image(imagePtr);
     auto matPtr = OpencvIntegration::get_sum_pixels(rImagePtr);
 
-    //cout << (*matPtr)[4][99] << (*matPtr)[4][100] << (*matPtr)[4][101] << endl;
-    //cout << (*matPtr)[5][99] << (*matPtr)[5][100] << (*matPtr)[5][101] << endl;
-    //cout << (*matPtr)[6][99] << (*matPtr)[6][100] << (*matPtr)[6][101] << endl;
+    // Example usage of neural networ class
+    //Mat2d<double> x = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
+    Mat2d<double> x = DataAnalysis::matrix_converter<int16_t, double>(*matPtr);
+    Mat2d<double> y = NumPP::zeros<double>(240, 1);
 
-    //auto processedMat = NeuralNetworks::pre_process_input(matPtr, 3);
-    //auto tanhMat = NumPP::tanh(processedMat);
-    //auto sumResult = NumPP::sum(tanhMat);
-    //auto powResult = NumPP::power(tanhMat);
+    int center_y = x[0].size() /2;
+    double threshold = 600;
 
-    /* for (auto &&el : sumResult)
-    {
-        cout << to_string(el) << endl;
-    } */
-    
-    //DataAnalysis::display_head(*matPtr, 2);
-    //vector<int> pos {4, 99};
-    //cout << DataAnalysis::find_by_pos(processedMat, pos) << endl;
-    //auto pos1 = DataAnalysis::find_all<int16_t>(processedMat, 348);
-    //DataAnalysis::display_all(pos1);
-    //DataAnalysis::display_head(*tanhMat);
-    //DataAnalysis::display_all(pos1);
-    cout << "-------------------------------------------------------------" << std::endl;
-    //DataAnalysis::display_all(powResult);
-    //DataAnalysis::display_bottom(*tanhMat);
-    cout << "-------------------------------------------------------------" << std::endl;
-    //auto pos1 = DataAnalysis::find_all(*tanhMat, (-1.0));
-    //cout << sumResult.size() << endl;
-    //DataAnalysis::display_all(pos1);
-    //DataAnalysis::display_head(processedMat, 5);
-    //cout << processedMat.size() << endl;
-    //cout << processedMat[0].size() << endl;
+    for (size_t i = 0; i < x.size(); i++) {
+        for (size_t j = 0; j < x[i].size(); j++) {
+            if (j < center_y) {
+               if (x[i][j] >= threshold) {
+                y[i][0] = -1.0;
+               }
+            }
+            else {
+               if (x[i][j] >= threshold) {
+                y[i][0] = 1.0;
+               }
+            }
+        }
+    }
 
+    int input_size = x[0].size();
+    //int hidden_size1 = input_size/2;
+    //int hidden_size2 = input_size/4;
+
+    // Define neural network with specified architecture
+    NeuralNetwork model(input_size, 120, 60, 1);
+
+    // Train neural network with specified training data and hyperparameters
+    size_t epochs = 1100;
+    double learning_rate = 0.1;
+    for (size_t epoch = 0; epoch < epochs; epoch++) {
+        // Forward propagation
+        Mat2d<double> output = model.forward(x);
+
+        // Compute loss
+        double loss = 0.0;
+        for (size_t i = 0; i < output.size(); i++) {
+            loss += pow(output[i][0] - y[i][0], 2);
+        }
+
+        loss /= y.size();
+
+        // Print loss periodically
+        if (epoch % 100 == 0) {
+            cout << "Epoch " << epoch << ", Loss: " << loss << endl;
+        }
+
+        // Backward propagation
+        model.backward(x, y, learning_rate);
+    }
     return 0;
+
 }

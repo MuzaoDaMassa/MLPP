@@ -59,82 +59,78 @@ namespace MLPP
     public:
         // Method to transpose 2d matrix, [100, 50] -> [50, 100]
         template <typename T> 
-        static Mat2d<T>* transpose(const Mat2d<T>* to_transpose)
+        static Mat2d<T> transpose(const Mat2d<T>& to_transpose)
         {
             if (!to_transpose.empty()) {
                 // Get original matrix dimensions
-                size_t rows = to_transpose->size();
-                size_t cols = rows > 0 ? (*to_transpose)[0].size() : 0;
+                size_t rows = to_transpose.size();
+                size_t cols = rows > 0 ? to_transpose[0].size() : 0;
 
                 // Create new 2d matrix object with reshaped dimensions
-                Mat2d<T>* t = new Mat2d<T>(cols, std::vector<T>(rows));
+                Mat2d<T> t(cols, std::vector<T>(rows));
                 // Transpose the original matrix to reshape it
                 for (size_t i = 0; i < cols; i++) {              
                     for (size_t j = 0; j < rows; j++) {
-                        (*t)[i][j] = (*to_transpose)[j][i];
-                    }
-                    
+                        t[i][j] = to_transpose[j][i];
+                    }      
                 }
                 return t;
             }
             // Display error that informs data matrix is empty
             std::cerr << "Error: Matrix is empty" << std::endl;
-            return nullptr; // Return empty matrix
+            return Mat2d<T>(); // Return empty matrix
         }
         // Method that receives two 2d matrices and returns their dot product
         template <typename T> 
-        static Mat2d<T>* dot(const Mat2d<T>* a, const Mat2d<T>* b)
+        static Mat2d<T> dot(const Mat2d<T>& a, const Mat2d<T>& b)
         {       
-            if (!a->empty() || !b->empty()) {
-                if ((*a)[0].size() == b->size()) {
+            if (!a.empty() || !b.empty()) {
+                if (a[0].size() == b.size()) { 
                     // Create new 2d matrix to store result
-                    Mat2d<T>* result = new Mat2d<T>(a->size(), std::vector<T>((*b)[0].size())); 
-                    for (size_t a_row = 0; a_row < a->size(); a_row++) {
-                        std::vector<T>* nRow = new std::vector<T>(); // Create smart pointer to temporarily store row to be pushed to new matrix
-                        for (size_t b_col = 0; b_col < (*b)[a_row].size(); b_col++) {
-                            T* r = new T(); // Create smart pointer to store temporary calculation results
-                            for (size_t k = 0; k < b->size(); k++) {
-                                *r += (*a)[a_row][k] * (*b)[k][b_col];
-                            }           
-                            nRow->push_back(*r); // Push final value to new Row
-                            delete r; // Delete result smart pointer
+                    Mat2d<T> result(a.size(), std::vector<T>(b[0].size())); 
+                    for (size_t a_row = 0; a_row < a.size(); a_row++) {
+                        //std::vector<T> nRow(result[a_row].size());
+                        for (size_t b_col = 0; b_col < b[0].size(); b_col++) {
+                            T r = 0; // Create smart pointer to store temporary calculation results
+                            for (size_t k = 0; k < b.size(); k++) {
+                                r += a[a_row][k] * b[k][b_col];
+                            }      
+                            result[a_row][b_col] = r;
                         }
-                        result->push_back(*nRow); // Push final row to result matrix
-                        delete nRow; // Delete row smart pointer 
                     }
                     return result; // Return matrix with new values
                 }
                 // Display error that informs matrix a column size is different to matrix b row size
                 std::cerr << "Error: Incompatible shapes" << std::endl;
-                return nullptr; // Return empty matrix
+                return Mat2d<T>(); // Return empty matrix
             }
             // Display error that informs data matrix is empty
             std::cerr << "Error: Input empty" << std::endl;
-            return nullptr; // Return null pointer
+            return Mat2d<T>(); // Return empty matrix
         }
         
         // Method to multiply corresponding elements of 2 2d matrices
         // Matrices must be same size
         template <typename T> 
-        static Mat2d<T>* mat_mul_matching_elements(const Mat2d<T>* a, const Mat2d<T>* b)
+        static Mat2d<T> mat_mul_matching_elements(const Mat2d<T>& a, const Mat2d<T>& b)
         {
-            if (a->empty() || b->empty()) {
+            if (a.empty() || b.empty()) {
                 // Display error that informs data matrix is empty
                 std::cerr << "Error: Input empty" << std::endl;
-                return nullptr; // Return empty matrix
+                return Mat2d<T>(); // Return empty matrix
             }
 
-            if (a->size() != b->size() || (*a)[0].size() != (*b)[0].size()) {
+            if (a.size() != b.size() || a[0].size() != b[0].size()) {
                 // Display error that informs data matrix is empty
                 std::cerr << "Error: Incompatible shapes" << std::endl;
-                return nullptr; // Return empty matrix
+                return Mat2d<T>(); // Return empty matrix
             }
 
-            Mat2d<T> result = new Mat2d<T>(a->size(), std::vector<T>((*a)[0].size()));
+            Mat2d<T> result(a.size(), std::vector<T>(a[0].size()));
 
-            for (size_t row = 0; row < a->size(); row++) {
-                for (size_t col = 0; col < (*a)[row].size(); col++) {
-                    (*result)[row][col] = (*a)[row][col] * (*b)[row][col];
+            for (size_t row = 0; row < a.size(); row++) {
+                for (size_t col = 0; col < a[row].size(); col++) {
+                    result[row][col] = a[row][col] * b[row][col];
                 }
             }
 
@@ -165,19 +161,19 @@ namespace MLPP
 
         // Method that multiplies given number with all elements in matrix
         template <typename T>
-        static Mat2d<T>* scalar_mat_mul(const Mat2d<T>* matPtr, const T& scalar)
+        static Mat2d<T> scalar_mat_mul(const Mat2d<T>& mat, const T& scalar)
         {
-            if (matPtr->empty()) {
+            if (mat.empty()) {
                 // Display error that informs data matrix is empty
                 std::cerr << "Error: Input empty" << std::endl;
-                return nullptr; // Return empty matrix
+                return Mat2d<T>(); // Return empty matrix
             }
 
-            Mat2d<T>* result = new Mat2d<T>(*matPtr);
+            Mat2d<T> result(mat.size(), std::vector<T>(mat[0].size()));
 
-            for (auto &row : (*result)) {
-                for (auto &el : row) {
-                    el = (el * scalar);
+            for (size_t i = 0; i < result.size(); i++) {
+                for (size_t j = 0; j < result[i].size(); j++) {
+                    result[i][j] = mat[i][j] * scalar;
                 }
             }
 
@@ -186,19 +182,19 @@ namespace MLPP
         
         // Overload for different input and output type
         template <typename T, typename R>
-        static Mat2d<R> scalar_mat_mul(const Mat2d<T>* matPtr, const R& scalar)
+        static Mat2d<R> scalar_mat_mul(const Mat2d<T>& mat, const R& scalar)
         {
-            if (matPtr->empty()) {
+            if (mat.empty()) {
                 // Display error that informs data matrix is empty
                 std::cerr << "Error: Input empty" << std::endl;
                 return Mat2d<R>(); // Return empty matrix
             }
 
-            Mat2d<R> result(matPtr->size(), std::vector<R>((*matPtr)[0].size()));
+            Mat2d<R> result(mat.size(), std::vector<R>(mat[0].size()));
 
             for (size_t row = 0; row < result.size(); row++) {
                 for (size_t col = 0; col < result[row].size(); col++) {
-                    result[row][col] = static_cast<R>((*matPtr)[row][col]) * scalar;
+                    result[row][col] = static_cast<R>(mat[row][col]) * scalar;
                 }
             }
 
@@ -207,15 +203,15 @@ namespace MLPP
 
         // Method that subtracts every element in mat by given number
         template <typename T>
-        static Mat2d<T>* scalar_mat_sub(const Mat2d<T>* matPtr, const T& scalar)
+        static Mat2d<T> scalar_mat_sub(const Mat2d<T>& mat, const T& scalar)
         {
-            if (matPtr->empty()) {
+            if (mat.empty()) {
                 // Display error that informs data matrix is empty
                 std::cerr << "Error: Input empty" << std::endl;
-                return nullptr; // Return empty matrix
+                return Mat2d<T>(); // Return empty matrix
             }
 
-            Mat2d<T>* result = new Mat2d<T>((*matPtr));
+            Mat2d<T> result(mat.size(), std::vector<T>(mat[0].size()));
 
             for (auto &row : result) {
                 for (auto &el : row) {
@@ -228,17 +224,17 @@ namespace MLPP
         
         // Overload that subtracts given number by every element in matrix
         template <typename T>
-        static Mat2d<T>* scalar_mat_sub(const T& scalar, const Mat2d<T>* matPtr)
+        static Mat2d<T> scalar_mat_sub(const T& scalar, const Mat2d<T>& mat)
         {
-            if (matPtr->empty()) {
+            if (mat.empty()) {
                 // Display error that informs data matrix is empty
                 std::cerr << "Error: Input empty" << std::endl;
-                return nullptr; // Return empty matrix
+                return Mat2d<T>(); // Return empty matrix
             }
 
-            Mat2d<T>* result = new Mat2d<T>((*matPtr));
+            Mat2d<T> result(mat.size(), std::vector<T>(mat[0].size()));
 
-            for (auto &row : (*result)) {
+            for (auto &row : result) {
                 for (auto &el : row) {
                     el = (scalar - el);
                 }
@@ -249,45 +245,43 @@ namespace MLPP
 
         // Method that multiplies given number with all elements in vector
         template <typename T>
-        static std::vector<T>* scalar_vec_mul(const std::vector<T>* vec, const T& scalar)
+        static std::vector<T> scalar_vec_mul(const std::vector<T>& vec, const T& scalar)
         {
-            if (vec->empty()) {
+            if (vec.empty()) {
                 // Display error that informs data matrix is empty
                 std::cerr << "Error: Input empty" << std::endl;
-                return nullptr; // Return empty vector
+                return std::vector<T>(); // Return empty vector
             }
 
-            std::vector<T>* result = new std::vector<T>(vec->size());
-
-            for (auto &el : (*vec))
-            {
-                result->push_back(el * scalar);
+            std::vector<T> result(vec.size());
+            for (size_t i = 0; i < result.size(); i++) {
+                result[i] = vec[i] * scalar;
             }
-
+            
             return result;        
         }
 
         // Method to subtract two matrices
         template <typename T>
-        static Mat2d<T>* subtract(const Mat2d<T>* a, const Mat2d<T>* b)
+        static Mat2d<T> subtract(const Mat2d<T>& a, const Mat2d<T>& b)
         {
-            if (a->empty() || b->empty()) {
+            if (a.empty() || b.empty()) {
                 // Display error that informs data matrix is empty
                 std::cerr << "Error: Input empty" << std::endl;
-                return nullptr; // Return null pointer        
+                return Mat2d<T>(); // Return null pointer        
             }
 
-            if ((a->size() != b->size()) || ((*a)[0].size() != (*b)[0].size())) {
+            if ((a.size() != b.size()) || (a[0].size() != b[0].size())) {
                 // Display error that informs matrix a column size is different to matrix b row size
                 std::cerr << "Error: Incompatible shapes" << std::endl;
-                return nullptr; // Return null pointer
+                return Mat2d<T>(); // Return null pointer
             }
 
-            Mat2d<T>* result = new Mat2d<T>(a->size(), std::vector<T>((*a)[0].size()));
+            Mat2d<T> result(a.size(), std::vector<T>(a[0].size()));
 
-            for (size_t row = 0; row < result->size(); row++) {
-                for (size_t col = 0; col < (*result)[row].size(); col++) {
-                    (*result)[row][col] = (*a)[row][col] - (*b)[row][col];
+            for (size_t row = 0; row < result.size(); row++) {
+                for (size_t col = 0; col < result[row].size(); col++) {
+                    result[row][col] = a[row][col] - b[row][col];
                 }
             }
 
@@ -296,25 +290,25 @@ namespace MLPP
         
         // Overload to subtract two vectors
         template <typename T>
-        static std::vector<T>* subtract(const std::vector<T>* a, const std::vector<T>* b)
+        static std::vector<T> subtract(const std::vector<T>& a, const std::vector<T>& b)
         {
-            if (a->empty() || b->empty()) {
+            if (a.empty() || b.empty()) {
                 // Display error that informs data matrix is empty
                 std::cerr << "Error: Input empty" << std::endl;
-                return nullptr; // Return null pointer
+                return std::vector<T>(); // Return null pointer        
             }
 
-            if (a->size() != b->size()) {
+            if (a.size() != b.size()) {
                 // Display error that informs vectors are of different sizes
                 std::cerr << "Error: Incompatible shapes" << std::endl;
-                return nullptr; // Return null pointer
+                return std::vector<T>(); // Return null pointer
             }
 
-            std::vector<T>* result = new std::vector<T>(a->size());
+            std::vector<T> result(a.size());
 
-            for (size_t i = 0; i < result->size(); i++)
+            for (size_t i = 0; i < result.size(); i++)
             {
-                result->push_back((*a)[i] - (*b)[i]);
+                result[i] = a[i] - b[i];
             }
 
             return result;         
@@ -322,13 +316,13 @@ namespace MLPP
 
         // Method that apply tanh function to every element in 2d matrix
         template <typename T>
-        static Mat2d<double>* tanh(const Mat2d<T>* matPrt)
+        static Mat2d<double> tanh(const Mat2d<T>& mat)
         {
-            Mat2d<double>* tanhMat = new Mat2d<double>(matPrt->size(), std::vector<double>((*matPrt)[0].size()));
+            Mat2d<double> tanhMat(mat.size(), std::vector<double>(mat[0].size()));
 
-            for (size_t row = 0; row < tanhMat->size(); row++) {
-                for (size_t col = 0; col < (*tanhMat)[row].size(); col++) {
-                    (*tanhMat)[row][col] = std::tanh((*matPrt)[row][col]);
+            for (size_t row = 0; row < tanhMat.size(); row++) {
+                for (size_t col = 0; col < tanhMat[row].size(); col++) {
+                    tanhMat[row][col] = std::tanh(mat[row][col]);
                 }
             }
             return tanhMat;
@@ -336,10 +330,10 @@ namespace MLPP
 
         // Method that generates random 2d matrix 
         template <typename T>
-        static Mat2d<T>* rand(const size_t& rows, const size_t& cols, const double& mean = 0.0, const double& stddev = 1.0)
+        static Mat2d<T> rand(const size_t& rows, const size_t& cols, const double& mean = 0.0, const double& stddev = 1.0)
         {
             // Create new 2d matrix object with specified parameters to later return
-            Mat2d<T>* result = new Mat2d<T>(rows, std::vector<T>(cols));
+            Mat2d<T> result(rows, std::vector<T>(cols));
 
             // Initialize random generator - Normal Distribution, receives mean and standard deviation as paramaters
             std::random_device rd;
@@ -347,9 +341,9 @@ namespace MLPP
             std::normal_distribution<double> distribution(mean, stddev);
 
             // Fill matrix with random values
-            for (size_t rows = 0; rows < result->size(); rows++) {
-                for (size_t cols = 0; cols < (*result)[rows].size(); cols++) {
-                    (*result)[rows][cols] = static_cast<T>(distribution(generator));
+            for (size_t rows = 0; rows < result.size(); rows++) {
+                for (size_t cols = 0; cols < result[rows].size(); cols++) {
+                    result[rows][cols] = static_cast<T>(distribution(generator));
                 }
             }
 
@@ -357,11 +351,32 @@ namespace MLPP
             return result;
         }
 
-        // Method that generates pointer to vector of size N filled with 0
+        // Method that generates vector of size N filled with 0
         template <typename T>
         static std::vector<T> zeros(const int& size)
         {
             return std::vector<T>(size, 0);
+        }
+
+        // OVerload of zeros that generates 2d matrix of size R x C filled with 0
+        template <typename T>
+        static Mat2d<T> zeros(const size_t& rows, const size_t& cols)
+        {
+            return Mat2d<T>(rows, std::vector<T>(cols, 0));
+        }
+
+        // Method that generates vector of size N filled with 1
+        template <typename T>
+        static std::vector<T> ones(const int& size)
+        {
+            return std::vector<T>(size, 1);
+        }
+
+        // OVerload of zeros that generates 2d matrix of size R x C filled with 1
+        template <typename T>
+        static Mat2d<T> ones(const size_t& rows, const size_t& cols)
+        {
+            return Mat2d<T>(rows, std::vector<T>(cols, 1));
         }
 
         // Method that generates square 2d matrix
@@ -407,29 +422,29 @@ namespace MLPP
         // Method that collapses 2d matrix into vector with each element
         // being the sum of each row or each column from 2d matrix, 0 = rows, 1 = columns
         template <typename T> 
-        static std::vector<T>* sum(const Mat2d<T>* matPtr, const size_t& axis = 0)
+        static std::vector<T> sum(const Mat2d<T>& mat, const size_t& axis = 0)
         {
-            if (matPtr == nullptr) {
-                std::cerr << "Error: Matrix pointer is null" << std::endl;
-                return nullptr;
+            if (mat.empty()) {
+                std::cerr << "Error: Matrix is empty" << std::endl;
+                return std::vector<T>();
             }
 
             if (axis == 1) {
                 // Get sum of each column into vector
-                std::vector<T>* result = new std::vector<T>((*matPtr)[0].size()); // Create vector to store result
-                for (size_t row = 0; row < matPtr->size(); row++) {
-                    for (size_t col = 0; col < result->size(); col++) {
-                        (*result)[col] += (*matPtr)[row][col];
+                std::vector<T> result(mat[0].size()); // Create vector to store result
+                for (size_t row = 0; row < mat.size(); row++) {
+                    for (size_t col = 0; col < result.size(); col++) {
+                        result[col] += mat[row][col];
                     }
                 }
 
                 return result;
             }
 
-            std::vector<T>* result = new Mat2d<T>(matPtr->size()); // Create vector to store result
+            std::vector<T> result(mat.size()); // Create vector to store result
 
-            for (size_t i = 0; i < result->size(); i++) {
-                (*result)[i] = get_sum_of_vector<T>((*matPtr)[i]);
+            for (size_t i = 0; i < result.size(); i++) {
+                result[i] = get_sum_of_vector<T>(mat[i]);
             }
 
             return result;
@@ -456,18 +471,18 @@ namespace MLPP
 
         // Overload for 2d matrix
         template <typename T>
-        static Mat2d<double>* power(const Mat2d<T>* matPtr, const size_t& power = 2)
+        static Mat2d<double> power(const Mat2d<T>& mat, const size_t& power = 2)
         {
-            if (matPtr == nullptr) {
+            if (mat.empty()) {
                 std::cerr << "Error: Matrix pointer is null" << std::endl;
-                return nullptr; // Return empty matrix
+                return Mat2d<double>(); // Return empty matrix
             }
             
-            Mat2d<double>* results = new Mat2d<double>(matPtr->size(), std::vector<double>((*matPtr)[0].size()));
+            Mat2d<double> results(mat.size(), std::vector<double>(mat[0].size()));
 
-            for (size_t row = 0; row < results->size(); row++) {
-                for (size_t col = 0; col < (*results)[row].size(); col++) {
-                    (*results)[row][col] = std::pow((*matPtr)[row][col], power);
+            for (size_t row = 0; row < results.size(); row++) {
+                for (size_t col = 0; col < results[row].size(); col++) {
+                    results[row][col] = std::pow(mat[row][col], power);
                 }
             }
 
@@ -547,6 +562,7 @@ namespace MLPP
             std::cerr << "Error: Line provided is empty" << std::endl;
             return row;
         }
+        
         // Method to read CSV files into 2d string matrix
         static Mat2d<std::string> read_csv_file(const std::string& filePath)
         {
@@ -574,6 +590,7 @@ namespace MLPP
             // Return data in matrix
             return data;
         }
+        
         // Method to convert string to differnt data type, returns new 2d matrix with passed type
         template<typename T> 
         static Mat2d<T> matrix_converter(const Mat2d<std::string>& stringMatrix)
@@ -605,6 +622,27 @@ namespace MLPP
                 return convertedMatrix;
             }
         }
+        
+        // Converter overload that converts matrix other than string to different data type
+        template <typename T, typename R>
+        static Mat2d<R> matrix_converter(const Mat2d<T>& dataMatrix)
+        {
+            if (dataMatrix.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat2d<R>();
+            }
+
+            Mat2d<R> result(dataMatrix.size(), std::vector<R>(dataMatrix[0].size()));
+
+            for (size_t i = 0; i < result.size(); i++) {
+                for (size_t j = 0; j < result[i].size(); j++) {
+                    result[i][j] = static_cast<R>(dataMatrix[i][j]);
+                }
+            }
+
+            return result;
+        }
+
         // Method to format data matrix by removing rows and or columns for better data
         // analysis Template for removing single row or column
         template <typename T> 
@@ -644,6 +682,7 @@ namespace MLPP
             // Display error to inform data is empty
             std::cerr << "Error: Data Matrix is empty" << std::endl;
         }
+        
         // Overload to remove multiple row or columns
         // rocToRemove = rows or columns to remove, vector will hold all rows or columns to remove
         template <typename T> 
@@ -689,6 +728,7 @@ namespace MLPP
             // Display error to inform data is empty
             std::cerr << "Error: Data Matrix is empty" << std::endl;
         }
+        
         // Overload to remove single or multiple row and columns
         // racToRemove = rows and columns to remove, outside vector will hold all rows and inside vector all columns to remove
         template <typename T> 
@@ -709,6 +749,7 @@ namespace MLPP
             }
             std::cerr << "Error: Data is empty" << std::endl;
         }
+        
         // Overload to add single row or column
         template <typename T> 
         static void matrix_formatter(Mat2d<T>& dataMatrix, Formatter f, const int& indexToAdd, const std::vector<T>& dataToAdd)
@@ -743,6 +784,7 @@ namespace MLPP
             // Display error if no data was found
             std::cerr << "Error: Data Matrix is empty" << std::endl;
         }
+        
         // Overload to add multiple rows or columns
         template <typename T> 
         static void matrix_formatter(Mat2d<T>& dataMatrix, Formatter f, const std::vector<int>& indexesToAdd, const Mat2d<T>& dataToAdd)
@@ -791,6 +833,7 @@ namespace MLPP
             // Display error if no data was found
             std::cerr << "Error: Data Matrix is empty" << std::endl;
         }
+        
         // Overload to add single or multiple rows and columns 
         // Indexes to add matrix, first row will hold all row indexes, second will hold all column indexes                                                           
         template <typename T> 
@@ -815,6 +858,7 @@ namespace MLPP
             }
             std::cerr << "Error: Data is empty" << std::endl;
         }
+        
         // Method to search data matrix for first appearance of desired element, return first position found
         template <typename T> 
         static std::vector<int> find(const Mat2d<T>& dataMatrix, const T& desiredElement)
@@ -843,6 +887,7 @@ namespace MLPP
             std::cerr << "Error: Data Matrix is empty" << std::endl;
             return pos;
         }
+        
         // Method to search data matrix by position, return element at requqested position on 2d Matrix
         template <typename T> 
         static T find_by_pos(const Mat2d<T>& dataMatrix, std::vector<int>& pos)
@@ -857,6 +902,7 @@ namespace MLPP
             std::cerr << "Error: Data Matrix is empty" << std::endl;
             return element;
         }
+        
         // Method to search data matrix for all appearances of desired element, return
         // vector of positions Outside vecotor holds all rows indexes element was found,
         // and inside vector holds all columns indexes element was found
@@ -888,6 +934,7 @@ namespace MLPP
             std::cerr << "Error: Data Matrix is empty" << std::endl;
             return pos;
         }
+        
         // Method to display all elemenst of data matrix
         template <typename T> 
         static void display_all(const Mat2d<T>& dataMatrix)
@@ -904,6 +951,7 @@ namespace MLPP
             // Display error that informs data matrix is empty
             std::cerr << "Error: Data Matrix is empty" << std::endl;
         }
+        
         // Method to display all elements in given rows
         template <typename T> 
         static void display_rows(const Mat2d<T>& dataMatrix, const std::vector<int>& rowsToDisplay)
@@ -926,6 +974,7 @@ namespace MLPP
             // Display error that informs data matrix is empty
             std::cerr << "Error: Data Matrix is empty" << std::endl;
         }
+        
         // Method to display all elements in given columns
         template <typename T> 
         static void display_columns(const Mat2d<T>& dataMatrix, const std::vector<int>& colsToDisplay)
@@ -948,6 +997,7 @@ namespace MLPP
             // Display error that informs data matrix is empty
             std::cerr << "Error: Data Matrix is empty" << std::endl;
         }
+        
         // Method to display first five rows method, Display first 5 rows + display_head row
         template <typename T> 
         static void display_head(const Mat2d<T>& dataMatrix, int rowsToDisplay = 5)
@@ -970,6 +1020,7 @@ namespace MLPP
             // Display error that informs data matrix is empty
             std::cerr << "Error: Data Matrix is empty" << std::endl;
         }
+        
         // Mehtod to display last five colunms method, Display lastdisplayBfive rows
         template <typename T> 
         static void display_bottom(const Mat2d<T>& dataMatrix, int rowsToDisplay = 5)
@@ -1032,6 +1083,7 @@ namespace MLPP
     class NeuralNetwork
     {
     private:
+        /* 
         Mat2d<double>* m_a1; // Activation output for first hidden layer
         Mat2d<double>* m_a2; // Activation output for second hidden layer
         Mat2d<double>* m_a3; // Activation output for output layer
@@ -1040,13 +1092,25 @@ namespace MLPP
         Mat2d<double>* m_w3; // Weight matrix for the output layer
         std::vector<double>* m_b1; // Bias vector for the first hidden layer
         std::vector<double>* m_b2; // Bias vector for the second hidden layer
-        std::vector<double>* m_b3; // Bias vector for the output layer
+        std::vector<double>* m_b3; // Bias vector for the output layer 
+        */
+
+        Mat2d<double> m_a1; // Activation output for first hidden layer
+        Mat2d<double> m_a2; // Activation output for second hidden layer
+        Mat2d<double> m_a3; // Activation output for output layer
+        Mat2d<double> m_w1; // Weight matrix for the first hidden layer
+        Mat2d<double> m_w2; // Weight matrix for the scond hidden layer
+        Mat2d<double> m_w3; // Weight matrix for the output layer
+        std::vector<double> m_b1; // Bias vector for the first hidden layer
+        std::vector<double> m_b2; // Bias vector for the second hidden layer
+        std::vector<double> m_b3; // Bias vector for the output layer
 
         // Method to generate kernel matrix, which will be apllied in filter step
         template <typename T> 
         Mat2d<T>* gen_kernel(const int& kernel_size)
         {
-            return NumPP::rand<T>(kernel_size, kernel_size);
+            Mat2d<T>* p = new Mat2d<T>(NumPP::rand<T>(kernel_size, kernel_size));
+            return p;
         } 
 
         // Method to return block of data, i.e, NxN matrix from larger matrix to apply filter
@@ -1091,7 +1155,7 @@ namespace MLPP
             return fMat;
         }
     public:
-        NeuralNetwork(int& input_size, int& hidden_size1, int& hidden_size2, int& output_size) 
+        NeuralNetwork(int input_size, int hidden_size1, int hidden_size2, int output_size) 
         {
            // Initialize weights and biases randomly
            init_weights(input_size, hidden_size1, hidden_size2, output_size);
@@ -1106,33 +1170,34 @@ namespace MLPP
             m_w3 = NumPP::rand<double>(hidden_size2, output_size);
 
             // IUnitialize biases with zeros
-            m_b1 = new std::vector<double>(NumPP::zeros<double>(hidden_size1));
-            m_b2 = new std::vector<double>(NumPP::zeros<double>(hidden_size2));
-            m_b3 = new std::vector<double>(NumPP::zeros<double>(output_size));
+            m_b1 = NumPP::zeros<double>(hidden_size1);
+            m_b2 = NumPP::zeros<double>(hidden_size2);
+            m_b3 = NumPP::zeros<double>(output_size);
         }
 
         // Method to perform forward propagation and compute output
         template <typename T>
-        Mat2d<double>* forward(const Mat2d<T>* X)
-        {
+        Mat2d<double> forward(const Mat2d<T>& x)
+        { 
             // Compute output of first hidden layer
-            Mat2d<double>* z1 = NumPP::dot<double>(X, m_w1); // Linear transformation for the first hidden layer
+            Mat2d<double> z1 = NumPP::dot<double>(x, m_w1); // Linear transformation for the first hidden layer
             m_a1 = NumPP::tanh(z1); // Activation output for the first hidden layer
 
             // Compute output of second hidden layer
-            Mat2d<double>* z2 = NumPP::dot<double>(m_a1, m_w2); // Linear transformation for the second hidden layer
+            Mat2d<double> z2 = NumPP::dot<double>(m_a1, m_w2); // Linear transformation for the second hidden layer
             m_a2 = NumPP::tanh(z2); // Activation output for the second hidden layer
 
             // Compute outpute layer
-            Mat2d<double>* z3 = NumPP::dot<double>(m_a2, m_w3); // Linear transformation for the output layer
+            Mat2d<double> z3 = NumPP::dot<double>(m_a2, m_w3); // Linear transformation for the output layer
             m_a3 = NumPP::tanh(z3); // Activation output for the output layer
 
             return m_a3; // Return output result
         }
 
         // Method to uptade weights and biases
-        void update_parameters(const Mat2d<double>* dw1, const Mat2d<double>* dw2, const Mat2d<double>* dw3,
-                                const std::vector<double>* db1, const std::vector<double>* db2, const std::vector<double>* db3, 
+        // !!! - Need to fix errors here
+        void update_parameters(const Mat2d<double>& dw1, const Mat2d<double>& dw2, const Mat2d<double>& dw3,
+                                const std::vector<double>& db1, const std::vector<double>& db2, const std::vector<double>& db3, 
                                 const double& learning_rate)
         {
             m_w1 = NumPP::subtract(m_w1, NumPP::scalar_mat_mul(dw1, learning_rate)); // Update weights of the first hidden layer
@@ -1140,42 +1205,44 @@ namespace MLPP
             m_w2 = NumPP::subtract(m_w2, NumPP::scalar_mat_mul(dw2, learning_rate)); // Update weights of the first hidden layer
             m_b2 = NumPP::subtract(m_b2, NumPP::scalar_vec_mul(db2, learning_rate)); // Update biases of the first hidden layer
             m_w3 = NumPP::subtract(m_w3, NumPP::scalar_mat_mul(dw3, learning_rate)); // Update weights of the first hidden layer
-            m_b3 = NumPP::subtract(m_b3, NumPP::scalar_vec_mul(db3, learning_rate)); // Update biases of the first hidden layer
+            m_b3 = NumPP::subtract(m_b3, NumPP::scalar_vec_mul(db3, learning_rate)); // Update biases of the first hidden layer 
         }
 
         // Method to perform backward propagation and update weights
         template <typename T>
-        void backward(const Mat2d<T>* xPtr, const Mat2d<T>* yPtr, const double& learning_rate)
+        void backward(const Mat2d<T>& x, const Mat2d<T>& y, const double& learning_rate)
         {
-            int n = xPtr->size(); // Number of training example
-            // Gradient of the loss with respect to the output layer
-            Mat2d<double>* dz3 = NumPP::subtract(m_a3, yPtr);
+            double n = x.size(); // Number of training example
+            // Gradient of the loss with respect to the output layer;
+            Mat2d<double> dz3 = NumPP::subtract(m_a3, y);
             // Gradient of the loss with respect to the weights of the output layer
-            Mat2d<double>* dw3 = NumPP::scalar_mat_mul(NumPP::dot<double>(NumPP::transpose(m_a2), dz3), (double)(1/n)); 
+            Mat2d<double> dw3 = NumPP::scalar_mat_mul(NumPP::dot<double>(NumPP::transpose(m_a2), dz3), (1/n)); 
             // Gradient of the loss with respect to the biases of the output layer
-            std::vector<double>* db3 = NumPP::scalar_vec_mul(NumPP::sum(dz3, 0), (double)(1/n)); 
+            std::vector<double> db3 = NumPP::scalar_vec_mul(NumPP::sum(dz3, 1), (1/n));
 
             // Create pointers to hold sub operations
-            Mat2d<double>* a = NumPP::dot(dz3, NumPP::transpose(m_w3));
-            Mat2d<double>* b = NumPP::scalar_mat_sub<double>(1.0, NumPP::power(m_a2, 2));
+            Mat2d<double> a = NumPP::dot(dz3, NumPP::transpose(m_w3));
+            Mat2d<double> b = NumPP::scalar_mat_sub<double>(1.0, NumPP::power(m_a2, 2));
             // Gradient of the loss with respect to the output of the second hidden layer 
-            Mat2d<double>* dz2 = NumPP::mat_mul_matching_elements(a, b); 
+            Mat2d<double> dz2 = NumPP::mat_mul_matching_elements(a, b); 
             // Gradient of the loss with respect to the weights of the second hidden layer
-            Mat2d<double>* dw2 = NumPP::scalar_mat_mul(NumPP::dot(NumPP::transpose(m_a1), dz2), (double)(1/n));  
+            Mat2d<double> dw2 = NumPP::scalar_mat_mul(NumPP::dot(NumPP::transpose(m_a1), dz2), (1/n));
             // Gradient of the loss with respect to the biases of the second hidden layer
-            std::vector<double>* db2 = NumPP::scalar_vec_mul(NumPP::sum(dz2, 0), (double)(1/n));
+            std::vector<double> db2 = NumPP::scalar_vec_mul(NumPP::sum(dz2, 1), (1/n));
+
 
             // Override previously created pointers with newly appointed ones
             a = NumPP::dot(dz2, NumPP::transpose(m_w2));
             b = NumPP::scalar_mat_sub<double>(1.0, NumPP::power(m_a1, 2));
             // Gradient of the loss with respect to the output of the first hidden layer
-            Mat2d<double>* dz1 = NumPP::mat_mul_matching_elements(a, b);
+            Mat2d<double> dz1 = NumPP::mat_mul_matching_elements(a, b);
             // Gradient of the loss with respect to the weights of the first hidden layer
-            Mat2d<double>* dw1 = NumPP::scalar_mat_mul(NumPP::dot(NumPP::transpose(xPtr), dz1), (double)(1/n));
+            Mat2d<double> dw1 = NumPP::scalar_mat_mul(NumPP::dot(NumPP::transpose(x), dz1), (1/n));
             // Gradient of the loss with respect to the biases of the first hidden layer
-            std::vector<double>* db1 = NumPP::scalar_vec_mul(NumPP::sum(dz1, 0), (double)(1/n));
+            std::vector<double> db1 = NumPP::scalar_vec_mul(NumPP::sum(dz1, 1), (1/n));
 
             update_parameters(dw1, dw2, dw3, db1, db2, db3, learning_rate); // Update weights and biases
+            
         }
 
         // Further methods to be implemented
