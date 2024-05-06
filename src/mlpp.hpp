@@ -80,6 +80,7 @@ namespace MLPP
             std::cerr << "Error: Matrix is empty" << std::endl;
             return Mat2d<T>(); // Return empty matrix
         }
+        
         // Method that receives two 2d matrices and returns their dot product
         template <typename T> 
         static Mat2d<T> dot(const Mat2d<T>& a, const Mat2d<T>& b)
@@ -109,6 +110,27 @@ namespace MLPP
             return Mat2d<T>(); // Return empty matrix
         }
         
+        // Method that adds vector to each row of matrix 
+        template <typename T>
+        static Mat2d<T> add(const Mat2d<T>& mat, const std::vector<T>& vec)
+        {
+            if (mat.empty() || vec.empty()) {
+                // Display error that informs data matrix is empty
+                std::cerr << "Error: Input empty" << std::endl;
+                return Mat2d<T>(); // Return empty matrix
+            }
+
+            Mat2d<T> result(mat.size(), std::vector<T>(vec.size()));
+
+            for (size_t i = 0; i < result.size(); i++) {
+                for (size_t j = 0; j < result[i].size(); j++) {
+                    result[i][j] = mat[i][j] + vec[j];
+                }
+            }
+
+            return result;
+        }
+
         // Method to multiply corresponding elements of 2 2d matrices
         // Matrices must be same size
         template <typename T> 
@@ -431,10 +453,10 @@ namespace MLPP
 
             if (axis == 1) {
                 // Get sum of each column into vector
-                std::vector<T> result(mat[0].size()); // Create vector to store result
-                for (size_t row = 0; row < mat.size(); row++) {
-                    for (size_t col = 0; col < result.size(); col++) {
-                        result[col] += mat[row][col];
+                std::vector<T> result(mat[0].size(), 0); // Create vector to store result
+                for (size_t i = 0; i < result.size(); i++) {
+                    for (size_t j = 0; j < mat.size(); j++) {
+                        result[i] += mat[j][i];
                     }
                 }
 
@@ -509,6 +531,81 @@ namespace MLPP
         static int get_center(const std::vector<T>* vecPtr)
         {
             return vecPtr->size()/2;
+        }
+
+        // Method that finds and store maximun value in 2d matrix
+        template <typename T>
+        static T find_max_value(const Mat2d<T>& mat)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input empty" << std::endl;
+                return 0;
+            }
+
+            T result = 0;
+
+            for (size_t i = 0; i < mat.size(); i++) {
+                T max = *std::max_element(mat[i].begin(), mat[i].begin());
+                if (max >= result) {
+                    result = max;
+                }
+            }
+
+            return result;
+        }
+
+        // Overload that finds max value in vector
+        template <typename T>
+        static T find_max_value(const std::vector<T>& vec)
+        {
+            if (vec.empty()) {
+                std::cerr << "Error: Input empty" << std::endl;
+                return 0;
+            }
+
+            return static_cast<T>(*std::max_element(vec.begin(), vec.end()));
+        }
+
+        // Method that finds and store maximun value in 2d matrix
+        template <typename T>
+        static T find_min_value(const Mat2d<T>& mat)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input empty" << std::endl;
+                return 0;
+            }
+
+            T result = 0;
+
+            for (size_t i = 0; i < mat.size(); i++) {
+                T min = *std::min_element(mat[i].begin(), mat[i].begin());
+                if (min <= result) {
+                    result = min;
+                }
+            }
+
+            return result;
+        }
+
+        // Overload that finds max value in vector
+        template <typename T>
+        static T find_min_value(const std::vector<T>& vec)
+        {
+            if (vec.empty()) {
+                std::cerr << "Error: Input empty" << std::endl;
+                return 0;
+            }
+
+            return static_cast<T>(*std::min_element(vec.begin(), vec.end()));
+        }
+        
+        // Method that returns rows and columns size of 2d matrix
+        template <typename T>
+        static std::pair<int, int> get_shape(const Mat2d<T>& mat)
+        {
+            int rows = mat.size();
+            int cols = (rows > 0) ? mat[0].size() : 0;
+            return std::make_pair(rows, cols);
         }
 
         // Further methods to be implemented
@@ -1101,9 +1198,9 @@ namespace MLPP
         Mat2d<double> m_w1; // Weight matrix for the first hidden layer
         Mat2d<double> m_w2; // Weight matrix for the scond hidden layer
         Mat2d<double> m_w3; // Weight matrix for the output layer
-        std::vector<double> m_b1; // Bias vector for the first hidden layer
-        std::vector<double> m_b2; // Bias vector for the second hidden layer
-        std::vector<double> m_b3; // Bias vector for the output layer
+        Mat2d<double> m_b1; // Bias vector for the first hidden layer
+        Mat2d<double> m_b2; // Bias vector for the second hidden layer
+        Mat2d<double> m_b3; // Bias vector for the output layer
 
         // Method to generate kernel matrix, which will be apllied in filter step
         template <typename T> 
@@ -1170,9 +1267,9 @@ namespace MLPP
             m_w3 = NumPP::rand<double>(hidden_size2, output_size);
 
             // IUnitialize biases with zeros
-            m_b1 = NumPP::zeros<double>(hidden_size1);
-            m_b2 = NumPP::zeros<double>(hidden_size2);
-            m_b3 = NumPP::zeros<double>(output_size);
+            m_b1 = NumPP::zeros<double>(1, hidden_size1);
+            m_b2 = NumPP::zeros<double>(1, hidden_size2);
+            m_b3 = NumPP::zeros<double>(1, output_size);
         }
 
         // Method to perform forward propagation and compute output
@@ -1180,32 +1277,31 @@ namespace MLPP
         Mat2d<double> forward(const Mat2d<T>& x)
         { 
             // Compute output of first hidden layer
-            Mat2d<double> z1 = NumPP::dot<double>(x, m_w1); // Linear transformation for the first hidden layer
+            Mat2d<double> z1 = NumPP::add(NumPP::dot<double>(x, m_w1), m_b1[0]); // Linear transformation for the first hidden layer
             m_a1 = NumPP::tanh(z1); // Activation output for the first hidden layer
 
             // Compute output of second hidden layer
-            Mat2d<double> z2 = NumPP::dot<double>(m_a1, m_w2); // Linear transformation for the second hidden layer
+            Mat2d<double> z2 = NumPP::add(NumPP::dot<double>(m_a1, m_w2), m_b2[0]); // Linear transformation for the second hidden layer
             m_a2 = NumPP::tanh(z2); // Activation output for the second hidden layer
 
             // Compute outpute layer
-            Mat2d<double> z3 = NumPP::dot<double>(m_a2, m_w3); // Linear transformation for the output layer
+            Mat2d<double> z3 = NumPP::add(NumPP::dot<double>(m_a2, m_w3), m_b3[0]); // Linear transformation for the output layer
             m_a3 = NumPP::tanh(z3); // Activation output for the output layer
 
             return m_a3; // Return output result
         }
 
         // Method to uptade weights and biases
-        // !!! - Need to fix errors here
         void update_parameters(const Mat2d<double>& dw1, const Mat2d<double>& dw2, const Mat2d<double>& dw3,
-                                const std::vector<double>& db1, const std::vector<double>& db2, const std::vector<double>& db3, 
+                                const Mat2d<double>& db1, const Mat2d<double>& db2, const Mat2d<double>& db3, 
                                 const double& learning_rate)
         {
             m_w1 = NumPP::subtract(m_w1, NumPP::scalar_mat_mul(dw1, learning_rate)); // Update weights of the first hidden layer
-            m_b1 = NumPP::subtract(m_b1, NumPP::scalar_vec_mul(db1, learning_rate)); // Update biases of the first hidden layer
+            m_b1 = NumPP::subtract(m_b1, NumPP::scalar_mat_mul(db1, learning_rate)); // Update biases of the first hidden layer
             m_w2 = NumPP::subtract(m_w2, NumPP::scalar_mat_mul(dw2, learning_rate)); // Update weights of the first hidden layer
-            m_b2 = NumPP::subtract(m_b2, NumPP::scalar_vec_mul(db2, learning_rate)); // Update biases of the first hidden layer
+            m_b2 = NumPP::subtract(m_b2, NumPP::scalar_mat_mul(db2, learning_rate)); // Update biases of the first hidden layer
             m_w3 = NumPP::subtract(m_w3, NumPP::scalar_mat_mul(dw3, learning_rate)); // Update weights of the first hidden layer
-            m_b3 = NumPP::subtract(m_b3, NumPP::scalar_vec_mul(db3, learning_rate)); // Update biases of the first hidden layer 
+            m_b3 = NumPP::subtract(m_b3, NumPP::scalar_mat_mul(db3, learning_rate)); // Update biases of the first hidden layer 
         }
 
         // Method to perform backward propagation and update weights
@@ -1218,9 +1314,10 @@ namespace MLPP
             // Gradient of the loss with respect to the weights of the output layer
             Mat2d<double> dw3 = NumPP::scalar_mat_mul(NumPP::dot<double>(NumPP::transpose(m_a2), dz3), (1/n)); 
             // Gradient of the loss with respect to the biases of the output layer
-            std::vector<double> db3 = NumPP::scalar_vec_mul(NumPP::sum(dz3, 1), (1/n));
+            Mat2d<double> db3(1, std::vector<double>(dz3[0].size()));
+            db3[0] = NumPP::scalar_vec_mul(NumPP::sum(dz3, 1), (1/n));
 
-            // Create pointers to hold sub operations
+            // Create variables to hold sub operations
             Mat2d<double> a = NumPP::dot(dz3, NumPP::transpose(m_w3));
             Mat2d<double> b = NumPP::scalar_mat_sub<double>(1.0, NumPP::power(m_a2, 2));
             // Gradient of the loss with respect to the output of the second hidden layer 
@@ -1228,8 +1325,8 @@ namespace MLPP
             // Gradient of the loss with respect to the weights of the second hidden layer
             Mat2d<double> dw2 = NumPP::scalar_mat_mul(NumPP::dot(NumPP::transpose(m_a1), dz2), (1/n));
             // Gradient of the loss with respect to the biases of the second hidden layer
-            std::vector<double> db2 = NumPP::scalar_vec_mul(NumPP::sum(dz2, 1), (1/n));
-
+            Mat2d<double> db2(1, std::vector<double>(dz2[0].size()));
+            db2[0] = NumPP::scalar_vec_mul(NumPP::sum(dz2, 1), (1/n));
 
             // Override previously created pointers with newly appointed ones
             a = NumPP::dot(dz2, NumPP::transpose(m_w2));
@@ -1239,7 +1336,8 @@ namespace MLPP
             // Gradient of the loss with respect to the weights of the first hidden layer
             Mat2d<double> dw1 = NumPP::scalar_mat_mul(NumPP::dot(NumPP::transpose(x), dz1), (1/n));
             // Gradient of the loss with respect to the biases of the first hidden layer
-            std::vector<double> db1 = NumPP::scalar_vec_mul(NumPP::sum(dz1, 1), (1/n));
+            Mat2d<double> db1(1, std::vector<double>(dz1[0].size()));
+            db1[0] = NumPP::scalar_vec_mul(NumPP::sum(dz1, 1), (1/n));
 
             update_parameters(dw1, dw2, dw3, db1, db2, db3, learning_rate); // Update weights and biases
             
@@ -1321,7 +1419,7 @@ namespace MLPP
         }
         // Further methods to be implemented
     };
-    // Further classes to be implemented
     
+    // Further classes to be implemented
 }
 

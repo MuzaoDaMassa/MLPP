@@ -204,7 +204,7 @@ int main4()
 // Mini tests for Neural Network unit
 int main()
 {
-    cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Faixa2.jpg"));
+    cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista99.jpg"));
 	if (!imagePtr->data) { 
 		std::cerr << "Error: No image data" << std::endl; 
 		return -1; 
@@ -222,42 +222,45 @@ int main()
     auto matPtr = OpencvIntegration::get_sum_pixels(rImagePtr);
 
     // Example usage of neural networ class
-    //Mat2d<double> x = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
-    Mat2d<double> x = DataAnalysis::matrix_converter<int16_t, double>(*matPtr);
-    Mat2d<double> y = NumPP::zeros<double>(240, 1);
-
+    Mat2d<double> x = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
+    //Mat2d<double> x = DataAnalysis::matrix_converter<int16_t, double>(*matPtr);
+    //Mat2d<double> y = NumPP::zeros<double>(240, 1);
+    Mat2d<double> y = {{0}, {0}, {0}, {1}};
+   
+    /* 
     int center_y = x[0].size() /2;
     double threshold = 600;
 
     for (size_t i = 0; i < x.size(); i++) {
         for (size_t j = 0; j < x[i].size(); j++) {
             if (j < center_y) {
-               if (x[i][j] >= threshold) {
-                y[i][0] = -1.0;
-               }
-            }
-            else {
-               if (x[i][j] >= threshold) {
-                y[i][0] = 1.0;
-               }
+                if (x[i][j] >= threshold) {
+                    y[i][0] -= 1.0;
+                }
+            } else {
+                if (x[i][j] >= threshold) {
+                    y[i][0] += 1.0;
+                }
             }
         }
-    }
-
-    int input_size = x[0].size();
+    } */
+    
+    //y = NumPP::tanh(y); 
+    //int input_size = x[0].size();
     //int hidden_size1 = input_size/2;
     //int hidden_size2 = input_size/4;
 
     // Define neural network with specified architecture
-    NeuralNetwork model(input_size, 120, 60, 1);
+    NeuralNetwork model(2, 3, 3, 1);
+    double learning_rate = 0.1;
 
     // Train neural network with specified training data and hyperparameters
-    size_t epochs = 1100;
-    double learning_rate = 0.1;
+    size_t epochs = 1000;
+    
     for (size_t epoch = 0; epoch < epochs; epoch++) {
         // Forward propagation
         Mat2d<double> output = model.forward(x);
-
+        //cout << output.size() << ", " << output[0].size() << endl;
         // Compute loss
         double loss = 0.0;
         for (size_t i = 0; i < output.size(); i++) {
@@ -274,6 +277,7 @@ int main()
         // Backward propagation
         model.backward(x, y, learning_rate);
     }
+
     return 0;
 
 }
