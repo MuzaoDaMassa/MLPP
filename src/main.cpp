@@ -204,7 +204,7 @@ int main4()
 // Mini tests for Neural Network unit
 int main()
 {
-    cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista99.jpg"));
+    cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Exterior.jpeg"));
 	if (!imagePtr->data) { 
 		std::cerr << "Error: No image data" << std::endl; 
 		return -1; 
@@ -219,33 +219,25 @@ int main()
     cv::Mat* grayPtr = new cv::Mat(grayImage);
 
     cv::namedWindow("Original Image", cv::WINDOW_AUTOSIZE);
-    cv::imshow("Original Image", *rImagePtr);
+    cv::imshow("Original Image", *grayPtr);
     cv::waitKey(0);
 
-    /*     
-    cv::Vec3b pixel = rImagePtr->at<cv::Vec3b>(0,1);
-    cv::Vec3b pixel1 = rImagePtr->at<cv::Vec3b>(0,2);
-    cv::Vec3b pixel2 = rImagePtr->at<cv::Vec3b>(0,3);
-    std::cout << to_string(pixel[0]) << "," << to_string(pixel1[0]) << "," << to_string(pixel2[0]) << std::endl;
-    pixel = rImagePtr->at<cv::Vec3b>(1,1);
-    pixel1 = rImagePtr->at<cv::Vec3b>(1,2);
-    pixel2 = rImagePtr->at<cv::Vec3b>(1,3);
-    std::cout << to_string(pixel[0]) << "," << to_string(pixel1[0]) << "," << to_string(pixel2[0]) << std::endl;
-    pixel = rImagePtr->at<cv::Vec3b>(2,1);
-    pixel1 = rImagePtr->at<cv::Vec3b>(2,2);
-    pixel2 = rImagePtr->at<cv::Vec3b>(2,3);
-    std::cout << to_string(pixel[0]) << "," << to_string(pixel1[0]) << "," << to_string(pixel2[0]) << std::endl;
-    std::cout << "----------------------------" << std::endl; 
-    */
+    Mat2d<int8_t> filter_1{{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}};
+    Mat2d<int8_t> filter_2{{-1, -1, -1}, {0, 0, 0}, {1, 1, 1}};
+    Mat2d<int8_t> filter_3{{-1, -2, -1}, {0, 0, 0}, {1, 2, 1}};
 
-    //auto nImagePtr = OpencvIntegration::convert_gray_image(grayPtr);
-    auto nImagePtr = OpencvIntegration::convert_color_image(rImagePtr);
-    auto fImage = ComputerVision::conv_2d<int16_t, u_int8_t>(*nImagePtr, 3);
+    auto nImagePtr = OpencvIntegration::convert_gray_image(grayPtr);
+    //auto nImagePtr = OpencvIntegration::convert_color_image(rImagePtr);
+    //auto fImage = ComputerVision::conv_2d<int16_t, u_int8_t>(*nImagePtr, filter_1, 3);
+    auto fImage = ComputerVision::conv_2d<u_int8_t, u_int8_t>(*nImagePtr, filter_1, SAME, 3);
     //auto rImage = NumPP::tanh(fImage);
-    //auto rImage = ComputerVision::relu(fImage);
+    auto rImage = ComputerVision::relu(fImage);
     //auto cv2Image = OpencvIntegration::get_open_cv_color_mat<u_int8_t>(nImagePtr);
     //auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(nImagePtr);
-    auto cv2Image = OpencvIntegration::get_open_cv_color_mat<int16_t>(&fImage);
+    //auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&fImage);
+    auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&rImage);
+    //auto cv2Image = OpencvIntegration::get_open_cv_color_mat<int16_t>(&fImage);
+    //auto cv2Image = OpencvIntegration::get_open_cv_color_mat<u_int8_t>(&fImage);
     //auto cv2Image = OpencvIntegration::get_open_cv_color_mat<int16_t>(&rImage);
 
     cv::namedWindow("Convolution Result Image", cv::WINDOW_AUTOSIZE);
@@ -253,31 +245,37 @@ int main()
     cv::waitKey(0);
 
     //auto pImage = ComputerVision::max_pooling(fImage);
-    //auto pImage = ComputerVision::max_pooling(rImage);
+    auto pImage = ComputerVision::max_pooling(rImage);
+    auto cv2Image_2 = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&pImage);
     //auto cv2Image_2 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&pImage);
 
-    //cv::namedWindow("Pooling Result Image", cv::WINDOW_AUTOSIZE);
-    //cv::imshow("Pooling Result Image", cv2Image_2);
-    //cv::waitKey(0);
+    cv::namedWindow("Pooling Result Image", cv::WINDOW_AUTOSIZE);
+    cv::imshow("Pooling Result Image", cv2Image_2);
+    cv::waitKey(0);
 
-    /* auto fImage_2 = ComputerVision::conv_2d<int16_t, int16_t>(pImage, 3);
+    auto fImage_2 = ComputerVision::conv_2d<u_int8_t, u_int8_t>(*nImagePtr, filter_3, SAME, 3);
+    //auto fImage_2 = ComputerVision::conv_2d<int16_t, int16_t>(pImage, filter_3, 3);
     //auto rImage_2 = NumPP::tanh(fImage_2);
-    //auto rImage_2 = ComputerVision::relu(fImage_2);
-    auto cv2Image_3 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&fImage_2);
+    auto rImage_2 = ComputerVision::relu(fImage_2);
+    //auto cv2Image_3 = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&fImage_2);
+    auto cv2Image_3 = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&rImage_2);
+    //auto cv2Image_3 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&fImage_2);
     //auto cv2Image_3 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&rImage_2);
 
     cv::namedWindow("Convolution Result Image 2", cv::WINDOW_AUTOSIZE);
     cv::imshow("Convolution Result Image 2", cv2Image_3);
     cv::waitKey(0);
     
-    auto pImage_2 = ComputerVision::max_pooling(fImage_2);
-    //auto pImage_2 = ComputerVision::max_pooling(rImage_2);
-    auto cv2Image_4 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&pImage_2);
+    //auto pImage_2 = ComputerVision::max_pooling(fImage_2);
+    auto pImage_2 = ComputerVision::max_pooling(rImage_2);
+    auto cv2Image_4 = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&pImage_2);
+    //auto cv2Image_4 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&pImage_2);
 
     cv::namedWindow("Pooling Result Image 2", cv::WINDOW_AUTOSIZE);
     cv::imshow("Pooling Result Image 2", cv2Image_4);
     cv::waitKey(0);
     
+    /* 
     auto fImage_3 = ComputerVision::conv_2d<int16_t, int16_t>(pImage_2, 3);
     //auto rImage_3 = NumPP::tanh(fImage_3);
     //auto rImage_3 = ComputerVision::relu(fImage_3);

@@ -43,15 +43,27 @@ SOFTWARE.
 
 namespace MLPP 
 {
-    // Declaring 2d Matrix template, a "new" data type called Mat2d, which will
-    // create 2d Matrix based on parameter type
-    // Outside vector stores row data, inside vector store columns
+    // Declaring 2d Matrix template, which is a vector that holds other vectors
+    // Ex: Mat2d[0] = vector stored in at index 0, Mat2d[0][0] = single value stored at index (0,0)
+    // Essentially Mat2d[x][y] will return value stored in row x, column y
     template <typename T> using Mat2d = std::vector<std::vector<T>>;
-    // Declare 3d matrix template where each element is a vector
+    // Declare 3d matrix template which is a vector that holds 2d matrices
+    // Ex: Mat3d[0] = 2d matrix stored at index 0, Mat3d[0][0] = vector stored at index 0 in stored 2d matrix,
+    // Mat3d[0][0][0] = single value stored at index (0,0,0)
+    // Essentially Mat3d[x][y][z] will return value stored in row x, column y, depth z
     template <typename T> using Mat3d = std::vector<Mat2d<T>>;  
+    // Declare 4d matrix template where each element is a 3d matrix
+    // Ex: Mat4d[0] = 3d matrix stored at index 0, Mat4d[0][0] = 2d matrix stored at index (0,0),
+    // Mat4d[0][0][0] = vector stored at index (0,0,0), Mat4d[0][0][0][0] = single value stored at index (0,0,0,0)
+    // Essentially Mat4d[a][x][y][z] = will return values stored in 3d matrix a, in row x, column y, depth z
+    template <typename T> using Mat4d = std::vector<Mat3d<T>>; 
 
     // Formatter utility enum to help with method overload
     enum Formatter { ROW, COLUMN, ROWANDCOLUMN };
+    // Activation functions enum for neural networks
+    enum Activation { RELU, TANH, SIGMOID, SOFTMAX };
+    // Padding enum for convolution layers
+    enum Padding { SAME, VALID };
 
     // Class that contains all methods that are needed for numeric computation
     class NumPP
@@ -1232,7 +1244,7 @@ namespace MLPP
     private:
         // Method that returns 2d matrix block taken from 3d matrix
         template <typename T>
-        static Mat2d<T> get_2d_block_from_mat(const Mat3d<T>& mat, const int& block_size, std::pair<size_t, size_t>& output_loc,
+        static Mat2d<T> get_2d_block_from_mat(const Mat3d<T>& mat, const int& block_size, const size_t& offset, std::pair<size_t, size_t>& output_loc,
                                         const size_t& depth)
         {
             if (mat.empty()) {
@@ -1243,28 +1255,17 @@ namespace MLPP
             Mat2d<T> b_mat(block_size, std::vector<T>(block_size)); // Create block mat variable to store result
 
             for (size_t i = 0; i < b_mat.size(); i++) {
-                for (size_t j = 0; j < b_mat[i].size(); j++) {
-                    b_mat[i][j] = mat[output_loc.first+i][output_loc.second+j][depth];
+                for (size_t j = 0; j < b_mat[i].size(); j++) {   
+                    std::pair<size_t, size_t> og_mat_loc = {output_loc.first+i, output_loc.second+j};
+                    if (og_mat_loc.first < mat.size() - offset && og_mat_loc.second < mat[i].size() - offset) {
+                        b_mat[i][j] = mat[og_mat_loc.first][og_mat_loc.second][depth];
+                    }
                 }
             }
 
             return b_mat;
         }
 
-        // Method that generate channels vector based on image channels
-        static std::vector<size_t> gen_channels_vector(const int& channels)
-        {
-            if (channels == 3) {
-                std::vector<size_t> {0, 1, 2};
-                return std::vector<size_t> {0, 1, 2};
-            }
-            if (channels == 2) {
-                return std::vector<size_t> {0, 1};
-            }
-            return std::vector<size_t> {0};
-            
-        }
-        
     public:
         // Method to convert 3d matrix into 2d matrix, where each element
         // Will be a sum of R, G and B values
@@ -1336,52 +1337,54 @@ namespace MLPP
         }
 
         // Method that applies filter(kernel) to 3d matrix, will be used in Convolutional layer for neural network applications
+        // !!! Need to figure out how to make it work while maintaining original mat dimensions !!!
         template <typename T, typename R>
-        static Mat3d<T> conv_2d(const Mat3d<R>& mat, const int& kernel_size = 3, const int& num_of_filters = 1)
+        static Mat3d<T> conv_2d(const Mat3d<R>& mat, const Mat2d<int8_t>& kernel_mat, Padding padding, const int& kernel_size = 3)
         {
             if (mat.empty()) {
                 std::cerr << "Error: Input is empty" << std::endl;
                 return Mat3d<T>();
             }
             
+            size_t offset; // Create variable to store offset, determines output size
+
+            if (padding == SAME) {
+                offset = 0;
+            }
+            else {
+                offset = kernel_size - 1;
+            }
+
             // Create filtered matrix variable to store and return result
-            Mat3d<T> filtered_Mat(mat.size()-(kernel_size-1), Mat2d<T>(mat[0].size()-(kernel_size-1), std::vector<T>(1))); 
+            Mat3d<T> feature_map(mat.size()-offset, Mat2d<T>(mat[0].size()-offset, std::vector<T>(1))); 
             std::pair<size_t, size_t> output_location; // Create pair to store output(filtered matrix) current location
             int channels = mat[0][0].size(); // Get depth of original image
-            std::vector<size_t> vec_channels = gen_channels_vector(channels); // Create vector to store how many channels image has
-            std::vector<T> filtered_pixel(channels); // Create vector to store blue, green and red filtered values, 0 = Blue, 1 = Green, 2 = Red
-            //Mat2d<int8_t> b_filter = NumPP::rand<int8_t>(kernel_size, kernel_size, -2, 2); // Create kernel matrix for blue values
-            //Mat2d<int8_t> g_filter = NumPP::rand<int8_t>(kernel_size, kernel_size, -2, 2); // Create kernel matrix for green values
-            //Mat2d<int8_t> r_filter = NumPP::rand<int8_t>(kernel_size, kernel_size, -2, 2); // Create kernel matrix for red values
-            Mat2d<int8_t> filter_1 {{-1,0,1}, {-2,0,2}, {-1,0,1}};
-            Mat2d<int8_t> filter_2 {{-1,-1,-1}, {0,0,0}, {1,1,1}};
-            Mat2d<int8_t> filter_3 {{-1,-2,-1}, {0,0,0}, {1,2,1}};
-            
+            std::vector<T> filtered_pixel(channels); // Create vector to store convolution iteration result    
 
             // Loop through filtered mat and fill elements with sum of every channel in input
-            for (size_t i = 0; i < filtered_Mat.size(); i++) {
-                for (size_t j = 0; j < filtered_Mat[i].size(); j++) {
+            for (size_t i = 0; i < feature_map.size(); i++) {
+                for (size_t j = 0; j < feature_map[i].size(); j++) {
                     output_location = {i, j};
-                    for (size_t k = 0; k < vec_channels.size(); k++) { 
-                        Mat2d<R> block_mat = get_2d_block_from_mat(mat, kernel_size, output_location, vec_channels[k]);
+                    for (size_t k = 0; k < channels; k++) { 
+                        Mat2d<R> block_mat = get_2d_block_from_mat(mat, kernel_size, offset, output_location, k);
                         if (k == 0) {
                             // Blue channel
-                            filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, filter_1);
+                            filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, kernel_mat);
                         }
                         else if (k == 1) {
                             // Green channel
-                            filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, filter_2);
+                            filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, kernel_mat);
                         }
                         else {
                             // Red channel
-                            filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, filter_3);
+                            filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, kernel_mat);
                         }
                     }
-                    filtered_Mat[i][j][0] = NumPP::get_sum_of_vector<T>(filtered_pixel) + 1; // Get sum of all channel and add bias, currently fixed to +1
+                    feature_map[i][j][0] = NumPP::get_sum_of_vector<T>(filtered_pixel) + 1; // Get sum of all channel and add bias, currently fixed to +1
                 }
             }
 
-            return filtered_Mat;
+            return feature_map;
         }
 
         // Method that applies Rectified Linear Unit to 3d matrix
@@ -1421,7 +1424,7 @@ namespace MLPP
             for (size_t i = 0; i < pool_mat.size(); i++) {
                 og_mat_loc.second = 0;
                 for (size_t j = 0; j < pool_mat[i].size(); j++) {
-                    Mat2d<T> block_mat = get_2d_block_from_mat(mat, size, og_mat_loc, 0);
+                    Mat2d<T> block_mat = get_2d_block_from_mat(mat, size, 0, og_mat_loc, 0);
                     pool_mat[i][j][0] = NumPP::find_max_value(block_mat);
                     og_mat_loc.second += stride;
                 }
