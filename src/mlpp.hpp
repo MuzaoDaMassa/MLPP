@@ -177,8 +177,28 @@ namespace MLPP
                 }
             }
 
-            return r;
-            
+            return r; 
+        } 
+        
+        // Overload that receives matrices of differente types and returns specified type
+        template <typename R, typename A, typename B> 
+        static R sum_mat_mul_matching_elements(const Mat2d<A>& a, const Mat2d<B>& b)
+        {
+            if (a.empty() || b.empty()) {
+                // Display error that informs data matrix is empty
+                std::cerr << "Error: Input empty" << std::endl;
+                return 0; // Return 0
+            }
+
+            R r = 0; // Create variable to store results
+            // Iterate through every element in a, and multiply by matching elemnt in b
+            for (size_t i = 0; i < a.size(); i++) {
+                for (size_t j = 0; j < a[i].size(); j++) {
+                    r += static_cast<R>(a[i][j] * b[i][j]);
+                }
+            }
+
+            return r; 
         } 
 
         // Method that multiplies given number with all elements in matrix
@@ -338,17 +358,55 @@ namespace MLPP
 
         // Method that apply tanh function to every element in 2d matrix
         template <typename T>
-        static Mat2d<double> tanh(const Mat2d<T>& mat)
+        static Mat2d<T> tanh(const Mat2d<T>& mat)
         {
-            Mat2d<double> tanhMat(mat.size(), std::vector<double>(mat[0].size()));
+            if (mat.empty()) {
+                // Display error that informs data matrix is empty
+                std::cerr << "Error: Input empty" << std::endl;
+                return Mat2d<T>(); // Return null pointer        
+            }
 
-            for (size_t row = 0; row < tanhMat.size(); row++) {
-                for (size_t col = 0; col < tanhMat[row].size(); col++) {
-                    tanhMat[row][col] = std::tanh(mat[row][col]);
+            Mat2d<T> tanhMat(mat.size(), std::vector<T>(mat[0].size()));
+
+            for (size_t i = 0; i < tanhMat.size(); i++) {
+                for (size_t j = 0; j < tanhMat[i].size(); j++) {
+                    tanhMat[i][j] = static_cast<T>(std::tanh(mat[i][j]));
                 }
             }
             return tanhMat;
         }  
+
+        // Overload of tanh method to deal with 3d matrices
+        template <typename T>
+        static Mat3d<T> tanh(const Mat3d<T>& mat)
+        {
+            if (mat.empty()) {
+                // Display error that informs data matrix is empty
+                std::cerr << "Error: Input empty" << std::endl;
+                return Mat3d<T>(); // Return null pointer        
+            }
+
+            Mat3d<T> tanhMat(mat.size(), Mat2d<T>(mat[0].size(), std::vector<T>(mat[0][0].size())));
+
+            for (size_t i = 0; i < tanhMat.size(); i++) {
+                for (size_t j = 0; j < tanhMat[i].size(); j++) {
+                    for (size_t k = 0; k < tanhMat[i][j].size(); k++) {
+                        tanhMat[i][j][k] = static_cast<T>(std::tanh(mat[i][j][k]));
+                    }
+                }
+            }
+            return tanhMat;
+        }
+
+        // Method that applies Rectified Linear Unit function to value
+        template <typename T>
+        static T relu(const T& value)
+        {
+            if (value <= 0) {
+                return 0;
+            }
+            return value;
+        }
 
         // Method that generates random 2d matrix 
         template <typename T>
@@ -370,6 +428,28 @@ namespace MLPP
             }
 
             // Return random 2d matrix
+            return result;
+        }
+
+        // Overload for method with uniform distribution
+        template <typename T>
+        static Mat2d<T> rand(const size_t& rows, const size_t& cols, const int& min, const int& max)
+        {
+            // Create new 2d matrix object with specified parameters to later return
+            Mat2d<T> result(rows, std::vector<T>(cols));
+
+            // Initialize random generator - Uniform distribution, generate integer values between set interval
+            std::random_device rd;
+            std::mt19937 generator(rd());
+            std::uniform_int_distribution<int> distribution(min, max);
+
+            // Fill matrix with random values
+            for (size_t rows = 0; rows < result.size(); rows++) {
+                for (size_t cols = 0; cols < result[rows].size(); cols++) {
+                    result[rows][cols] = static_cast<T>(distribution(generator));
+                }
+            }
+
             return result;
         }
 
@@ -1149,6 +1229,42 @@ namespace MLPP
     // Required for computer vision
     class ComputerVision
     {
+    private:
+        // Method that returns 2d matrix block taken from 3d matrix
+        template <typename T>
+        static Mat2d<T> get_2d_block_from_mat(const Mat3d<T>& mat, const int& block_size, std::pair<size_t, size_t>& output_loc,
+                                        const size_t& depth)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input empty" << std::endl;
+                return Mat2d<T>();
+            }
+
+            Mat2d<T> b_mat(block_size, std::vector<T>(block_size)); // Create block mat variable to store result
+
+            for (size_t i = 0; i < b_mat.size(); i++) {
+                for (size_t j = 0; j < b_mat[i].size(); j++) {
+                    b_mat[i][j] = mat[output_loc.first+i][output_loc.second+j][depth];
+                }
+            }
+
+            return b_mat;
+        }
+
+        // Method that generate channels vector based on image channels
+        static std::vector<size_t> gen_channels_vector(const int& channels)
+        {
+            if (channels == 3) {
+                std::vector<size_t> {0, 1, 2};
+                return std::vector<size_t> {0, 1, 2};
+            }
+            if (channels == 2) {
+                return std::vector<size_t> {0, 1};
+            }
+            return std::vector<size_t> {0};
+            
+        }
+        
     public:
         // Method to convert 3d matrix into 2d matrix, where each element
         // Will be a sum of R, G and B values
@@ -1174,24 +1290,152 @@ namespace MLPP
             return mat2dPtr;
         }
 
+        // Overload to receive double 3d matrix
+        static Mat2d<double>* get_sum_all_pixels(const Mat3d<double>* mat3dPtr)
+        {
+            if (mat3dPtr == nullptr) {
+                // Display error that informs data matrix is empty
+                std::cerr << "Error: 3d matrix pointer is null" << std::endl;
+                return nullptr; // Return nullptr if image data is empty
+            }
+
+            // Create a new Mat2d pointer and allocate memory for it
+            Mat2d<double>* mat2dPtr = new Mat2d<double>(mat3dPtr->size(), std::vector<double>((*mat3dPtr)[0].size()));
+
+            for (size_t i = 0; i < mat2dPtr->size(); i++) {
+                for (size_t j = 0; j < (*mat2dPtr)[i].size(); j++) {
+                    auto v = (*mat3dPtr)[i][j];
+                    double e = NumPP::get_sum_of_vector(v);
+                    (*mat2dPtr)[i][j] = e;
+                }
+            }
+
+            return mat2dPtr;
+        }
+       
+        // Method that normalize pixel values to interval [0,1]
+        template <typename T>
+        static Mat3d<T> normalize_pixels(const Mat3d<u_int8_t>* matPtr)
+        {
+            if (matPtr == nullptr) {
+                std::cerr << "Error: Input is null" << std::endl;
+                return Mat3d<T>();
+            }
+
+            Mat3d<T> nMat(matPtr->size(), Mat2d<T>((*matPtr)[0].size(), std::vector<T>(3)));
+
+            for (size_t i = 0; i < matPtr->size(); i++) {
+                for (size_t j = 0; j < (*matPtr)[i].size(); j++) {
+                    for (size_t k = 0; k < (*matPtr)[i][j].size(); k++) {
+                        nMat[i][j][k] = static_cast<T>((*matPtr)[i][j][k]) / 255.0;
+                    }
+                }
+            }
+
+            return nMat;
+        }
+
+        // Method that applies filter(kernel) to 3d matrix, will be used in Convolutional layer for neural network applications
+        template <typename T, typename R>
+        static Mat3d<T> conv_2d(const Mat3d<R>& mat, const int& kernel_size = 3, const int& num_of_filters = 1)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat3d<T>();
+            }
+            
+            // Create filtered matrix variable to store and return result
+            Mat3d<T> filtered_Mat(mat.size()-(kernel_size-1), Mat2d<T>(mat[0].size()-(kernel_size-1), std::vector<T>(1))); 
+            std::pair<size_t, size_t> output_location; // Create pair to store output(filtered matrix) current location
+            int channels = mat[0][0].size(); // Get depth of original image
+            std::vector<size_t> vec_channels = gen_channels_vector(channels); // Create vector to store how many channels image has
+            std::vector<T> filtered_pixel(channels); // Create vector to store blue, green and red filtered values, 0 = Blue, 1 = Green, 2 = Red
+            //Mat2d<int8_t> b_filter = NumPP::rand<int8_t>(kernel_size, kernel_size, -2, 2); // Create kernel matrix for blue values
+            //Mat2d<int8_t> g_filter = NumPP::rand<int8_t>(kernel_size, kernel_size, -2, 2); // Create kernel matrix for green values
+            //Mat2d<int8_t> r_filter = NumPP::rand<int8_t>(kernel_size, kernel_size, -2, 2); // Create kernel matrix for red values
+            Mat2d<int8_t> filter_1 {{-1,0,1}, {-2,0,2}, {-1,0,1}};
+            Mat2d<int8_t> filter_2 {{-1,-1,-1}, {0,0,0}, {1,1,1}};
+            Mat2d<int8_t> filter_3 {{-1,-2,-1}, {0,0,0}, {1,2,1}};
+            
+
+            // Loop through filtered mat and fill elements with sum of every channel in input
+            for (size_t i = 0; i < filtered_Mat.size(); i++) {
+                for (size_t j = 0; j < filtered_Mat[i].size(); j++) {
+                    output_location = {i, j};
+                    for (size_t k = 0; k < vec_channels.size(); k++) { 
+                        Mat2d<R> block_mat = get_2d_block_from_mat(mat, kernel_size, output_location, vec_channels[k]);
+                        if (k == 0) {
+                            // Blue channel
+                            filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, filter_1);
+                        }
+                        else if (k == 1) {
+                            // Green channel
+                            filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, filter_2);
+                        }
+                        else {
+                            // Red channel
+                            filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, filter_3);
+                        }
+                    }
+                    filtered_Mat[i][j][0] = NumPP::get_sum_of_vector<T>(filtered_pixel) + 1; // Get sum of all channel and add bias, currently fixed to +1
+                }
+            }
+
+            return filtered_Mat;
+        }
+
+        // Method that applies Rectified Linear Unit to 3d matrix
+        template <typename T>
+        static Mat3d<T> relu(const Mat3d<T>& mat)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat3d<T>();
+            }
+
+            Mat3d<T> relu_mat(mat.size(), Mat2d<T>(mat[0].size(), std::vector<T>(mat[0][0].size())));
+
+            for (size_t i = 0; i < relu_mat.size(); i++) {
+                for (size_t j = 0; j < relu_mat[i].size(); j++) {
+                    for (size_t k = 0; k < relu_mat[i][j].size(); k++) {
+                        relu_mat[i][j][k] = NumPP::relu(mat[i][j][k]);
+                    }
+                }
+            }
+
+            return relu_mat;
+        }
+
+        // Method that iterates through 3d matrix and reduces it by selecting max value for each iteration
+        template <typename T>
+        static Mat3d<T> max_pooling(const Mat3d<T>& mat, const int& size = 2, const int& stride = 2)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat3d<T>();
+            }
+
+            Mat3d<T> pool_mat(mat.size()/2, Mat2d<T>(mat[0].size()/2, std::vector<T>(1)));
+            std::pair<size_t, size_t> og_mat_loc = {0, 0};
+
+            for (size_t i = 0; i < pool_mat.size(); i++) {
+                og_mat_loc.second = 0;
+                for (size_t j = 0; j < pool_mat[i].size(); j++) {
+                    Mat2d<T> block_mat = get_2d_block_from_mat(mat, size, og_mat_loc, 0);
+                    pool_mat[i][j][0] = NumPP::find_max_value(block_mat);
+                    og_mat_loc.second += stride;
+                }
+                og_mat_loc.first += stride;
+            }
+
+            return pool_mat;
+        } 
     };
 
     // Class that contains all methods that are needed for Neural Network usage
     class NeuralNetwork
     {
     private:
-        /* 
-        Mat2d<double>* m_a1; // Activation output for first hidden layer
-        Mat2d<double>* m_a2; // Activation output for second hidden layer
-        Mat2d<double>* m_a3; // Activation output for output layer
-        Mat2d<double>* m_w1; // Weight matrix for the first hidden layer
-        Mat2d<double>* m_w2; // Weight matrix for the scond hidden layer
-        Mat2d<double>* m_w3; // Weight matrix for the output layer
-        std::vector<double>* m_b1; // Bias vector for the first hidden layer
-        std::vector<double>* m_b2; // Bias vector for the second hidden layer
-        std::vector<double>* m_b3; // Bias vector for the output layer 
-        */
-
         Mat2d<double> m_a1; // Activation output for first hidden layer
         Mat2d<double> m_a2; // Activation output for second hidden layer
         Mat2d<double> m_a3; // Activation output for output layer
@@ -1365,9 +1609,9 @@ namespace MLPP
 
         }
     public:
-        // Get open cv image matrix and convert it to our 3d matrix data structure
+        // Get open cv color image matrix and convert it to our 3d matrix data structure
         // Default format is Blue, Green, Red
-        static Mat3d<u_int8_t>* convert_image(const cv::Mat* image) 
+        static Mat3d<u_int8_t>* convert_color_image(const cv::Mat* image) 
         {
             if (!image->data) {
                 // Display error that informs data matrix is empty
@@ -1376,7 +1620,7 @@ namespace MLPP
             }
 
             // Create a new Mat3d pointer and allocate memory for it
-            Mat3d<u_int8_t> *nMatPtr = new Mat3d<u_int8_t>(image->rows, Mat2d<uint8_t>(image->cols, std::vector<uint8_t>(3)));
+            Mat3d<u_int8_t>* nMatPtr = new Mat3d<u_int8_t>(image->rows, Mat2d<uint8_t>(image->cols, std::vector<uint8_t>(3)));
             // Create pointer to hold open cv pixel values
             cv::Vec3b* cvPixelPtr = new cv::Vec3b(3);
             // Iterate over each pixel in the given image
@@ -1386,6 +1630,34 @@ namespace MLPP
                     (*cvPixelPtr) = image->at<cv::Vec3b>(i, j);
                     // Access the corresponding pixel in the new matrix and copy pixel values
                     (*nMatPtr)[i][j] = {(*cvPixelPtr)[0], (*cvPixelPtr)[1], (*cvPixelPtr)[2]};
+                }
+            }
+
+            delete cvPixelPtr;
+            // Return the pointer to the final matrix
+            return nMatPtr;
+        }
+
+        // Overload of convert_image method for gray images
+        static Mat3d<u_int8_t>* convert_gray_image(const cv::Mat* image) 
+        {
+            if (!image->data) {
+                // Display error that informs data matrix is empty
+                std::cerr << "Error: Image data empty" << std::endl;
+                return nullptr; // Return nullptr if image data is empty
+            }
+
+            // Create a new Mat3d pointer and allocate memory for it
+            Mat3d<u_int8_t>* nMatPtr = new Mat3d<u_int8_t>(image->rows, Mat2d<uint8_t>(image->cols, std::vector<uint8_t>(1)));
+            // Create pointer to hold open cv pixel values
+            uchar* cvPixelPtr = new uchar(1);
+            // Iterate over each pixel in the given image
+            for (int i = 0; i < image->rows; i++) {
+                for (int j = 0; j < image->cols; j++) {
+                    // Assing current pixel data to pointer
+                    (*cvPixelPtr) = image->at<uchar>(i, j);
+                    // Access the corresponding pixel in the new matrix and copy pixel values
+                    (*nMatPtr)[i][j][0] = static_cast<u_int8_t>((*cvPixelPtr));
                 }
             }
 
@@ -1417,6 +1689,90 @@ namespace MLPP
 
             return mat2dPtr;
         }
+        
+        // Method to convert 3d matrix into open cv color matrix
+        template <typename T>
+        static cv::Mat get_open_cv_color_mat(const Mat3d<T>* matPtr)
+        {
+            if (matPtr == nullptr) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return cv::Mat();
+            }
+
+            // Get dimensions of the input matrix
+            int rows = static_cast<int>(matPtr->size());
+            int cols = static_cast<int>((*matPtr)[0].size());
+            int depth = static_cast<int>((*matPtr)[0][0].size());
+
+            // Determine OpenCV data type based on the template parameter T
+            int cvDataType;
+            if (std::is_same<T, uchar>::value) {
+                cvDataType = CV_8UC(depth);
+                cv::Mat opencv_mat(rows, cols, cvDataType);
+
+                for (int d = 0; d < depth; d++) {
+                    for (int i = 0; i < rows; i++) {
+                        for (int j = 0; j < cols; j++) {
+                            if (depth == 1) {
+                                opencv_mat.at<cv::Vec<T, 1>>(i, j)[d] = static_cast<float>((*matPtr)[i][j][d]);
+                            } else if (depth == 2) {
+                                opencv_mat.at<cv::Vec<T, 2>>(i, j)[d] = static_cast<T>((*matPtr)[i][j][d]);
+                            } else {
+                                opencv_mat.at<cv::Vec<T, 3>>(i, j)[d] = static_cast<T>((*matPtr)[i][j][d]);
+                            }
+                        }
+                    }
+                }
+
+                return opencv_mat;
+            } 
+            else {
+                cvDataType = CV_32FC(depth);
+
+                cv::Mat opencv_mat(rows, cols, cvDataType);
+
+                for (int d = 0; d < depth; d++) {
+                    for (int i = 0; i < rows; i++) {
+                        for (int j = 0; j < cols; j++) {
+                            if (depth == 1) {
+                                opencv_mat.at<cv::Vec<float, 1>>(i, j)[d] = static_cast<float>((*matPtr)[i][j][d]);
+                            } else if (depth == 2) {
+                                opencv_mat.at<cv::Vec<float, 2>>(i, j)[d] = static_cast<float>((*matPtr)[i][j][d]);
+                            } else {
+                                opencv_mat.at<cv::Vec<float, 3>>(i, j)[d] = static_cast<float>((*matPtr)[i][j][d]);
+                            }
+                        }
+                    }
+                }
+
+                return opencv_mat;
+            } 
+        }
+
+        // Method to convert 3d matrix into open cv matrix
+        template <typename T>
+        static cv::Mat get_open_cv_gray_mat(const Mat3d<T>* matPtr)
+        {
+            if (matPtr == nullptr) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return cv::Mat();
+            }
+
+            // Get dimensions of the input matrix
+            int rows = matPtr->size();
+            int cols = (*matPtr)[0].size();
+
+            cv::Mat opencv_mat(rows, cols, CV_8UC1);
+
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < cols; j++) {
+                    opencv_mat.at<uchar>(i, j) = static_cast<uchar>((*matPtr)[i][j][0]);
+                }
+            }
+
+            return opencv_mat;
+        }
+        
         // Further methods to be implemented
     };
     
