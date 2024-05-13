@@ -26,6 +26,7 @@ SOFTWARE.
 
 #pragma region Includes
 #include <iostream>
+#include <filesystem>
 #include <algorithm>
 #include <fstream>
 #include <sstream>
@@ -41,8 +42,11 @@ SOFTWARE.
 #include <opencv2/videoio.hpp>
 #pragma endregion
 
+namespace fs = std::filesystem;
+
 namespace MLPP 
 {
+#pragma region New Data Structure declarations
     // Declaring 2d Matrix template, which is a vector that holds other vectors
     // Ex: Mat2d[0] = vector stored in at index 0, Mat2d[0][0] = single value stored at index (0,0)
     // Essentially Mat2d[x][y] will return value stored in row x, column y
@@ -57,42 +61,42 @@ namespace MLPP
     // Mat4d[0][0][0] = vector stored at index (0,0,0), Mat4d[0][0][0][0] = single value stored at index (0,0,0,0)
     // Essentially Mat4d[a][x][y][z] = will return values stored in 3d matrix a, in row x, column y, depth z
     template <typename T> using Mat4d = std::vector<Mat3d<T>>; 
+#pragma endregion
 
+#pragma region Enums
     // Formatter utility enum to help with method overload
     enum Formatter { ROW, COLUMN, ROWANDCOLUMN };
     // Activation functions enum for neural networks
     enum Activation { RELU, TANH, SIGMOID, SOFTMAX };
     // Padding enum for convolution layers
     enum Padding { SAME, VALID };
+#pragma endregion
 
     // Class that contains all methods that are needed for numeric computation
     class NumPP
     {
     public:
-        // Method to transpose 2d matrix, [100, 50] -> [50, 100]
-        template <typename T> 
-        static Mat2d<T> transpose(const Mat2d<T>& to_transpose)
+        // Method that adds vector to each row of matrix 
+        template <typename T>
+        static Mat2d<T> add(const Mat2d<T>& mat, const std::vector<T>& vec)
         {
-            if (!to_transpose.empty()) {
-                // Get original matrix dimensions
-                size_t rows = to_transpose.size();
-                size_t cols = rows > 0 ? to_transpose[0].size() : 0;
-
-                // Create new 2d matrix object with reshaped dimensions
-                Mat2d<T> t(cols, std::vector<T>(rows));
-                // Transpose the original matrix to reshape it
-                for (size_t i = 0; i < cols; i++) {              
-                    for (size_t j = 0; j < rows; j++) {
-                        t[i][j] = to_transpose[j][i];
-                    }      
-                }
-                return t;
+            if (mat.empty() || vec.empty()) {
+                // Display error that informs data matrix is empty
+                std::cerr << "Error: Input empty" << std::endl;
+                return Mat2d<T>(); // Return empty matrix
             }
-            // Display error that informs data matrix is empty
-            std::cerr << "Error: Matrix is empty" << std::endl;
-            return Mat2d<T>(); // Return empty matrix
+
+            Mat2d<T> result(mat.size(), std::vector<T>(vec.size()));
+
+            for (size_t i = 0; i < result.size(); i++) {
+                for (size_t j = 0; j < result[i].size(); j++) {
+                    result[i][j] = mat[i][j] + vec[j];
+                }
+            }
+
+            return result;
         }
-        
+
         // Method that receives two 2d matrices and returns their dot product
         template <typename T> 
         static Mat2d<T> dot(const Mat2d<T>& a, const Mat2d<T>& b)
@@ -121,28 +125,144 @@ namespace MLPP
             std::cerr << "Error: Input empty" << std::endl;
             return Mat2d<T>(); // Return empty matrix
         }
-        
-        // Method that adds vector to each row of matrix 
+
+        // Method that finds and store maximun value in 2d matrix
         template <typename T>
-        static Mat2d<T> add(const Mat2d<T>& mat, const std::vector<T>& vec)
+        static T find_max_value(const Mat2d<T>& mat)
         {
-            if (mat.empty() || vec.empty()) {
-                // Display error that informs data matrix is empty
+            if (mat.empty()) {
                 std::cerr << "Error: Input empty" << std::endl;
-                return Mat2d<T>(); // Return empty matrix
+                return 0;
             }
 
-            Mat2d<T> result(mat.size(), std::vector<T>(vec.size()));
+            T result = 0;
 
-            for (size_t i = 0; i < result.size(); i++) {
-                for (size_t j = 0; j < result[i].size(); j++) {
-                    result[i][j] = mat[i][j] + vec[j];
+            for (size_t i = 0; i < mat.size(); i++) {
+                T max = *std::max_element(mat[i].begin(), mat[i].begin());
+                if (max >= result) {
+                    result = max;
                 }
             }
 
             return result;
         }
 
+        // Overload that finds max value in vector
+        template <typename T>
+        static T find_max_value(const std::vector<T>& vec)
+        {
+            if (vec.empty()) {
+                std::cerr << "Error: Input empty" << std::endl;
+                return 0;
+            }
+
+            return static_cast<T>(*std::max_element(vec.begin(), vec.end()));
+        }
+
+        // Method that finds and store maximun value in 2d matrix
+        template <typename T>
+        static T find_min_value(const Mat2d<T>& mat)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input empty" << std::endl;
+                return 0;
+            }
+
+            T result = 0;
+
+            for (size_t i = 0; i < mat.size(); i++) {
+                T min = *std::min_element(mat[i].begin(), mat[i].begin());
+                if (min <= result) {
+                    result = min;
+                }
+            }
+
+            return result;
+        }
+
+        // Overload that finds max value in vector
+        template <typename T>
+        static T find_min_value(const std::vector<T>& vec)
+        {
+            if (vec.empty()) {
+                std::cerr << "Error: Input empty" << std::endl;
+                return 0;
+            }
+
+            return static_cast<T>(*std::min_element(vec.begin(), vec.end()));
+        }
+        
+        // Method that generates square 2d matrix
+        template <typename T>
+        static Mat2d<T>* gen_square_matrix(const size_t& size, const T& value = 0)
+        {
+            // Create new 2d matrix object with specified parameters to later return
+            Mat2d<T>* result = new Mat2d<T>(size, std::vector<T>(size));
+
+            // Fill matrix with specified value
+            for (size_t rows = 0; rows < result->size(); rows++) {
+                for (size_t cols = 0; cols < (*result)[rows].size(); cols++) {
+                    (*result)[rows][cols] = value;
+                }
+            }
+
+            // Return random 2d matrix
+            return result;
+        }
+       
+        // Method that returns center coordinates of given 2d matrix
+        template <typename T>
+        static std::vector<int> get_center(const Mat2d<T>* matPtr)
+        {
+            if (matPtr == nullptr) {
+                std::vector<int> pos {0,0};
+                // Display error that informs data matrix is empty
+                std::cerr << "Error: Null matrix pointer" << std::endl;
+                return pos; // Return empty vector
+            }
+
+            std::vector<int> pos {matPtr->size()/2, (*matPtr)[matPtr->size()/2].size()/2}; // Create vector pointer to store position     
+            return pos;
+        }
+
+        // Overload to get center of 1d matrix, i.e, a vector
+        template <typename T>
+        static int get_center(const std::vector<T>* vecPtr)
+        {
+            return vecPtr->size()/2;
+        }
+       
+        // Method that returns rows and columns size of 2d matrix
+        template <typename T>
+        static std::pair<int, int> get_shape(const Mat2d<T>& mat)
+        {
+            int rows = mat.size();
+            int cols = (rows > 0) ? mat[0].size() : 0;
+            return std::make_pair(rows, cols);
+        }
+       
+        // Method that returns sum of all elements in vector
+        template <typename T>
+        static T get_sum_of_vector(const std::vector<T>& vec)
+        {
+            T r;
+            for (size_t i = 0; i < vec.size(); i++) {
+                r += vec[i];
+            }
+            return r;
+        }
+
+        // Get sum of vector overload for diffferent type input and output
+        template <typename T, typename R>
+        static R get_sum_of_vector(const std::vector<T>& vec)
+        {
+            R r;
+            for (size_t i = 0; i < vec.size(); i++) {
+                r += static_cast<R>(vec[i]);
+            }
+            return r;
+        }
+       
         // Method to multiply corresponding elements of 2 2d matrices
         // Matrices must be same size
         template <typename T> 
@@ -170,48 +290,136 @@ namespace MLPP
 
             return result;
         }
-         
-        // Returns sum of all multiplications, matrices must have same size
-        template <typename T> 
-        static T sum_mat_mul_matching_elements(const Mat2d<T>* a, const Mat2d<T>* b)
+       
+        // Method that generates vector of size N filled with 1
+        template <typename T>
+        static std::vector<T> ones(const int& size)
         {
-            if (a->empty() || b->empty()) {
-                // Display error that informs data matrix is empty
-                std::cerr << "Error: Input empty" << std::endl;
-                return 0; // Return 0
+            return std::vector<T>(size, 1);
+        }
+
+        // OVerload of zeros that generates 2d matrix of size R x C filled with 1
+        template <typename T>
+        static Mat2d<T> ones(const size_t& rows, const size_t& cols)
+        {
+            return Mat2d<T>(rows, std::vector<T>(cols, 1));
+        }
+
+        // Method that elevates each element of given matrix to the power of n
+        template <typename T>
+        static std::vector<double> power(const std::vector<T>* vecPtr, const size_t& power = 2)
+        {
+            if (vecPtr == nullptr) {
+                std::cerr << "Error: Matrix pointer is null" << std::endl;
+                return std::vector<double>(); // Return empty matrix
             }
 
-            T r = 0; // Create variable to store results
-            // Iterate through every element in a, and multiply by matching elemnt in b
-            for (size_t i = 0; i < a->size(); i++) {
-                for (size_t j = 0; j < (*a)[i].size(); j++) {
-                    r += (*a)[i][j] * (*b)[i][j];
+            std::vector<double> results(vecPtr->size());
+
+            for (size_t i = 0; i < results.size(); i++)
+            {
+                results[i] = std::pow((*vecPtr)[i], power);
+            }
+            
+            return results;
+        }
+
+        // Overload for 2d matrix
+        template <typename T>
+        static Mat2d<double> power(const Mat2d<T>& mat, const size_t& power = 2)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Matrix pointer is null" << std::endl;
+                return Mat2d<double>(); // Return empty matrix
+            }
+            
+            Mat2d<double> results(mat.size(), std::vector<double>(mat[0].size()));
+
+            for (size_t row = 0; row < results.size(); row++) {
+                for (size_t col = 0; col < results[row].size(); col++) {
+                    results[row][col] = std::pow(mat[row][col], power);
                 }
             }
 
-            return r; 
-        } 
-        
-        // Overload that receives matrices of differente types and returns specified type
-        template <typename R, typename A, typename B> 
-        static R sum_mat_mul_matching_elements(const Mat2d<A>& a, const Mat2d<B>& b)
+            return results;
+        }
+       
+        // Method that generates random 2d matrix 
+        template <typename T>
+        static Mat2d<T> rand(const size_t& rows, const size_t& cols, const double& mean = 0.0, const double& stddev = 1.0)
         {
-            if (a.empty() || b.empty()) {
-                // Display error that informs data matrix is empty
-                std::cerr << "Error: Input empty" << std::endl;
-                return 0; // Return 0
-            }
+            // Create new 2d matrix object with specified parameters to later return
+            Mat2d<T> result(rows, std::vector<T>(cols));
 
-            R r = 0; // Create variable to store results
-            // Iterate through every element in a, and multiply by matching elemnt in b
-            for (size_t i = 0; i < a.size(); i++) {
-                for (size_t j = 0; j < a[i].size(); j++) {
-                    r += static_cast<R>(a[i][j] * b[i][j]);
+            // Initialize random generator - Normal Distribution, receives mean and standard deviation as paramaters
+            std::random_device rd;
+            std::mt19937 generator(rd());
+            std::normal_distribution<double> distribution(mean, stddev);
+
+            // Fill matrix with random values
+            for (size_t rows = 0; rows < result.size(); rows++) {
+                for (size_t cols = 0; cols < result[rows].size(); cols++) {
+                    result[rows][cols] = static_cast<T>(distribution(generator));
                 }
             }
 
-            return r; 
-        } 
+            // Return random 2d matrix
+            return result;
+        }
+
+        // Overload for method with uniform distribution
+        template <typename T>
+        static Mat2d<T> rand(const size_t& rows, const size_t& cols, const int& min, const int& max)
+        {
+            // Create new 2d matrix object with specified parameters to later return
+            Mat2d<T> result(rows, std::vector<T>(cols));
+
+            // Initialize random generator - Uniform distribution, generate integer values between set interval
+            std::random_device rd;
+            std::mt19937 generator(rd());
+            std::uniform_int_distribution<int> distribution(min, max);
+
+            // Fill matrix with random values
+            for (size_t rows = 0; rows < result.size(); rows++) {
+                for (size_t cols = 0; cols < result[rows].size(); cols++) {
+                    result[rows][cols] = static_cast<T>(distribution(generator));
+                }
+            }
+
+            return result;
+        }
+
+        // Method that applies Rectified Linear Unit function to value
+        template <typename T>
+        static T relu(const T& value)
+        {
+            if (value <= 0) {
+                return 0;
+            }
+            return value;
+        }
+
+        // Overload method that applies Rectified Linear Unit to every value in 3d matrix
+        template <typename T>
+        static Mat3d<T> relu(const Mat3d<T>& mat)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat3d<T>();
+            }
+
+            Mat3d<T> relu_mat(mat.size(), Mat2d<T>(mat[0].size(), std::vector<T>(mat[0][0].size())));
+
+            for (size_t i = 0; i < relu_mat.size(); i++) {
+                for (size_t j = 0; j < relu_mat[i].size(); j++) {
+                    for (size_t k = 0; k < relu_mat[i][j].size(); k++) {
+                        relu_mat[i][j][k] = NumPP::relu(mat[i][j][k]);
+                    }
+                }
+            }
+
+            return relu_mat;
+        }
 
         // Method that multiplies given number with all elements in matrix
         template <typename T>
@@ -368,6 +576,79 @@ namespace MLPP
             return result;         
         }
 
+        // Method that collapses 2d matrix into vector with each element
+        // being the sum of each row or each column from 2d matrix, 0 = rows, 1 = columns
+        template <typename T> 
+        static std::vector<T> sum(const Mat2d<T>& mat, const size_t& axis = 0)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Matrix is empty" << std::endl;
+                return std::vector<T>();
+            }
+
+            if (axis == 1) {
+                // Get sum of each column into vector
+                std::vector<T> result(mat[0].size(), 0); // Create vector to store result
+                for (size_t i = 0; i < result.size(); i++) {
+                    for (size_t j = 0; j < mat.size(); j++) {
+                        result[i] += mat[j][i];
+                    }
+                }
+
+                return result;
+            }
+
+            std::vector<T> result(mat.size()); // Create vector to store result
+
+            for (size_t i = 0; i < result.size(); i++) {
+                result[i] = get_sum_of_vector<T>(mat[i]);
+            }
+
+            return result;
+        }
+
+        // Returns sum of all multiplications, matrices must have same size
+        template <typename T> 
+        static T sum_mat_mul_matching_elements(const Mat2d<T>* a, const Mat2d<T>* b)
+        {
+            if (a->empty() || b->empty()) {
+                // Display error that informs data matrix is empty
+                std::cerr << "Error: Input empty" << std::endl;
+                return 0; // Return 0
+            }
+
+            T r = 0; // Create variable to store results
+            // Iterate through every element in a, and multiply by matching elemnt in b
+            for (size_t i = 0; i < a->size(); i++) {
+                for (size_t j = 0; j < (*a)[i].size(); j++) {
+                    r += (*a)[i][j] * (*b)[i][j];
+                }
+            }
+
+            return r; 
+        } 
+        
+        // Overload that receives matrices of differente types and returns specified type
+        template <typename R, typename A, typename B> 
+        static R sum_mat_mul_matching_elements(const Mat2d<A>& a, const Mat2d<B>& b)
+        {
+            if (a.empty() || b.empty()) {
+                // Display error that informs data matrix is empty
+                std::cerr << "Error: Input empty" << std::endl;
+                return 0; // Return 0
+            }
+
+            R r = 0; // Create variable to store results
+            // Iterate through every element in a, and multiply by matching elemnt in b
+            for (size_t i = 0; i < a.size(); i++) {
+                for (size_t j = 0; j < a[i].size(); j++) {
+                    r += static_cast<R>(a[i][j] * b[i][j]);
+                }
+            }
+
+            return r; 
+        } 
+
         // Method that apply tanh function to every element in 2d matrix
         template <typename T>
         static Mat2d<T> tanh(const Mat2d<T>& mat)
@@ -409,62 +690,31 @@ namespace MLPP
             }
             return tanhMat;
         }
-
-        // Method that applies Rectified Linear Unit function to value
-        template <typename T>
-        static T relu(const T& value)
+   
+        // Method to transpose 2d matrix, [100, 50] -> [50, 100]
+        template <typename T> 
+        static Mat2d<T> transpose(const Mat2d<T>& to_transpose)
         {
-            if (value <= 0) {
-                return 0;
-            }
-            return value;
-        }
+            if (!to_transpose.empty()) {
+                // Get original matrix dimensions
+                size_t rows = to_transpose.size();
+                size_t cols = rows > 0 ? to_transpose[0].size() : 0;
 
-        // Method that generates random 2d matrix 
-        template <typename T>
-        static Mat2d<T> rand(const size_t& rows, const size_t& cols, const double& mean = 0.0, const double& stddev = 1.0)
-        {
-            // Create new 2d matrix object with specified parameters to later return
-            Mat2d<T> result(rows, std::vector<T>(cols));
-
-            // Initialize random generator - Normal Distribution, receives mean and standard deviation as paramaters
-            std::random_device rd;
-            std::mt19937 generator(rd());
-            std::normal_distribution<double> distribution(mean, stddev);
-
-            // Fill matrix with random values
-            for (size_t rows = 0; rows < result.size(); rows++) {
-                for (size_t cols = 0; cols < result[rows].size(); cols++) {
-                    result[rows][cols] = static_cast<T>(distribution(generator));
+                // Create new 2d matrix object with reshaped dimensions
+                Mat2d<T> t(cols, std::vector<T>(rows));
+                // Transpose the original matrix to reshape it
+                for (size_t i = 0; i < cols; i++) {              
+                    for (size_t j = 0; j < rows; j++) {
+                        t[i][j] = to_transpose[j][i];
+                    }      
                 }
+                return t;
             }
-
-            // Return random 2d matrix
-            return result;
+            // Display error that informs data matrix is empty
+            std::cerr << "Error: Matrix is empty" << std::endl;
+            return Mat2d<T>(); // Return empty matrix
         }
-
-        // Overload for method with uniform distribution
-        template <typename T>
-        static Mat2d<T> rand(const size_t& rows, const size_t& cols, const int& min, const int& max)
-        {
-            // Create new 2d matrix object with specified parameters to later return
-            Mat2d<T> result(rows, std::vector<T>(cols));
-
-            // Initialize random generator - Uniform distribution, generate integer values between set interval
-            std::random_device rd;
-            std::mt19937 generator(rd());
-            std::uniform_int_distribution<int> distribution(min, max);
-
-            // Fill matrix with random values
-            for (size_t rows = 0; rows < result.size(); rows++) {
-                for (size_t cols = 0; cols < result[rows].size(); cols++) {
-                    result[rows][cols] = static_cast<T>(distribution(generator));
-                }
-            }
-
-            return result;
-        }
-
+        
         // Method that generates vector of size N filled with 0
         template <typename T>
         static std::vector<T> zeros(const int& size)
@@ -479,227 +729,6 @@ namespace MLPP
             return Mat2d<T>(rows, std::vector<T>(cols, 0));
         }
 
-        // Method that generates vector of size N filled with 1
-        template <typename T>
-        static std::vector<T> ones(const int& size)
-        {
-            return std::vector<T>(size, 1);
-        }
-
-        // OVerload of zeros that generates 2d matrix of size R x C filled with 1
-        template <typename T>
-        static Mat2d<T> ones(const size_t& rows, const size_t& cols)
-        {
-            return Mat2d<T>(rows, std::vector<T>(cols, 1));
-        }
-
-        // Method that generates square 2d matrix
-        template <typename T>
-        static Mat2d<T>* gen_square_matrix(const size_t& size, const T& value = 0)
-        {
-            // Create new 2d matrix object with specified parameters to later return
-            Mat2d<T>* result = new Mat2d<T>(size, std::vector<T>(size));
-
-            // Fill matrix with specified value
-            for (size_t rows = 0; rows < result->size(); rows++) {
-                for (size_t cols = 0; cols < (*result)[rows].size(); cols++) {
-                    (*result)[rows][cols] = value;
-                }
-            }
-
-            // Return random 2d matrix
-            return result;
-        }
-
-        // Method that returns sum of all elements in vector
-        template <typename T>
-        static T get_sum_of_vector(const std::vector<T>& vec)
-        {
-            T r;
-            for (size_t i = 0; i < vec.size(); i++) {
-                r += vec[i];
-            }
-            return r;
-        }
-
-        // Get sum of vector overload for diffferent type input and output
-        template <typename T, typename R>
-        static R get_sum_of_vector(const std::vector<T>& vec)
-        {
-            R r;
-            for (size_t i = 0; i < vec.size(); i++) {
-                r += static_cast<R>(vec[i]);
-            }
-            return r;
-        }
-
-        // Method that collapses 2d matrix into vector with each element
-        // being the sum of each row or each column from 2d matrix, 0 = rows, 1 = columns
-        template <typename T> 
-        static std::vector<T> sum(const Mat2d<T>& mat, const size_t& axis = 0)
-        {
-            if (mat.empty()) {
-                std::cerr << "Error: Matrix is empty" << std::endl;
-                return std::vector<T>();
-            }
-
-            if (axis == 1) {
-                // Get sum of each column into vector
-                std::vector<T> result(mat[0].size(), 0); // Create vector to store result
-                for (size_t i = 0; i < result.size(); i++) {
-                    for (size_t j = 0; j < mat.size(); j++) {
-                        result[i] += mat[j][i];
-                    }
-                }
-
-                return result;
-            }
-
-            std::vector<T> result(mat.size()); // Create vector to store result
-
-            for (size_t i = 0; i < result.size(); i++) {
-                result[i] = get_sum_of_vector<T>(mat[i]);
-            }
-
-            return result;
-        }
-
-        // Method that elevates each element of given matrix to the power of n
-        template <typename T>
-        static std::vector<double> power(const std::vector<T>* vecPtr, const size_t& power = 2)
-        {
-            if (vecPtr == nullptr) {
-                std::cerr << "Error: Matrix pointer is null" << std::endl;
-                return std::vector<double>(); // Return empty matrix
-            }
-
-            std::vector<double> results(vecPtr->size());
-
-            for (size_t i = 0; i < results.size(); i++)
-            {
-                results[i] = std::pow((*vecPtr)[i], power);
-            }
-            
-            return results;
-        }
-
-        // Overload for 2d matrix
-        template <typename T>
-        static Mat2d<double> power(const Mat2d<T>& mat, const size_t& power = 2)
-        {
-            if (mat.empty()) {
-                std::cerr << "Error: Matrix pointer is null" << std::endl;
-                return Mat2d<double>(); // Return empty matrix
-            }
-            
-            Mat2d<double> results(mat.size(), std::vector<double>(mat[0].size()));
-
-            for (size_t row = 0; row < results.size(); row++) {
-                for (size_t col = 0; col < results[row].size(); col++) {
-                    results[row][col] = std::pow(mat[row][col], power);
-                }
-            }
-
-            return results;
-        }
-       
-        // Method that returns center coordinates of given 2d matrix
-        template <typename T>
-        static std::vector<int> get_center(const Mat2d<T>* matPtr)
-        {
-            if (matPtr == nullptr) {
-                std::vector<int> pos {0,0};
-                // Display error that informs data matrix is empty
-                std::cerr << "Error: Null matrix pointer" << std::endl;
-                return pos; // Return empty vector
-            }
-
-            std::vector<int> pos {matPtr->size()/2, (*matPtr)[matPtr->size()/2].size()/2}; // Create vector pointer to store position     
-            return pos;
-        }
-
-        // Overload to get center of 1d matrix, i.e, a vector
-        template <typename T>
-        static int get_center(const std::vector<T>* vecPtr)
-        {
-            return vecPtr->size()/2;
-        }
-
-        // Method that finds and store maximun value in 2d matrix
-        template <typename T>
-        static T find_max_value(const Mat2d<T>& mat)
-        {
-            if (mat.empty()) {
-                std::cerr << "Error: Input empty" << std::endl;
-                return 0;
-            }
-
-            T result = 0;
-
-            for (size_t i = 0; i < mat.size(); i++) {
-                T max = *std::max_element(mat[i].begin(), mat[i].begin());
-                if (max >= result) {
-                    result = max;
-                }
-            }
-
-            return result;
-        }
-
-        // Overload that finds max value in vector
-        template <typename T>
-        static T find_max_value(const std::vector<T>& vec)
-        {
-            if (vec.empty()) {
-                std::cerr << "Error: Input empty" << std::endl;
-                return 0;
-            }
-
-            return static_cast<T>(*std::max_element(vec.begin(), vec.end()));
-        }
-
-        // Method that finds and store maximun value in 2d matrix
-        template <typename T>
-        static T find_min_value(const Mat2d<T>& mat)
-        {
-            if (mat.empty()) {
-                std::cerr << "Error: Input empty" << std::endl;
-                return 0;
-            }
-
-            T result = 0;
-
-            for (size_t i = 0; i < mat.size(); i++) {
-                T min = *std::min_element(mat[i].begin(), mat[i].begin());
-                if (min <= result) {
-                    result = min;
-                }
-            }
-
-            return result;
-        }
-
-        // Overload that finds max value in vector
-        template <typename T>
-        static T find_min_value(const std::vector<T>& vec)
-        {
-            if (vec.empty()) {
-                std::cerr << "Error: Input empty" << std::endl;
-                return 0;
-            }
-
-            return static_cast<T>(*std::min_element(vec.begin(), vec.end()));
-        }
-        
-        // Method that returns rows and columns size of 2d matrix
-        template <typename T>
-        static std::pair<int, int> get_shape(const Mat2d<T>& mat)
-        {
-            int rows = mat.size();
-            int cols = (rows > 0) ? mat[0].size() : 0;
-            return std::make_pair(rows, cols);
-        }
-
         // Further methods to be implemented
     };
 
@@ -707,77 +736,190 @@ namespace MLPP
     class DataAnalysis 
     {
     public:
-        // Method to parse CSV line with quoted fields and blank spaces
-        static std::vector<std::string> parse_csv_line(const std::string& line)
+        // Method to display all elemenst of data matrix
+        template <typename T> 
+        static void display_all(const Mat2d<T>& dataMatrix)
         {
-            std::vector<std::string> row;
-
-            if (!line.empty()) {
-                std::stringstream ss(line);
-                std::string cell;
-
-                // Tokenize line by comma
-                while (std::getline(ss, cell, ',')) {
-                    // Check if cell starts with a quote
-                    if (cell.front() == '"') {
-                        std::string quotedCell;
-                        quotedCell += cell;
-
-                        // Keep reading until we find the closing quote
-                        while (ss && cell.back() != '"') {
-                            std::getline(ss, cell, ',');
-                            quotedCell += "," + cell;
-                        }
-                        // Fill out row vector with parsed cells with quotes removed
-                        quotedCell = quotedCell.substr(1, quotedCell.size() - 2);
-                        row.push_back(quotedCell);
-                    } 
-                    else if (cell.find(' ') == std::string::npos) {
-                        // Fill out row vector with parsed cells
-                        // Using istringstream for cells with no space works better
-                        std::istringstream iss(cell);
-                        std::string val;
-                        iss >> val;
-                        row.push_back(val);
+            if (!dataMatrix.empty()) {
+                for (auto& row : dataMatrix) {
+                    for (auto& cell : row) {
+                        std::cout << " " << std::to_string(cell);
                     }
-                    else {
-                        row.push_back(cell);
-                    }
+                    std::cout << std::endl;
                 }
-                // Return filled out row
-                return row;
+                return;
             }
-            // Display error and return empty row
-            std::cerr << "Error: Line provided is empty" << std::endl;
-            return row;
+            // Display error that informs data matrix is empty
+            std::cerr << "Error: Data Matrix is empty" << std::endl;
         }
         
-        // Method to read CSV files into 2d string matrix
-        static Mat2d<std::string> read_csv_file(const std::string& filePath)
+        // Mehtod to display last five colunms method, Display lastdisplayBfive rows
+        template <typename T> 
+        static void display_bottom(const Mat2d<T>& dataMatrix, int rowsToDisplay = 5)
         {
-            // Create 2d matrix to store data
-            Mat2d<std::string> data;
-            // Open CSV file from path provided
-            std::ifstream file(filePath);
-            // Check if file opened correctly
-            if (!file.is_open()) {
-                // Display error and return empty data if file couldn't open
-                std::cerr << "Error: Coun't open file provided at '" << filePath << "'"
-                        << std::endl;
-                return data;
+            if (!dataMatrix.empty()) {
+                if (rowsToDisplay >= 0 && rowsToDisplay < dataMatrix.size() - 1) {
+                    for (int row = dataMatrix.size() - rowsToDisplay;
+                        row < dataMatrix.size(); row++) {
+                        for (int col = 0; col < dataMatrix[row].size(); col++) {
+                            std::cout << " " << dataMatrix[row][col];
+                        }
+                        std::cout << std::endl;
+                    }
+                    return;
+                }
+                // Display error that informs number of rows is invalid matrix is
+                // empty
+                std::cerr << "Error: Rows to display is invalid" << std::endl;
+                return;
             }
-            // Reach each line of the file
-            std::string line;
+            // Display error that informs data matrix is empty
+            std::cerr << "Error: Data Matrix is empty" << std::endl;
+        }
+        
+        // Method to display all elements in given columns
+        template <typename T> 
+        static void display_columns(const Mat2d<T>& dataMatrix, const std::vector<int>& colsToDisplay)
+        {
+            if (!dataMatrix.empty() && !colsToDisplay.empty()) {
+                for (size_t row = 0; row < dataMatrix.size(); row++) {
+                    if (colsToDisplay[row] < dataMatrix.size()) {
+                        std::cout << row << "-";
+                        for (auto& col : colsToDisplay) {
+                            std::cout << " " << dataMatrix[row][col];
+                        }
+                        std::cout << std::endl;
+                    }
+                }
+                // Display error that informs that one or more columns to display
+                // are invalid std::cerr << "Error: One or more columns to display
+                // is invalid" << std::endl;
+                return;
+            }
+            // Display error that informs data matrix is empty
+            std::cerr << "Error: Data Matrix is empty" << std::endl;
+        }
+        
+        // Method to display first five rows method, Display first 5 rows + display_head row
+        template <typename T> 
+        static void display_head(const Mat2d<T>& dataMatrix, int rowsToDisplay = 5)
+        {
+            if (!dataMatrix.empty()) {
+                if (rowsToDisplay >= 0 && rowsToDisplay < dataMatrix.size() - 1) {
+                    for (int row = 0; row < rowsToDisplay + 1; row++) {
+                        for (int col = 0; col < dataMatrix[row].size(); col++) {
+                            std::cout << " " << dataMatrix[row][col];
+                        }
+                        std::cout << std::endl;
+                    }
+                    return;
+                }
+                // Display error that informs number of rows is invalid matrix is
+                // empty
+                std::cerr << "Error: Rows to display is invalid" << std::endl;
+                return;
+            }
+            // Display error that informs data matrix is empty
+            std::cerr << "Error: Data Matrix is empty" << std::endl;
+        }
+        
+        // Method to display all elements in given rows
+        template <typename T> 
+        static void display_rows(const Mat2d<T>& dataMatrix, const std::vector<int>& rowsToDisplay)
+        {
+            if (!dataMatrix.empty() && !rowsToDisplay.empty()) {
+                for (size_t row = 0; row < rowsToDisplay.size(); row++) {
+                    std::cout << rowsToDisplay[row] << "-";
+                    if (rowsToDisplay[row] < dataMatrix.size()) {
+                        for (size_t col = 0; col < dataMatrix[row].size(); col++) {
+                            std::cout << " " << dataMatrix[row][col];
+                        }
+                        std::cout << std::endl;
+                    }
+                }
+                // Display error that informs one or more of rows to display is
+                // invalid std::cerr << "Error: One or more rows to display is
+                // invalid" << std::endl;
+                return;
+            }
+            // Display error that informs data matrix is empty
+            std::cerr << "Error: Data Matrix is empty" << std::endl;
+        }
+        
+        // Method to search data matrix for first appearance of desired element, return first position found
+        template <typename T> 
+        static std::vector<int> find(const Mat2d<T>& dataMatrix, const T& desiredElement)
+        {
+            // Creat position vector
+            std::vector<int> pos{0, 0};
 
-            while (std::getline(file, line)) {
-                // Parse CSV line and add it to the data matrix
-                std::vector<std::string> row = parse_csv_line(line);
-                data.push_back(row);
+            if (!dataMatrix.empty()) {
+                // Loop through matrix to check for desired element
+                for (size_t row = 0; row < dataMatrix.size(); row++) {
+                    // std::cout << row << std::endl;
+                    for (size_t col = 0; col < dataMatrix[row].size(); col++) {
+                        // std::cout << col << std::endl;
+                        if (dataMatrix[row][col] == desiredElement) {
+                            pos[0] = row;
+                            pos[1] = col;
+                            return pos;
+                        }
+                    }
+                }
+                // Return empty vector
+                std::cerr << "Error: Desired element was not found" << std::endl;
+                return pos;
             }
-            // Close file
-            file.close();
-            // Return data in matrix
-            return data;
+            // Return 0,0 vector
+            std::cerr << "Error: Data Matrix is empty" << std::endl;
+            return pos;
+        }
+        
+        // Method to search data matrix for all appearances of desired element, return
+        // vector of positions Outside vecotor holds all rows indexes element was found,
+        // and inside vector holds all columns indexes element was found
+        template <typename T> 
+        static Mat2d<int> find_all(const Mat2d<T>& dataMatrix, const T& desiredElemet)
+        {
+            // Creat position vector
+            Mat2d<int> pos;
+
+            if (!dataMatrix.empty()) {
+                // Loop through matrix to check for desired element
+                for (int row = 0; row < dataMatrix.size(); row++) {
+                    for (int col = 0; col < dataMatrix[row].size(); col++) {
+                        if (dataMatrix[row][col] == desiredElemet) {
+                            std::vector<int> currentPos{row, col};
+                            pos.push_back(currentPos);
+                        }
+                    }
+                }
+                if (pos.empty()) {
+                    // Return empty position matrix
+                    std::cerr << "Error: Element was not found" << std::endl;
+                    return pos;
+                }
+                // Return found positions
+                return pos;
+            }
+            // Return empty position matrix
+            std::cerr << "Error: Data Matrix is empty" << std::endl;
+            return pos;
+        }
+        
+        // Method to search data matrix by position, return element at requqested position on 2d Matrix
+        template <typename T> 
+        static T find_by_pos(const Mat2d<T>& dataMatrix, std::vector<int>& pos)
+        {
+            T element;
+
+            if (!dataMatrix.empty()) {
+                element = dataMatrix[pos[0]][pos[1]];
+                return element;
+            }
+            // Return empty element
+            std::cerr << "Error: Data Matrix is empty" << std::endl;
+            return element;
         }
         
         // Method to convert string to differnt data type, returns new 2d matrix with passed type
@@ -1048,190 +1190,77 @@ namespace MLPP
             std::cerr << "Error: Data is empty" << std::endl;
         }
         
-        // Method to search data matrix for first appearance of desired element, return first position found
-        template <typename T> 
-        static std::vector<int> find(const Mat2d<T>& dataMatrix, const T& desiredElement)
+        // Method to parse CSV line with quoted fields and blank spaces
+        static std::vector<std::string> parse_csv_line(const std::string& line)
         {
-            // Creat position vector
-            std::vector<int> pos{0, 0};
+            std::vector<std::string> row;
 
-            if (!dataMatrix.empty()) {
-                // Loop through matrix to check for desired element
-                for (size_t row = 0; row < dataMatrix.size(); row++) {
-                    // std::cout << row << std::endl;
-                    for (size_t col = 0; col < dataMatrix[row].size(); col++) {
-                        // std::cout << col << std::endl;
-                        if (dataMatrix[row][col] == desiredElement) {
-                            pos[0] = row;
-                            pos[1] = col;
-                            return pos;
-                        }
-                    }
-                }
-                // Return empty vector
-                std::cerr << "Error: Desired element was not found" << std::endl;
-                return pos;
-            }
-            // Return 0,0 vector
-            std::cerr << "Error: Data Matrix is empty" << std::endl;
-            return pos;
-        }
-        
-        // Method to search data matrix by position, return element at requqested position on 2d Matrix
-        template <typename T> 
-        static T find_by_pos(const Mat2d<T>& dataMatrix, std::vector<int>& pos)
-        {
-            T element;
+            if (!line.empty()) {
+                std::stringstream ss(line);
+                std::string cell;
 
-            if (!dataMatrix.empty()) {
-                element = dataMatrix[pos[0]][pos[1]];
-                return element;
-            }
-            // Return empty element
-            std::cerr << "Error: Data Matrix is empty" << std::endl;
-            return element;
-        }
-        
-        // Method to search data matrix for all appearances of desired element, return
-        // vector of positions Outside vecotor holds all rows indexes element was found,
-        // and inside vector holds all columns indexes element was found
-        template <typename T> 
-        static Mat2d<int> find_all(const Mat2d<T>& dataMatrix, const T& desiredElemet)
-        {
-            // Creat position vector
-            Mat2d<int> pos;
+                // Tokenize line by comma
+                while (std::getline(ss, cell, ',')) {
+                    // Check if cell starts with a quote
+                    if (cell.front() == '"') {
+                        std::string quotedCell;
+                        quotedCell += cell;
 
-            if (!dataMatrix.empty()) {
-                // Loop through matrix to check for desired element
-                for (int row = 0; row < dataMatrix.size(); row++) {
-                    for (int col = 0; col < dataMatrix[row].size(); col++) {
-                        if (dataMatrix[row][col] == desiredElemet) {
-                            std::vector<int> currentPos{row, col};
-                            pos.push_back(currentPos);
+                        // Keep reading until we find the closing quote
+                        while (ss && cell.back() != '"') {
+                            std::getline(ss, cell, ',');
+                            quotedCell += "," + cell;
                         }
+                        // Fill out row vector with parsed cells with quotes removed
+                        quotedCell = quotedCell.substr(1, quotedCell.size() - 2);
+                        row.push_back(quotedCell);
+                    } 
+                    else if (cell.find(' ') == std::string::npos) {
+                        // Fill out row vector with parsed cells
+                        // Using istringstream for cells with no space works better
+                        std::istringstream iss(cell);
+                        std::string val;
+                        iss >> val;
+                        row.push_back(val);
+                    }
+                    else {
+                        row.push_back(cell);
                     }
                 }
-                if (pos.empty()) {
-                    // Return empty position matrix
-                    std::cerr << "Error: Element was not found" << std::endl;
-                    return pos;
-                }
-                // Return found positions
-                return pos;
+                // Return filled out row
+                return row;
             }
-            // Return empty position matrix
-            std::cerr << "Error: Data Matrix is empty" << std::endl;
-            return pos;
+            // Display error and return empty row
+            std::cerr << "Error: Line provided is empty" << std::endl;
+            return row;
         }
         
-        // Method to display all elemenst of data matrix
-        template <typename T> 
-        static void display_all(const Mat2d<T>& dataMatrix)
+        // Method to read CSV files into 2d string matrix
+        static Mat2d<std::string> read_csv_file(const std::string& filePath)
         {
-            if (!dataMatrix.empty()) {
-                for (auto& row : dataMatrix) {
-                    for (auto& cell : row) {
-                        std::cout << " " << std::to_string(cell);
-                    }
-                    std::cout << std::endl;
-                }
-                return;
+            // Create 2d matrix to store data
+            Mat2d<std::string> data;
+            // Open CSV file from path provided
+            std::ifstream file(filePath);
+            // Check if file opened correctly
+            if (!file.is_open()) {
+                // Display error and return empty data if file couldn't open
+                std::cerr << "Error: Coun't open file provided at '" << filePath << "'"
+                        << std::endl;
+                return data;
             }
-            // Display error that informs data matrix is empty
-            std::cerr << "Error: Data Matrix is empty" << std::endl;
-        }
-        
-        // Method to display all elements in given rows
-        template <typename T> 
-        static void display_rows(const Mat2d<T>& dataMatrix, const std::vector<int>& rowsToDisplay)
-        {
-            if (!dataMatrix.empty() && !rowsToDisplay.empty()) {
-                for (size_t row = 0; row < rowsToDisplay.size(); row++) {
-                    std::cout << rowsToDisplay[row] << "-";
-                    if (rowsToDisplay[row] < dataMatrix.size()) {
-                        for (size_t col = 0; col < dataMatrix[row].size(); col++) {
-                            std::cout << " " << dataMatrix[row][col];
-                        }
-                        std::cout << std::endl;
-                    }
-                }
-                // Display error that informs one or more of rows to display is
-                // invalid std::cerr << "Error: One or more rows to display is
-                // invalid" << std::endl;
-                return;
+            // Reach each line of the file
+            std::string line;
+
+            while (std::getline(file, line)) {
+                // Parse CSV line and add it to the data matrix
+                std::vector<std::string> row = parse_csv_line(line);
+                data.push_back(row);
             }
-            // Display error that informs data matrix is empty
-            std::cerr << "Error: Data Matrix is empty" << std::endl;
-        }
-        
-        // Method to display all elements in given columns
-        template <typename T> 
-        static void display_columns(const Mat2d<T>& dataMatrix, const std::vector<int>& colsToDisplay)
-        {
-            if (!dataMatrix.empty() && !colsToDisplay.empty()) {
-                for (size_t row = 0; row < dataMatrix.size(); row++) {
-                    if (colsToDisplay[row] < dataMatrix.size()) {
-                        std::cout << row << "-";
-                        for (auto& col : colsToDisplay) {
-                            std::cout << " " << dataMatrix[row][col];
-                        }
-                        std::cout << std::endl;
-                    }
-                }
-                // Display error that informs that one or more columns to display
-                // are invalid std::cerr << "Error: One or more columns to display
-                // is invalid" << std::endl;
-                return;
-            }
-            // Display error that informs data matrix is empty
-            std::cerr << "Error: Data Matrix is empty" << std::endl;
-        }
-        
-        // Method to display first five rows method, Display first 5 rows + display_head row
-        template <typename T> 
-        static void display_head(const Mat2d<T>& dataMatrix, int rowsToDisplay = 5)
-        {
-            if (!dataMatrix.empty()) {
-                if (rowsToDisplay >= 0 && rowsToDisplay < dataMatrix.size() - 1) {
-                    for (int row = 0; row < rowsToDisplay + 1; row++) {
-                        for (int col = 0; col < dataMatrix[row].size(); col++) {
-                            std::cout << " " << dataMatrix[row][col];
-                        }
-                        std::cout << std::endl;
-                    }
-                    return;
-                }
-                // Display error that informs number of rows is invalid matrix is
-                // empty
-                std::cerr << "Error: Rows to display is invalid" << std::endl;
-                return;
-            }
-            // Display error that informs data matrix is empty
-            std::cerr << "Error: Data Matrix is empty" << std::endl;
-        }
-        
-        // Mehtod to display last five colunms method, Display lastdisplayBfive rows
-        template <typename T> 
-        static void display_bottom(const Mat2d<T>& dataMatrix, int rowsToDisplay = 5)
-        {
-            if (!dataMatrix.empty()) {
-                if (rowsToDisplay >= 0 && rowsToDisplay < dataMatrix.size() - 1) {
-                    for (int row = dataMatrix.size() - rowsToDisplay;
-                        row < dataMatrix.size(); row++) {
-                        for (int col = 0; col < dataMatrix[row].size(); col++) {
-                            std::cout << " " << dataMatrix[row][col];
-                        }
-                        std::cout << std::endl;
-                    }
-                    return;
-                }
-                // Display error that informs number of rows is invalid matrix is
-                // empty
-                std::cerr << "Error: Rows to display is invalid" << std::endl;
-                return;
-            }
-            // Display error that informs data matrix is empty
-            std::cerr << "Error: Data Matrix is empty" << std::endl;
+            // Close file
+            file.close();
+            // Return data in matrix
+            return data;
         }
         
         // Further methods to be implemented
@@ -1241,31 +1270,6 @@ namespace MLPP
     // Required for computer vision
     class ComputerVision
     {
-    private:
-        // Method that returns 2d matrix block taken from 3d matrix
-        template <typename T>
-        static Mat2d<T> get_2d_block_from_mat(const Mat3d<T>& mat, const int& block_size, const size_t& offset, std::pair<size_t, size_t>& output_loc,
-                                        const size_t& depth)
-        {
-            if (mat.empty()) {
-                std::cerr << "Error: Input empty" << std::endl;
-                return Mat2d<T>();
-            }
-
-            Mat2d<T> b_mat(block_size, std::vector<T>(block_size)); // Create block mat variable to store result
-
-            for (size_t i = 0; i < b_mat.size(); i++) {
-                for (size_t j = 0; j < b_mat[i].size(); j++) {   
-                    std::pair<size_t, size_t> og_mat_loc = {output_loc.first+i, output_loc.second+j};
-                    if (og_mat_loc.first < mat.size() - offset && og_mat_loc.second < mat[i].size() - offset) {
-                        b_mat[i][j] = mat[og_mat_loc.first][og_mat_loc.second][depth];
-                    }
-                }
-            }
-
-            return b_mat;
-        }
-
     public:
         // Method to convert 3d matrix into 2d matrix, where each element
         // Will be a sum of R, G and B values
@@ -1336,10 +1340,54 @@ namespace MLPP
             return nMat;
         }
 
+    };
+
+    // Class that contains all methods that are needed for Neural Network usage
+    class NeuralNetwork
+    {
+    private:
+        /* Weights and biases for 2 hidden layer format in first attempt
+        Mat2d<double> m_a1; // Activation output for first hidden layer
+        Mat2d<double> m_a2; // Activation output for second hidden layer
+        Mat2d<double> m_a3; // Activation output for output layer
+        Mat2d<double> m_w1; // Weight matrix for the first hidden layer
+        Mat2d<double> m_w2; // Weight matrix for the scond hidden layer
+        Mat2d<double> m_w3; // Weight matrix for the output layer
+        Mat2d<double> m_b1; // Bias vector for the first hidden layer
+        Mat2d<double> m_b2; // Bias vector for the second hidden layer
+        Mat2d<double> m_b3; // Bias vector for the output layer
+        */
+
+        // Method that returns 2d matrix block taken from 3d matrix
+        template <typename T>
+        static Mat2d<T> get_2d_block_from_mat(const Mat3d<T>& mat, const int& block_size, const size_t& offset, std::pair<size_t, size_t>& output_loc,
+                                                const size_t& depth)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input empty" << std::endl;
+                return Mat2d<T>();
+            }
+
+            Mat2d<T> b_mat(block_size, std::vector<T>(block_size)); // Create block mat variable to store result
+
+            for (size_t i = 0; i < b_mat.size(); i++) {
+                for (size_t j = 0; j < b_mat[i].size(); j++) {   
+                    std::pair<size_t, size_t> og_mat_loc = {output_loc.first+i, output_loc.second+j};
+                    if (og_mat_loc.first < mat.size() - offset && og_mat_loc.second < mat[i].size() - offset) {
+                        b_mat[i][j] = mat[og_mat_loc.first][og_mat_loc.second][depth];
+                    }
+                }
+            }
+
+            return b_mat;
+        }
+        
         // Method that applies filter(kernel) to 3d matrix, will be used in Convolutional layer for neural network applications
-        // !!! Need to figure out how to make it work while maintaining original mat dimensions !!!
+        // !!! Still need to test if values are being filled correctly in all feature maps created, i.e, it has to have the same 
+        // !!! as number of filters and since for now there's only one filter being passed all have to be the same !!!
         template <typename T, typename R>
-        static Mat3d<T> conv_2d(const Mat3d<R>& mat, const Mat2d<int8_t>& kernel_mat, Padding padding, const int& kernel_size = 3)
+        static Mat3d<T> conv_2d_process(const Mat3d<R>& mat, const Mat2d<int8_t>& kernel_mat, const Padding& padding, const int& kernel_size, 
+                                        const int& number_of_filters)
         {
             if (mat.empty()) {
                 std::cerr << "Error: Input is empty" << std::endl;
@@ -1356,149 +1404,61 @@ namespace MLPP
             }
 
             // Create filtered matrix variable to store and return result
-            Mat3d<T> feature_map(mat.size()-offset, Mat2d<T>(mat[0].size()-offset, std::vector<T>(1))); 
+            Mat3d<T> feature_maps(mat.size()-offset, Mat2d<T>(mat[0].size()-offset, std::vector<T>(number_of_filters))); 
             std::pair<size_t, size_t> output_location; // Create pair to store output(filtered matrix) current location
             int channels = mat[0][0].size(); // Get depth of original image
             std::vector<T> filtered_pixel(channels); // Create vector to store convolution iteration result    
 
-            // Loop through filtered mat and fill elements with sum of every channel in input
-            for (size_t i = 0; i < feature_map.size(); i++) {
-                for (size_t j = 0; j < feature_map[i].size(); j++) {
-                    output_location = {i, j};
-                    for (size_t k = 0; k < channels; k++) { 
-                        Mat2d<R> block_mat = get_2d_block_from_mat(mat, kernel_size, offset, output_location, k);
-                        if (k == 0) {
-                            // Blue channel
-                            filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, kernel_mat);
+            // Loop through input matrix N times and fill feature maps based on number of filters
+            for (size_t f = 0; f < number_of_filters; f++) {
+                for (size_t i = 0; i < feature_maps.size(); i++) {
+                    for (size_t j = 0; j < feature_maps[i].size(); j++) {
+                        output_location = {i, j};
+                        for (size_t k = 0; k < channels; k++) { 
+                            Mat2d<R> block_mat = get_2d_block_from_mat(mat, kernel_size, offset, output_location, k);
+                            if (k == 0) {
+                                // Blue channel
+                                filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, kernel_mat);
+                            }
+                            else if (k == 1) {
+                                // Green channel
+                                filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, kernel_mat);
+                            }
+                            else {
+                                // Red channel
+                                filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, kernel_mat);
+                            }
                         }
-                        else if (k == 1) {
-                            // Green channel
-                            filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, kernel_mat);
-                        }
-                        else {
-                            // Red channel
-                            filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, kernel_mat);
-                        }
+                        feature_maps[i][j][f] = NumPP::get_sum_of_vector<T>(filtered_pixel) + 1; // Get sum of all channel and add bias, currently fixed to +1
                     }
-                    feature_map[i][j][0] = NumPP::get_sum_of_vector<T>(filtered_pixel) + 1; // Get sum of all channel and add bias, currently fixed to +1
                 }
             }
 
-            return feature_map;
+            return feature_maps;
         }
 
-        // Method that applies Rectified Linear Unit to 3d matrix
+        // Method that applies activation function
         template <typename T>
-        static Mat3d<T> relu(const Mat3d<T>& mat)
+        static Mat3d<T> activation_layer(const Mat3d<T>& mat, const Activation& activation_function)
         {
             if (mat.empty()) {
                 std::cerr << "Error: Input is empty" << std::endl;
                 return Mat3d<T>();
             }
 
-            Mat3d<T> relu_mat(mat.size(), Mat2d<T>(mat[0].size(), std::vector<T>(mat[0][0].size())));
-
-            for (size_t i = 0; i < relu_mat.size(); i++) {
-                for (size_t j = 0; j < relu_mat[i].size(); j++) {
-                    for (size_t k = 0; k < relu_mat[i][j].size(); k++) {
-                        relu_mat[i][j][k] = NumPP::relu(mat[i][j][k]);
-                    }
-                }
-            }
-
-            return relu_mat;
-        }
-
-        // Method that iterates through 3d matrix and reduces it by selecting max value for each iteration
-        template <typename T>
-        static Mat3d<T> max_pooling(const Mat3d<T>& mat, const int& size = 2, const int& stride = 2)
-        {
-            if (mat.empty()) {
-                std::cerr << "Error: Input is empty" << std::endl;
+            switch (activation_function)
+            {
+            case RELU:
+                return NumPP::relu(mat);
+            case TANH:
+                return NumPP::tanh(mat);
+            default:
                 return Mat3d<T>();
             }
-
-            Mat3d<T> pool_mat(mat.size()/2, Mat2d<T>(mat[0].size()/2, std::vector<T>(1)));
-            std::pair<size_t, size_t> og_mat_loc = {0, 0};
-
-            for (size_t i = 0; i < pool_mat.size(); i++) {
-                og_mat_loc.second = 0;
-                for (size_t j = 0; j < pool_mat[i].size(); j++) {
-                    Mat2d<T> block_mat = get_2d_block_from_mat(mat, size, 0, og_mat_loc, 0);
-                    pool_mat[i][j][0] = NumPP::find_max_value(block_mat);
-                    og_mat_loc.second += stride;
-                }
-                og_mat_loc.first += stride;
-            }
-
-            return pool_mat;
-        } 
-    };
-
-    // Class that contains all methods that are needed for Neural Network usage
-    class NeuralNetwork
-    {
-    private:
-        Mat2d<double> m_a1; // Activation output for first hidden layer
-        Mat2d<double> m_a2; // Activation output for second hidden layer
-        Mat2d<double> m_a3; // Activation output for output layer
-        Mat2d<double> m_w1; // Weight matrix for the first hidden layer
-        Mat2d<double> m_w2; // Weight matrix for the scond hidden layer
-        Mat2d<double> m_w3; // Weight matrix for the output layer
-        Mat2d<double> m_b1; // Bias vector for the first hidden layer
-        Mat2d<double> m_b2; // Bias vector for the second hidden layer
-        Mat2d<double> m_b3; // Bias vector for the output layer
-
-        // Method to generate kernel matrix, which will be apllied in filter step
-        template <typename T> 
-        Mat2d<T>* gen_kernel(const int& kernel_size)
-        {
-            Mat2d<T>* p = new Mat2d<T>(NumPP::rand<T>(kernel_size, kernel_size));
-            return p;
-        } 
-
-        // Method to return block of data, i.e, NxN matrix from larger matrix to apply filter
-        // !!! Still hard coded, need to optimize !!!
-        template <typename T>
-        Mat2d<T> get_matrix_block(const Mat2d<T>* matPtr, const int& block_size, const std::vector<int>& center)
-        {
-            Mat2d<T> block(block_size, std::vector<T>(block_size)); // Create 2d matrix block to return later
-            int offset = block_size - 2; // Get offset, number to go back and forward from center 
-            
-            block[0] = {(*matPtr)[center[0]-offset][center[1]-offset], (*matPtr)[center[0] - offset][center[1]], (*matPtr)[center[0]-offset][center[1]+offset]};
-            block[1] = {(*matPtr)[center[0]][center[1]-offset], (*matPtr)[center[0]][center[1]], (*matPtr)[center[0]][center[1]+offset]};
-            block[2] = {(*matPtr)[center[0]+offset][center[1]-offset], (*matPtr)[center[0]+offset][center[1]], (*matPtr)[center[0]+offset][center[1]+offset]};
-
-            return block;
-        }
-
-        // Aplly filter to input, remove unwanted chunks, makes further steps more efficient
-        // !!! STILL NEED TO CHECK IF IT'S WORKING 100% CORRECTLY !!!
-        Mat2d<int16_t>* pre_process_input(const Mat2d<int16_t>* dataPtr, const int& kernel_size)
-        {
-            int offset = kernel_size - 2; // Get offset, number to go back and forward from center    
-            Mat2d<int16_t>* fMat = new Mat2d<int16_t>(dataPtr->size()-(offset*2), std::vector<int16_t>((*dataPtr)[0].size()-(offset*2))); // Create pointer to store final data
-            Mat2d<int16_t>* block_mat = new Mat2d<int16_t>(kernel_size, std::vector<int16_t>(kernel_size)); // Create memory to store NxN block matrix
-            Mat2d<int16_t>* kMat = gen_kernel<int16_t>(kernel_size); // Generate kernel matrix with passed size
-            DataAnalysis::display_all(*kMat);
-            std::vector<int> center(2);
-
-            // Loop through image matrix, centering kernel matrix with block to be analysed
-            for (int center_x = offset; center_x < dataPtr->size() - offset; center_x++) {  
-                //std::vector<int16_t> rowData;
-                for (int center_y = offset; center_y < (*dataPtr)[center_x].size() - offset; center_y++) {
-                    center = {center_x, center_y};      
-                    *block_mat = get_matrix_block(dataPtr, kernel_size, center); // Get NxN block of image matrix
-                    (*fMat)[center_x-1][center_y-1] = NumPP::sum_mat_mul_matching_elements(block_mat, kMat); // Multiply block by kernel matrix
-                    //rowData.push_back(r);                
-                }
-                //fMat->push_back(rowData);
-            }
-
-            delete kMat, block_mat;
-            return fMat;
         }
     public:
+        /* First attempt for neural network, commented and not removed because there may be parts we can use
+
         NeuralNetwork(int input_size, int hidden_size1, int hidden_size2, int output_size) 
         {
            // Initialize weights and biases randomly
@@ -1589,7 +1549,59 @@ namespace MLPP
             update_parameters(dw1, dw2, dw3, db1, db2, db3, learning_rate); // Update weights and biases
             
         }
+        */
+        
+        // Method that "creates convolutional layer" for training a CNN
+        template <typename T>
+        static Mat4d<T> conv_2d(const Mat4d<T>& data_mat, const int& number_of_filters = 5, const int& kernel_size = 3,
+                                    const Activation& activation_function = RELU, const Padding& padding = SAME)
+        {
+            if (data_mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat4d<T>();
+            }
 
+            // Create output matrix
+            Mat4d<T> out_mat(data_mat.size(), Mat3d<T>(data_mat[0].size(), Mat2d<T>(data_mat[0][0].size(), std::vector<T>(number_of_filters)))); 
+            Mat2d<int8_t> filter{{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}}; // !!! Testing only !!!
+            Mat3d<T> feature_maps;
+            Mat3d<T> activated_feature_map;
+
+            for (size_t i = 0; i < data_mat.size(); i++)
+            {
+                feature_maps = conv_2d_process<T, u_int8_t>(data_mat[i], filter, padding, kernel_size, number_of_filters); 
+                activated_feature_map = activation_layer(feature_maps, activation_function);
+                out_mat[i] = activated_feature_map;
+            }
+
+            return out_mat;     
+        }
+
+        // Method that iterates through 3d matrix and reduces it by selecting max value for each iteration
+        template <typename T>
+        static Mat3d<T> max_pooling(const Mat3d<T>& mat, const int& size = 2, const int& stride = 2)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat3d<T>();
+            }
+
+            Mat3d<T> pool_mat(mat.size()/2, Mat2d<T>(mat[0].size()/2, std::vector<T>(1)));
+            std::pair<size_t, size_t> og_mat_loc = {0, 0};
+
+            for (size_t i = 0; i < pool_mat.size(); i++) {
+                og_mat_loc.second = 0;
+                for (size_t j = 0; j < pool_mat[i].size(); j++) {
+                    Mat2d<T> block_mat = get_2d_block_from_mat(mat, size, 0, og_mat_loc, 0);
+                    pool_mat[i][j][0] = NumPP::find_max_value(block_mat);
+                    og_mat_loc.second += stride;
+                }
+                og_mat_loc.first += stride;
+            }
+
+            return pool_mat;
+        }         
+        
         // Further methods to be implemented
     };
 
@@ -1776,9 +1788,84 @@ namespace MLPP
             return opencv_mat;
         }
         
+        // Method that iterates through all images in given directory and return Mat4d with all images converted to Mat3d
+        static Mat4d<u_int8_t> preapre_training_data(const std::string& dir_path, const bool& resize = true, const bool& gray_scale = true, 
+                                                const std::pair<size_t, size_t>& shape = {240,240})
+        {
+            if (!fs::exists(dir_path) && !fs::is_directory(dir_path)) {
+                std::cerr << "Error: Directory not valid" << std::endl;
+                return Mat4d<u_int8_t>();
+            }
+
+            cv::Mat* imagePtr = new cv::Mat(); // Create pointer to store open cv matrices read from each image    
+            Mat4d<u_int8_t> training_data_mat; // Create 4d matrix that will hold all images matrices
+
+            if (!gray_scale && resize) {
+                // Iterate over the contents of the directory
+                for (const auto &entry : fs::directory_iterator(dir_path)) {
+                    *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
+                    cv::resize(*imagePtr, *imagePtr, cv::Size(shape.first, shape.second)); // Re-scale image based on shape parameter
+                    Mat3d<u_int8_t>* converted_image_mat = convert_color_image(imagePtr); // Convert opencv matrix to Mat3d
+                    training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
+
+                    delete converted_image_mat;
+                }
+
+                delete imagePtr;
+
+                return training_data_mat;
+            }
+
+            if (gray_scale && !resize) {    
+                // Iterate over the contents of the directory
+                for (const auto &entry : fs::directory_iterator(dir_path)) {
+                    *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
+                    cv::cvtColor(*imagePtr, *imagePtr, cv::COLOR_BGR2GRAY); // Convert image to gray scale
+                    Mat3d<u_int8_t>* converted_image_mat = convert_gray_image(imagePtr); // Convert opencv matrix to Mat3d
+                    training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
+
+                    delete converted_image_mat;
+                }
+
+                delete imagePtr;
+
+                return training_data_mat;
+            }
+
+           
+            if (gray_scale && resize) {
+                // Iterate over the contents of the directory
+                for (const auto &entry : fs::directory_iterator(dir_path)) {
+                    *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
+                    cv::resize(*imagePtr, *imagePtr, cv::Size(shape.first, shape.second)); // Re-scale image based on shape parameter
+                    cv::cvtColor(*imagePtr, *imagePtr, cv::COLOR_BGR2GRAY); // Convert image to gray scale
+                    Mat3d<u_int8_t>* converted_image_mat = convert_gray_image(imagePtr); // Convert opencv matrix to Mat3d
+                    training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
+
+                    delete converted_image_mat;
+                }
+
+                delete imagePtr;
+
+                return training_data_mat;
+            }
+
+            // Iterate over the contents of the directory
+            for (const auto &entry : fs::directory_iterator(dir_path)) {
+                *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
+                Mat3d<u_int8_t>* converted_image_mat = convert_color_image(imagePtr); // Convert opencv matrix to Mat3d
+                training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
+
+                delete converted_image_mat;
+            }
+
+            delete imagePtr;
+
+            return training_data_mat;
+        }
+
         // Further methods to be implemented
     };
     
     // Further classes to be implemented
 }
-

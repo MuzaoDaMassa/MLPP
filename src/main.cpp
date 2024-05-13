@@ -201,8 +201,37 @@ int main4()
     return 0;	
 }
 
-// Mini tests for Neural Network unit
+// Mini tests for Open Cv integration unit
 int main()
+{
+    string dir_path = "../tests/Images";
+
+    auto training_data = OpencvIntegration::preapre_training_data(dir_path);
+
+    cout << to_string(training_data.size()) << "," << to_string(training_data[0].size()) << ",";
+    cout << to_string(training_data[0][0].size()) << "," << to_string(training_data[0][0][0].size()) << endl;
+
+
+    auto conv_output = NeuralNetwork::conv_2d(training_data, 5, 3, RELU, SAME);
+
+    cout << to_string(conv_output.size()) << "," << to_string(conv_output[0].size()) << ",";
+    cout << to_string(conv_output[0][0].size()) << "," << to_string(conv_output[0][0][0].size()) << endl;
+
+    for (size_t i = 0; i < conv_output.size(); i++)
+    {
+        auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&conv_output[i]);
+        string window_name = "Training data " + to_string(i + 1);
+        cv::namedWindow(window_name, cv::WINDOW_AUTOSIZE);
+        cv::imshow(window_name, cv2Image);
+        cv::waitKey(0);
+    } 
+
+    return 0;
+}
+
+/*
+// Mini tests for Neural Network unit
+int main6()
 {
     cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Exterior.jpeg"));
 	if (!imagePtr->data) { 
@@ -229,9 +258,9 @@ int main()
     auto nImagePtr = OpencvIntegration::convert_gray_image(grayPtr);
     //auto nImagePtr = OpencvIntegration::convert_color_image(rImagePtr);
     //auto fImage = ComputerVision::conv_2d<int16_t, u_int8_t>(*nImagePtr, filter_1, 3);
-    auto fImage = ComputerVision::conv_2d<u_int8_t, u_int8_t>(*nImagePtr, filter_1, SAME, 3);
+    //auto fImage = NeuralNetwork::conv_2d<u_int8_t, u_int8_t>(*nImagePtr, filter_1, NeuralNetwork::SAME, 3);
     //auto rImage = NumPP::tanh(fImage);
-    auto rImage = ComputerVision::relu(fImage);
+    //auto rImage = NumPP::relu(fImage);
     //auto cv2Image = OpencvIntegration::get_open_cv_color_mat<u_int8_t>(nImagePtr);
     //auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(nImagePtr);
     //auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&fImage);
@@ -245,7 +274,7 @@ int main()
     cv::waitKey(0);
 
     //auto pImage = ComputerVision::max_pooling(fImage);
-    auto pImage = ComputerVision::max_pooling(rImage);
+    auto pImage = NeuralNetwork::max_pooling(rImage);
     auto cv2Image_2 = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&pImage);
     //auto cv2Image_2 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&pImage);
 
@@ -253,10 +282,10 @@ int main()
     cv::imshow("Pooling Result Image", cv2Image_2);
     cv::waitKey(0);
 
-    auto fImage_2 = ComputerVision::conv_2d<u_int8_t, u_int8_t>(*nImagePtr, filter_3, SAME, 3);
+    auto fImage_2 = NeuralNetwork::conv_2d<u_int8_t, u_int8_t>(*nImagePtr, filter_3, NeuralNetwork::SAME, 3);
     //auto fImage_2 = ComputerVision::conv_2d<int16_t, int16_t>(pImage, filter_3, 3);
     //auto rImage_2 = NumPP::tanh(fImage_2);
-    auto rImage_2 = ComputerVision::relu(fImage_2);
+    auto rImage_2 = NumPP::relu(fImage_2);
     //auto cv2Image_3 = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&fImage_2);
     auto cv2Image_3 = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&rImage_2);
     //auto cv2Image_3 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&fImage_2);
@@ -267,7 +296,7 @@ int main()
     cv::waitKey(0);
     
     //auto pImage_2 = ComputerVision::max_pooling(fImage_2);
-    auto pImage_2 = ComputerVision::max_pooling(rImage_2);
+    auto pImage_2 = NeuralNetwork::max_pooling(rImage_2);
     auto cv2Image_4 = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&pImage_2);
     //auto cv2Image_4 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&pImage_2);
 
@@ -275,7 +304,7 @@ int main()
     cv::imshow("Pooling Result Image 2", cv2Image_4);
     cv::waitKey(0);
     
-    /* 
+
     auto fImage_3 = ComputerVision::conv_2d<int16_t, int16_t>(pImage_2, 3);
     //auto rImage_3 = NumPP::tanh(fImage_3);
     //auto rImage_3 = ComputerVision::relu(fImage_3);
@@ -292,8 +321,8 @@ int main()
 
     cv::namedWindow("Pooling Result Image 3", cv::WINDOW_AUTOSIZE);
     cv::imshow("Pooling Result Image 3", cv2Image_6);
-    cv::waitKey(0);  */
-
+    cv::waitKey(0); 
     return 0;
-
 }
+
+*/
