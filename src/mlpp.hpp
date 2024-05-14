@@ -42,8 +42,6 @@ SOFTWARE.
 #include <opencv2/videoio.hpp>
 #pragma endregion
 
-namespace fs = std::filesystem;
-
 namespace MLPP 
 {
 #pragma region New Data Structure declarations
@@ -97,6 +95,29 @@ namespace MLPP
             return result;
         }
 
+        // Overload of add method that adds two vectors of same shape
+        template <typename T>
+        static std::vector<T> add(const std::vector<T>& a, const std::vector<T>& b)
+        {
+            if (a.empty() || b.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return std::vector<T>();
+            }
+
+            if (a.size() != b.size()) {
+                std::cerr << "Error: Incompatible shapes" << std::endl;
+                return std::vector<T>();
+            }
+
+            std::vector<T> output_vector(a.size());
+
+            for (size_t i = 0; i < output_vector.size(); i++) {
+                output_vector[i] = a[i] + b[i];
+            }
+
+            return output_vector;
+        }
+
         // Method that receives two 2d matrices and returns their dot product
         template <typename T> 
         static Mat2d<T> dot(const Mat2d<T>& a, const Mat2d<T>& b)
@@ -124,6 +145,36 @@ namespace MLPP
             // Display error that informs data matrix is empty
             std::cerr << "Error: Input empty" << std::endl;
             return Mat2d<T>(); // Return empty matrix
+        }
+
+        // Overload of dot method that multiplies vector with 2d matrix and return a vector
+        // I.E, we treat vector as 2d matrix of size (0,R) and multiply with matrix of size (R,C)
+        // Returning a matrix of size (0,C), which is treated as vector to return
+        template <typename T> 
+        static std::vector<T> dot(const std::vector<T>& a, const Mat2d<T>& b)
+        {
+            if (a.empty() || b.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return std::vector<T>();
+            }
+
+            if (a.size() != b.size()) {
+                std::cerr << "Error: Incompatible shapes" << std::endl;
+                return std::vector<T>();
+            }
+
+            std::vector<T> output_vector(b[0].size()); // Create output vector with b matrix columns size
+            T r; // Create variable to store temporary results
+
+            for (size_t i = 0; i < output_vector.size(); i++) {
+                r = 0;
+                for (size_t j = 0; j < a.size(); j++) {
+                    r += a[j] * b[j][i];
+                }
+                output_vector[i] = r; // Fill output vector with dot result from row j and column i
+            }
+
+            return output_vector;
         }
 
         // Method that finds and store maximun value in 2d matrix
@@ -399,6 +450,24 @@ namespace MLPP
             return value;
         }
 
+        // Overload method that applies Rectified Linear Unit to every value in vector
+        template <typename T>
+        static std::vector<T> relu(const std::vector<T>& vec)
+        {
+            if (vec.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return std::vector<T>();
+            }
+
+            std::vector<T> output_vector(vec.size());
+
+            for (size_t i = 0; i < output_vector.size(); i++) {
+                output_vector[i] = NumPP::relu(vec[i]);
+            }
+
+            return output_vector;
+        }
+
         // Overload method that applies Rectified Linear Unit to every value in 3d matrix
         template <typename T>
         static Mat3d<T> relu(const Mat3d<T>& mat)
@@ -649,7 +718,25 @@ namespace MLPP
             return r; 
         } 
 
-        // Method that apply tanh function to every element in 2d matrix
+        // Method that apply tanh function to every element in vector
+        template <typename T>
+        static std::vector<T> tanh(const std::vector<T>& vec)
+        {
+            if (vec.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return std::vector<T>();
+            }
+
+            std::vector<T> output_vector(vec.size());
+
+            for (size_t i = 0; i < output_vector.size(); i++) {
+                output_vector[i] = static_cast<T>(std::tanh(vec[i]));
+            }
+
+            return output_vector;
+        }
+
+        // Overload of tanh ethod that apply tanh function to every element in 2d matrix
         template <typename T>
         static Mat2d<T> tanh(const Mat2d<T>& mat)
         {
@@ -1439,7 +1526,7 @@ namespace MLPP
 
         // Method that applies activation function
         template <typename T>
-        static Mat3d<T> activation_layer(const Mat3d<T>& mat, const Activation& activation_function)
+        static Mat3d<T> activation_process(const Mat3d<T>& mat, const Activation& activation_function)
         {
             if (mat.empty()) {
                 std::cerr << "Error: Input is empty" << std::endl;
@@ -1456,6 +1543,78 @@ namespace MLPP
                 return Mat3d<T>();
             }
         }
+
+        // Overload of activation process method to work with vectors
+        template <typename T>
+        static std::vector<T> activation_process(const std::vector<T>& vec, const Activation& activation_function)
+        {
+            if (vec.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return std::vector<T>();
+            }
+
+            switch (activation_function)
+            {
+            case RELU:
+                return NumPP::relu(vec);
+            case TANH:
+                return NumPP::tanh(vec);
+            default:
+                return std::vector<T>();
+            }
+        }
+    
+        // Method that iterates through 3d matrix and reduces it by selecting max value for each iteration
+        template <typename T>
+        static Mat3d<T> max_pool_process(const Mat3d<T>& mat, const int& size = 2, const int& stride = 2, 
+                                        const int& depth = 1)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat3d<T>();
+            }
+
+            Mat3d<T> pool_mat(mat.size()/2, Mat2d<T>(mat[0].size()/2, std::vector<T>(depth)));
+            std::pair<size_t, size_t> og_mat_loc = {0, 0};
+
+            for (size_t f = 0; f < depth; f++) {
+                for (size_t i = 0; i < pool_mat.size(); i++) {
+                    og_mat_loc.second = 0;
+                    for (size_t j = 0; j < pool_mat[i].size(); j++) {
+                        Mat2d<T> block_mat = get_2d_block_from_mat(mat, size, 0, og_mat_loc, f);
+                        pool_mat[i][j][f] = NumPP::find_max_value(block_mat);
+                        og_mat_loc.second += stride;
+                    }
+                    og_mat_loc.first += stride;
+                }
+            }
+
+            return pool_mat;
+        }    
+
+        // Method that flattens 3d matrix into vector
+        template <typename T>
+        static std::vector<T> flatten_process(const Mat3d<T>& mat)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return std::vector<T>();
+            }
+
+            int depth = mat[0][0].size();
+            std::vector<T> output_vector;
+
+            for (size_t i = 0; i < depth; i++) {
+                for (size_t i = 0; i < mat.size(); i++) {
+                    for (size_t j = 0; j < mat[i].size(); j++) {
+                        output_vector.push_back(mat[i][j][depth]);
+                    }
+                }
+            }
+
+            return output_vector;
+        }
+
     public:
         /* First attempt for neural network, commented and not removed because there may be parts we can use
 
@@ -1551,57 +1710,98 @@ namespace MLPP
         }
         */
         
-        // Method that "creates convolutional layer" for training a CNN
+        // Method that "creates" convolutional layer for training a CNN
         template <typename T>
-        static Mat4d<T> conv_2d(const Mat4d<T>& data_mat, const int& number_of_filters = 5, const int& kernel_size = 3,
+        static Mat4d<T> conv_2d(const Mat4d<T>& input_mat, const int& number_of_filters = 5, const int& kernel_size = 3,
                                     const Activation& activation_function = RELU, const Padding& padding = SAME)
         {
-            if (data_mat.empty()) {
+            if (input_mat.empty()) {
                 std::cerr << "Error: Input is empty" << std::endl;
                 return Mat4d<T>();
             }
 
             // Create output matrix
-            Mat4d<T> out_mat(data_mat.size(), Mat3d<T>(data_mat[0].size(), Mat2d<T>(data_mat[0][0].size(), std::vector<T>(number_of_filters)))); 
+            Mat4d<T> output_mat(input_mat.size(), Mat3d<T>(input_mat[0].size(), Mat2d<T>(input_mat[0][0].size(), std::vector<T>(number_of_filters)))); 
             Mat2d<int8_t> filter{{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}}; // !!! Testing only !!!
             Mat3d<T> feature_maps;
             Mat3d<T> activated_feature_map;
 
-            for (size_t i = 0; i < data_mat.size(); i++)
+            for (size_t i = 0; i < input_mat.size(); i++)
             {
-                feature_maps = conv_2d_process<T, u_int8_t>(data_mat[i], filter, padding, kernel_size, number_of_filters); 
-                activated_feature_map = activation_layer(feature_maps, activation_function);
-                out_mat[i] = activated_feature_map;
+                feature_maps = conv_2d_process<T, u_int8_t>(input_mat[i], filter, padding, kernel_size, number_of_filters); 
+                activated_feature_map = activation_process(feature_maps, activation_function);
+                output_mat[i] = activated_feature_map;
             }
 
-            return out_mat;     
+            return output_mat;     
         }
 
-        // Method that iterates through 3d matrix and reduces it by selecting max value for each iteration
-        template <typename T>
-        static Mat3d<T> max_pooling(const Mat3d<T>& mat, const int& size = 2, const int& stride = 2)
+        // Method that "creates" pooling layer for training a CNN
+        template <typename T> 
+        static Mat4d<T> max_pooling(const Mat4d<T>& input_mat, const int& size = 2, const int& stride = 2)
         {
-            if (mat.empty()) {
+            if (input_mat.empty()) {
                 std::cerr << "Error: Input is empty" << std::endl;
-                return Mat3d<T>();
+                return Mat4d<T>();
             }
 
-            Mat3d<T> pool_mat(mat.size()/2, Mat2d<T>(mat[0].size()/2, std::vector<T>(1)));
-            std::pair<size_t, size_t> og_mat_loc = {0, 0};
+            int depth = input_mat[0][0][0].size();
+            Mat4d<T> output_mat;
+            Mat3d<T> pooled_mat;
 
-            for (size_t i = 0; i < pool_mat.size(); i++) {
-                og_mat_loc.second = 0;
-                for (size_t j = 0; j < pool_mat[i].size(); j++) {
-                    Mat2d<T> block_mat = get_2d_block_from_mat(mat, size, 0, og_mat_loc, 0);
-                    pool_mat[i][j][0] = NumPP::find_max_value(block_mat);
-                    og_mat_loc.second += stride;
-                }
-                og_mat_loc.first += stride;
+            for (size_t i = 0; i < input_mat.size(); i++) {
+                pooled_mat = max_pool_process(input_mat[i], size, stride, depth);
+                output_mat.push_back(pooled_mat);
             }
 
-            return pool_mat;
-        }         
+            return output_mat;
+        }
         
+        // Method that flattens multi dimension matrices into single vector with every value stored in matrices
+        // Resulting vector for every image will be a new row in new 2d matrix
+        template <typename T>
+        static Mat2d<T> flatten(const Mat4d<T>& input_mat)
+        {
+            if (input_mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat2d<T>();
+            }
+
+            Mat2d<T> output_matrix;
+            std::vector<T> image_vector;
+
+            for (size_t i = 0; i < input_mat.size(); i++)
+            {
+                image_vector = flatten_process(input_mat[i]);
+                output_matrix.push_back(image_vector);
+            }
+
+            return output_matrix;
+        }
+
+        // Method that applis linear transformation to input, i.e, condenses input into a smaller size
+        template <typename T>
+        static Mat2d<T> dense(const Mat2d<T>& input_mat, const Mat2d<T>& weight_matrix, const std::vector<T>& bias_vector, 
+                                const int& output_size, const Activation& activation_function)
+        {
+            if (input_mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat2d<T>();
+            }
+
+            Mat2d<T> output_mat; // Create output matrix
+            std::vector<T> transformed_vector; // Create vector to store result of linear transformation
+            std::vector<T> activated_vector; // Create vector to store result of activation function
+
+            for (size_t i = 0; i < input_mat.size(); i++) {
+                transformed_vector = NumPP::add(NumPP::dot(input_mat[i], weight_matrix), bias_vector);
+                activated_vector = activation_process(transformed_vector, activation_function);
+                output_mat.push_back(activated_vector);
+            }
+
+            return output_mat;
+        }
+
         // Further methods to be implemented
     };
 
@@ -1789,10 +1989,10 @@ namespace MLPP
         }
         
         // Method that iterates through all images in given directory and return Mat4d with all images converted to Mat3d
-        static Mat4d<u_int8_t> preapre_training_data(const std::string& dir_path, const bool& resize = true, const bool& gray_scale = true, 
+        static Mat4d<u_int8_t> prepare_training_data(const std::string& dir_path, const bool& resize = true, const bool& gray_scale = true, 
                                                 const std::pair<size_t, size_t>& shape = {240,240})
         {
-            if (!fs::exists(dir_path) && !fs::is_directory(dir_path)) {
+            if (!std::filesystem::exists(dir_path) && !std::filesystem::is_directory(dir_path)) {
                 std::cerr << "Error: Directory not valid" << std::endl;
                 return Mat4d<u_int8_t>();
             }
@@ -1802,7 +2002,7 @@ namespace MLPP
 
             if (!gray_scale && resize) {
                 // Iterate over the contents of the directory
-                for (const auto &entry : fs::directory_iterator(dir_path)) {
+                for (const auto &entry : std::filesystem::directory_iterator(dir_path)) {
                     *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
                     cv::resize(*imagePtr, *imagePtr, cv::Size(shape.first, shape.second)); // Re-scale image based on shape parameter
                     Mat3d<u_int8_t>* converted_image_mat = convert_color_image(imagePtr); // Convert opencv matrix to Mat3d
@@ -1818,7 +2018,7 @@ namespace MLPP
 
             if (gray_scale && !resize) {    
                 // Iterate over the contents of the directory
-                for (const auto &entry : fs::directory_iterator(dir_path)) {
+                for (const auto &entry : std::filesystem::directory_iterator(dir_path)) {
                     *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
                     cv::cvtColor(*imagePtr, *imagePtr, cv::COLOR_BGR2GRAY); // Convert image to gray scale
                     Mat3d<u_int8_t>* converted_image_mat = convert_gray_image(imagePtr); // Convert opencv matrix to Mat3d
@@ -1835,7 +2035,7 @@ namespace MLPP
            
             if (gray_scale && resize) {
                 // Iterate over the contents of the directory
-                for (const auto &entry : fs::directory_iterator(dir_path)) {
+                for (const auto &entry : std::filesystem::directory_iterator(dir_path)) {
                     *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
                     cv::resize(*imagePtr, *imagePtr, cv::Size(shape.first, shape.second)); // Re-scale image based on shape parameter
                     cv::cvtColor(*imagePtr, *imagePtr, cv::COLOR_BGR2GRAY); // Convert image to gray scale
@@ -1851,7 +2051,7 @@ namespace MLPP
             }
 
             // Iterate over the contents of the directory
-            for (const auto &entry : fs::directory_iterator(dir_path)) {
+            for (const auto &entry : std::filesystem::directory_iterator(dir_path)) {
                 *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
                 Mat3d<u_int8_t>* converted_image_mat = convert_color_image(imagePtr); // Convert opencv matrix to Mat3d
                 training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data

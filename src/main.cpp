@@ -201,36 +201,68 @@ int main4()
     return 0;	
 }
 
-// Mini tests for Open Cv integration unit
+// Mini tests for Open Cv integration + Neural network units
 int main()
 {
     string dir_path = "../tests/Images";
 
-    auto training_data = OpencvIntegration::preapre_training_data(dir_path);
+    auto training_data = OpencvIntegration::prepare_training_data(dir_path, true, true, {28, 28});
 
-    cout << to_string(training_data.size()) << "," << to_string(training_data[0].size()) << ",";
-    cout << to_string(training_data[0][0].size()) << "," << to_string(training_data[0][0][0].size()) << endl;
-
+    cout << "Input shape = ";
+    cout << "(" << to_string(training_data.size()) << "," << to_string(training_data[0].size()) << ",";
+    cout << to_string(training_data[0][0].size()) << "," << to_string(training_data[0][0][0].size()) << ")" << endl;
 
     auto conv_output = NeuralNetwork::conv_2d(training_data, 5, 3, RELU, SAME);
 
-    cout << to_string(conv_output.size()) << "," << to_string(conv_output[0].size()) << ",";
-    cout << to_string(conv_output[0][0].size()) << "," << to_string(conv_output[0][0][0].size()) << endl;
+    cout << "Convolution output shape = ";
+    cout << "(" << to_string(conv_output.size()) << "," << to_string(conv_output[0].size()) << ",";
+    cout << to_string(conv_output[0][0].size()) << "," << to_string(conv_output[0][0][0].size()) << ")" << endl;
+    
+    auto pool_output = NeuralNetwork::max_pooling(conv_output, 2, 2);
 
+    cout << "Pooling output shape = ";
+    cout << "(" << to_string(pool_output.size()) << "," << to_string(pool_output[0].size()) << ",";
+    cout << to_string(pool_output[0][0].size()) << "," << to_string(pool_output[0][0][0].size()) << ")" << endl;
+
+    /*
     for (size_t i = 0; i < conv_output.size(); i++)
     {
-        auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&conv_output[i]);
+        auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&pool_output[i]);
         string window_name = "Training data " + to_string(i + 1);
         cv::namedWindow(window_name, cv::WINDOW_AUTOSIZE);
         cv::imshow(window_name, cv2Image);
         cv::waitKey(0);
     } 
+    */
+    
+    auto flatten_output = NeuralNetwork::flatten(pool_output);
+    auto shape = NumPP::get_shape(flatten_output);
 
+    cout << "Flatten output shape = ";
+    cout << "(" << shape.first << ", " << shape.second << ")" << endl;
+
+    std::vector<u_int8_t> bias_vector = NumPP::ones<u_int8_t>(120);
+    Mat2d<u_int8_t> weight_matrix = NumPP::rand<u_int8_t>(flatten_output[0].size(), 120, -1, 1);
+    auto dense_output = NeuralNetwork::dense(flatten_output, weight_matrix, bias_vector, 120, RELU);
+    shape = NumPP::get_shape(dense_output);
+
+    cout << "Dense 1 output shape = ";
+    cout << "(" << shape.first << ", " << shape.second << ")" << endl;
+
+    bias_vector = NumPP::ones<u_int8_t>(10);
+    weight_matrix = NumPP::rand<u_int8_t>(dense_output[0].size(), 10, -1, 1);
+    auto dense_output_2 = NeuralNetwork::dense(dense_output, weight_matrix, bias_vector, 10, RELU);
+
+    shape = NumPP::get_shape(dense_output_2);
+
+    cout << "Dense 2 output shape = ";
+    cout << "(" << shape.first << ", " << shape.second << ")" << endl;
+    
     return 0;
 }
 
-/*
-// Mini tests for Neural Network unit
+
+/*  Mini tests for Neural Network unit
 int main6()
 {
     cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Exterior.jpeg"));
@@ -262,9 +294,9 @@ int main6()
     //auto rImage = NumPP::tanh(fImage);
     //auto rImage = NumPP::relu(fImage);
     //auto cv2Image = OpencvIntegration::get_open_cv_color_mat<u_int8_t>(nImagePtr);
-    //auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(nImagePtr);
+    auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(nImagePtr);
     //auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&fImage);
-    auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&rImage);
+    //auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&rImage);
     //auto cv2Image = OpencvIntegration::get_open_cv_color_mat<int16_t>(&fImage);
     //auto cv2Image = OpencvIntegration::get_open_cv_color_mat<u_int8_t>(&fImage);
     //auto cv2Image = OpencvIntegration::get_open_cv_color_mat<int16_t>(&rImage);
@@ -274,55 +306,14 @@ int main6()
     cv::waitKey(0);
 
     //auto pImage = ComputerVision::max_pooling(fImage);
-    auto pImage = NeuralNetwork::max_pooling(rImage);
-    auto cv2Image_2 = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&pImage);
+    //auto pImage = NeuralNetwork::max_pooling(rImage);
+    //auto cv2Image_2 = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&pImage);
     //auto cv2Image_2 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&pImage);
 
-    cv::namedWindow("Pooling Result Image", cv::WINDOW_AUTOSIZE);
-    cv::imshow("Pooling Result Image", cv2Image_2);
-    cv::waitKey(0);
+    //cv::namedWindow("Pooling Result Image", cv::WINDOW_AUTOSIZE);
+    //cv::imshow("Pooling Result Image", cv2Image_2);
+    //cv::waitKey(0);
 
-    auto fImage_2 = NeuralNetwork::conv_2d<u_int8_t, u_int8_t>(*nImagePtr, filter_3, NeuralNetwork::SAME, 3);
-    //auto fImage_2 = ComputerVision::conv_2d<int16_t, int16_t>(pImage, filter_3, 3);
-    //auto rImage_2 = NumPP::tanh(fImage_2);
-    auto rImage_2 = NumPP::relu(fImage_2);
-    //auto cv2Image_3 = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&fImage_2);
-    auto cv2Image_3 = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&rImage_2);
-    //auto cv2Image_3 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&fImage_2);
-    //auto cv2Image_3 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&rImage_2);
-
-    cv::namedWindow("Convolution Result Image 2", cv::WINDOW_AUTOSIZE);
-    cv::imshow("Convolution Result Image 2", cv2Image_3);
-    cv::waitKey(0);
-    
-    //auto pImage_2 = ComputerVision::max_pooling(fImage_2);
-    auto pImage_2 = NeuralNetwork::max_pooling(rImage_2);
-    auto cv2Image_4 = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&pImage_2);
-    //auto cv2Image_4 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&pImage_2);
-
-    cv::namedWindow("Pooling Result Image 2", cv::WINDOW_AUTOSIZE);
-    cv::imshow("Pooling Result Image 2", cv2Image_4);
-    cv::waitKey(0);
-    
-
-    auto fImage_3 = ComputerVision::conv_2d<int16_t, int16_t>(pImage_2, 3);
-    //auto rImage_3 = NumPP::tanh(fImage_3);
-    //auto rImage_3 = ComputerVision::relu(fImage_3);
-    auto cv2Image_5 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&fImage_3);
-    //auto cv2Image_5 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&rImage_3);
-
-    cv::namedWindow("Convolution Result Image 3", cv::WINDOW_AUTOSIZE);
-    cv::imshow("Convolution Result Image 3", cv2Image_5);
-    cv::waitKey(0);
-
-    auto pImage_3 = ComputerVision::max_pooling(fImage_3);
-    //auto pImage_3 = ComputerVision::max_pooling(rImage_3);
-    auto cv2Image_6 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&pImage_3);
-
-    cv::namedWindow("Pooling Result Image 3", cv::WINDOW_AUTOSIZE);
-    cv::imshow("Pooling Result Image 3", cv2Image_6);
-    cv::waitKey(0); 
     return 0;
 }
-
-*/
+ */
