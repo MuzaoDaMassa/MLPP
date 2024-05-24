@@ -440,14 +440,14 @@ namespace MLPP
             return result;
         }
 
-        // Method that applies Rectified Linear Unit function to value
+        // Method that applies Rectified Linear Unit function to input
         template <typename T>
-        static T relu(const T& value)
+        static T relu(const T& input)
         {
-            if (value <= 0) {
+            if (input <= 0) {
                 return 0;
             }
-            return value;
+            return input;
         }
 
         // Overload method that applies Rectified Linear Unit to every value in vector
@@ -590,6 +590,50 @@ namespace MLPP
             }
             
             return result;        
+        }
+
+        // Method that applies softmax function to vector
+        // !!! Still need to work on method a little more, make sure everything is working properly !!!
+        template <typename T> 
+        static std::vector<T> softmax(const std::vector<T>& input_vector)
+        {
+            if (input_vector.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return std::vector<T>();
+            }
+
+            std::cout << input_vector[0] << ", " << input_vector[1] << ", " << input_vector[2] << std::endl;
+            std::vector<T> exp_values(input_vector.size()); // Create vector to store computed exponential values
+
+            // Find the maximum value in the input to improve numerical stability
+            T max_input = static_cast<double>(NumPP::find_max_value(input_vector));
+            // Determine a scaling factor to ensure values fall within a manageable range
+            const T scaling_factor = 10000.0;
+            // Create vector to hold adjusted values
+            std::vector<T> adjusted_values(input_vector.size());
+
+            // Subtract max input to current input value and apply scaling
+            for (size_t i = 0; i < adjusted_values.size(); i++)
+            {   
+                // Get adjusted value for current input value
+                adjusted_values[i] = (input_vector[i] - max_input) / scaling_factor;
+                std::cout << "Adjusted Value " << i << ": " << adjusted_values[i] << std::endl;
+                // Apply exponential function to adjusted value
+                exp_values[i] = std::exp(adjusted_values[i]); 
+                std::cout << "Exp Value " << i << ": " << exp_values[i] << std::endl;
+            }         
+            
+            // Compute the sum of exponentials
+            T sum_exp = std::accumulate(exp_values.begin(), exp_values.end(), static_cast<T>(0));
+            std::cout << "Sum " << sum_exp << std::endl;
+
+            // Normalize exponentials to get probabilities
+            for (size_t i = 0; i < exp_values.size(); i++)
+            {   
+                exp_values[i] /= sum_exp;
+            }
+            
+            return exp_values;
         }
 
         // Method to subtract two matrices
@@ -966,7 +1010,7 @@ namespace MLPP
         // vector of positions Outside vecotor holds all rows indexes element was found,
         // and inside vector holds all columns indexes element was found
         template <typename T> 
-        static Mat2d<int> find_all(const Mat2d<T>& dataMatrix, const T& desiredElemet)
+        static Mat2d<int> find_all(const Mat2d<T>& dataMatrix, const T& desiredElement)
         {
             // Creat position vector
             Mat2d<int> pos;
@@ -975,7 +1019,7 @@ namespace MLPP
                 // Loop through matrix to check for desired element
                 for (int row = 0; row < dataMatrix.size(); row++) {
                     for (int col = 0; col < dataMatrix[row].size(); col++) {
-                        if (dataMatrix[row][col] == desiredElemet) {
+                        if (dataMatrix[row][col] == desiredElement) {
                             std::vector<int> currentPos{row, col};
                             pos.push_back(currentPos);
                         }
@@ -994,6 +1038,52 @@ namespace MLPP
             return pos;
         }
         
+        // Overload of find_all that returns number of times element was found, not their position (Mat2d)
+        template <typename T>
+        static int find_all(const T& desiredElement, const Mat2d<T>& dataMatrix)
+        {
+            if (dataMatrix.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return 0;
+            }
+
+            int counter = 0;
+
+            for (size_t i = 0; i < dataMatrix.size(); i++) {
+                for (size_t j = 0; j < dataMatrix[i].size(); j++) {
+                    if (dataMatrix[i][j] == desiredElement) {
+                        counter++;
+                    }
+                }
+            }
+
+            return counter;
+        }
+
+        // Overload of find_all that returns number of times element was found, not their position (Mat3d)
+        template <typename T>
+        static int find_all(const T& desiredElement, const Mat3d<T>& dataMatrix)
+        {
+            if (dataMatrix.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return 0;
+            }
+
+            int counter = 0;
+
+            for (size_t d = 0; d < dataMatrix[0][0].size(); d++) {
+                for (size_t i = 0; i < dataMatrix.size(); i++) {
+                    for (size_t j = 0; j < dataMatrix[i].size(); j++) {
+                        if (dataMatrix[i][j][d] == desiredElement) {
+                            counter++;
+                        }
+                    }
+                }
+            }
+
+            return counter;
+        }
+
         // Method to search data matrix by position, return element at requqested position on 2d Matrix
         template <typename T> 
         static T find_by_pos(const Mat2d<T>& dataMatrix, std::vector<int>& pos)
@@ -1407,14 +1497,14 @@ namespace MLPP
        
         // Method that normalize pixel values to interval [0,1]
         template <typename T>
-        static Mat3d<T> normalize_pixels(const Mat3d<u_int8_t>* matPtr)
+        static Mat3d<T> normalize_pixels(const Mat3d<T>* matPtr)
         {
             if (matPtr == nullptr) {
                 std::cerr << "Error: Input is null" << std::endl;
                 return Mat3d<T>();
             }
 
-            Mat3d<T> nMat(matPtr->size(), Mat2d<T>((*matPtr)[0].size(), std::vector<T>(3)));
+            Mat3d<T> nMat(matPtr->size(), Mat2d<T>((*matPtr)[0].size(), std::vector<T>((*matPtr)[0][0].size())));
 
             for (size_t i = 0; i < matPtr->size(); i++) {
                 for (size_t j = 0; j < (*matPtr)[i].size(); j++) {
@@ -1470,10 +1560,8 @@ namespace MLPP
         }
         
         // Method that applies filter(kernel) to 3d matrix, will be used in Convolutional layer for neural network applications
-        // !!! Still need to test if values are being filled correctly in all feature maps created, i.e, it has to have the same 
-        // !!! as number of filters and since for now there's only one filter being passed all have to be the same !!!
-        template <typename T, typename R>
-        static Mat3d<T> conv_2d_process(const Mat3d<R>& mat, const Mat2d<int8_t>& kernel_mat, const Padding& padding, const int& kernel_size, 
+        template <typename T>
+        static Mat3d<T> conv_2d_process(const Mat3d<T>& mat, const Mat2d<T>& kernel_mat, const Padding& padding, const int& kernel_size, 
                                         const int& number_of_filters)
         {
             if (mat.empty()) {
@@ -1502,18 +1590,18 @@ namespace MLPP
                     for (size_t j = 0; j < feature_maps[i].size(); j++) {
                         output_location = {i, j};
                         for (size_t k = 0; k < channels; k++) { 
-                            Mat2d<R> block_mat = get_2d_block_from_mat(mat, kernel_size, offset, output_location, k);
+                            Mat2d<T> block_mat = get_2d_block_from_mat(mat, kernel_size, offset, output_location, k);
                             if (k == 0) {
                                 // Blue channel
-                                filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, kernel_mat);
+                                filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T>(block_mat, kernel_mat);
                             }
                             else if (k == 1) {
                                 // Green channel
-                                filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, kernel_mat);
+                                filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T>(block_mat, kernel_mat);
                             }
                             else {
                                 // Red channel
-                                filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T, R, int8_t>(block_mat, kernel_mat);
+                                filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T>(block_mat, kernel_mat);
                             }
                         }
                         feature_maps[i][j][f] = NumPP::get_sum_of_vector<T>(filtered_pixel) + 1; // Get sum of all channel and add bias, currently fixed to +1
@@ -1559,6 +1647,8 @@ namespace MLPP
                 return NumPP::relu(vec);
             case TANH:
                 return NumPP::tanh(vec);
+            case SOFTMAX:
+                return NumPP::softmax(vec);
             default:
                 return std::vector<T>();
             }
@@ -1578,6 +1668,7 @@ namespace MLPP
             std::pair<size_t, size_t> og_mat_loc = {0, 0};
 
             for (size_t f = 0; f < depth; f++) {
+                og_mat_loc.first = 0;
                 for (size_t i = 0; i < pool_mat.size(); i++) {
                     og_mat_loc.second = 0;
                     for (size_t j = 0; j < pool_mat[i].size(); j++) {
@@ -1604,14 +1695,14 @@ namespace MLPP
             int depth = mat[0][0].size();
             std::vector<T> output_vector;
 
-            for (size_t i = 0; i < depth; i++) {
+            for (size_t d = 0; d < depth; d++) {
                 for (size_t i = 0; i < mat.size(); i++) {
                     for (size_t j = 0; j < mat[i].size(); j++) {
-                        output_vector.push_back(mat[i][j][depth]);
+                        output_vector.push_back(mat[i][j][d]);
                     }
                 }
             }
-
+            
             return output_vector;
         }
 
@@ -1722,13 +1813,13 @@ namespace MLPP
 
             // Create output matrix
             Mat4d<T> output_mat(input_mat.size(), Mat3d<T>(input_mat[0].size(), Mat2d<T>(input_mat[0][0].size(), std::vector<T>(number_of_filters)))); 
-            Mat2d<int8_t> filter{{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}}; // !!! Testing only !!!
+            Mat2d<T> filter{{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}}; // !!! Testing only !!!
             Mat3d<T> feature_maps;
             Mat3d<T> activated_feature_map;
 
             for (size_t i = 0; i < input_mat.size(); i++)
             {
-                feature_maps = conv_2d_process<T, u_int8_t>(input_mat[i], filter, padding, kernel_size, number_of_filters); 
+                feature_maps = conv_2d_process<T>(input_mat[i], filter, padding, kernel_size, number_of_filters); 
                 activated_feature_map = activation_process(feature_maps, activation_function);
                 output_mat[i] = activated_feature_map;
             }
@@ -1738,7 +1829,7 @@ namespace MLPP
 
         // Method that "creates" pooling layer for training a CNN
         template <typename T> 
-        static Mat4d<T> max_pooling(const Mat4d<T>& input_mat, const int& size = 2, const int& stride = 2)
+        static Mat4d<T> pooling(const Mat4d<T>& input_mat, const int& size = 2, const int& stride = 2)
         {
             if (input_mat.empty()) {
                 std::cerr << "Error: Input is empty" << std::endl;
@@ -1810,6 +1901,54 @@ namespace MLPP
     class OpencvIntegration
     {
     private:
+        // Method that caculate parameters necessary to apply warp perspective method
+        static cv::Mat calc_params_for_warp_perspective(const cv::Mat& src_image, const int& adjustable_center_x = 0, 
+                                                        const int& reduction_factor = 3, const bool& rectangular_perspective = false)
+        {
+            if (src_image.empty()) {
+                std::cerr << "Error: Input is null" << std::endl;
+                return cv::Mat();
+            }
+
+            int xfd = (550 / reduction_factor); // Horizontal displacement in relation to image center
+            int yf = (450 / reduction_factor); // Veritcal position of origin points
+            int offset_x = 0; // Horizontal displacement of origin points in relation to image borders
+            int img_height = src_image.rows;
+            int img_width = src_image.cols;
+
+            // Get horizontal position of image center adding a adjustable displacement
+            int center_x = (img_width / 2) + adjustable_center_x;
+
+            std::vector<cv::Point2f> src(4); // Create vector of Point2f type to store origin coordinates
+            std::vector<cv::Point2f> dst(4); // Create vector of Point2f type to store destination coordinates
+            
+            if (rectangular_perspective) {
+                src[0] = cv::Point2f(offset_x, img_height); // Top left
+                src[1] = cv::Point2f(offset_x, yf); // Bottom left
+                src[2] = cv::Point2f((img_width - offset_x), yf); // Bottom right
+                src[3] = cv::Point2f((img_width - offset_x), img_height); // Top right
+
+                dst[0] = cv::Point2f(offset_x, img_height);
+                dst[1] = cv::Point2f(offset_x, yf); 
+                dst[2] = cv::Point2f((img_height - offset_x), yf); 
+                dst[3] = cv::Point2f((img_height - offset_x), img_height);
+
+                return cv::getPerspectiveTransform(src, dst);
+            }
+
+            src[0] = cv::Point2f(offset_x, img_height); // Top left
+            src[1] = cv::Point2f((center_x - xfd), yf); // Bottom left
+            src[2] = cv::Point2f((center_x + xfd), yf); // Bottom right
+            src[3] =cv::Point2f((img_width - offset_x), img_height); // Top right
+
+            dst[0] = cv::Point2f(offset_x, img_height);
+            dst[1] = cv::Point2f(offset_x, yf);
+            dst[2] = cv::Point2f((img_height - offset_x), yf);
+            dst[3] = cv::Point2f((img_height - offset_x), img_height);
+
+            return cv::getPerspectiveTransform(src, dst);
+        }
+
         // Get sum of a open cv Vec3b data type, returns the sum in declared data type
         template <typename T>
         static T get_sum_of_vector(const cv::Vec3b& vec)
@@ -1824,9 +1963,27 @@ namespace MLPP
 
         }
     public:
+        // Method that applies Warp perspective to image and return image in 
+        // Bird's Eye View (bev) perspective
+        static cv::Mat change_perspective_to_bev(const cv::Mat& src_image)
+        {
+            if (src_image.empty()) {
+                std::cerr << "Error: Input is null" << std::endl;
+                return cv::Mat();
+            }
+
+            cv::Mat bev_image;
+            cv::Mat parameters = calc_params_for_warp_perspective(src_image, 0, 3, false);
+            cv::Size img_dimensions(src_image.cols, src_image.rows);
+            cv::warpPerspective(src_image, bev_image, parameters, img_dimensions, cv::INTER_LINEAR);
+
+            return bev_image;
+        }
+
         // Get open cv color image matrix and convert it to our 3d matrix data structure
         // Default format is Blue, Green, Red
-        static Mat3d<u_int8_t>* convert_color_image(const cv::Mat* image) 
+        template <typename T>
+        static Mat3d<T>* convert_color_image(const cv::Mat* image) 
         {
             if (!image->data) {
                 // Display error that informs data matrix is empty
@@ -1835,7 +1992,7 @@ namespace MLPP
             }
 
             // Create a new Mat3d pointer and allocate memory for it
-            Mat3d<u_int8_t>* nMatPtr = new Mat3d<u_int8_t>(image->rows, Mat2d<uint8_t>(image->cols, std::vector<uint8_t>(3)));
+            Mat3d<T>* nMatPtr = new Mat3d<T>(image->rows, Mat2d<T>(image->cols, std::vector<T>(3)));
             // Create pointer to hold open cv pixel values
             cv::Vec3b* cvPixelPtr = new cv::Vec3b(3);
             // Iterate over each pixel in the given image
@@ -1844,7 +2001,9 @@ namespace MLPP
                     // Assing current pixel data to pointer
                     (*cvPixelPtr) = image->at<cv::Vec3b>(i, j);
                     // Access the corresponding pixel in the new matrix and copy pixel values
-                    (*nMatPtr)[i][j] = {(*cvPixelPtr)[0], (*cvPixelPtr)[1], (*cvPixelPtr)[2]};
+                    (*nMatPtr)[i][j] = {static_cast<T>((*cvPixelPtr)[0]),
+                                        static_cast<T>((*cvPixelPtr)[1]), 
+                                        static_cast<T>((*cvPixelPtr)[2])};
                 }
             }
 
@@ -1854,7 +2013,8 @@ namespace MLPP
         }
 
         // Overload of convert_image method for gray images
-        static Mat3d<u_int8_t>* convert_gray_image(const cv::Mat* image) 
+        template <typename T>
+        static Mat3d<T>* convert_gray_image(const cv::Mat* image) 
         {
             if (!image->data) {
                 // Display error that informs data matrix is empty
@@ -1863,7 +2023,7 @@ namespace MLPP
             }
 
             // Create a new Mat3d pointer and allocate memory for it
-            Mat3d<u_int8_t>* nMatPtr = new Mat3d<u_int8_t>(image->rows, Mat2d<uint8_t>(image->cols, std::vector<uint8_t>(1)));
+            Mat3d<T>* nMatPtr = new Mat3d<T>(image->rows, Mat2d<T>(image->cols, std::vector<T>(1)));
             // Create pointer to hold open cv pixel values
             uchar* cvPixelPtr = new uchar(1);
             // Iterate over each pixel in the given image
@@ -1872,7 +2032,7 @@ namespace MLPP
                     // Assing current pixel data to pointer
                     (*cvPixelPtr) = image->at<uchar>(i, j);
                     // Access the corresponding pixel in the new matrix and copy pixel values
-                    (*nMatPtr)[i][j][0] = static_cast<u_int8_t>((*cvPixelPtr));
+                    (*nMatPtr)[i][j][0] = static_cast<T>((*cvPixelPtr));
                 }
             }
 
@@ -1965,8 +2125,10 @@ namespace MLPP
         }
 
         // Method to convert 3d matrix into open cv matrix
+        // Added conv_channel parameter to test if all convolutional feature maps are being
+        // generated correctly
         template <typename T>
-        static cv::Mat get_open_cv_gray_mat(const Mat3d<T>* matPtr)
+        static cv::Mat get_open_cv_gray_mat(const Mat3d<T>* matPtr, int conv_channel = 0)
         {
             if (matPtr == nullptr) {
                 std::cerr << "Error: Input is empty" << std::endl;
@@ -1981,7 +2143,7 @@ namespace MLPP
 
             for (int i = 0; i < rows; i++) {
                 for (int j = 0; j < cols; j++) {
-                    opencv_mat.at<uchar>(i, j) = static_cast<uchar>((*matPtr)[i][j][0]);
+                    opencv_mat.at<uchar>(i, j) = static_cast<uchar>((*matPtr)[i][j][conv_channel]);
                 }
             }
 
@@ -1989,25 +2151,26 @@ namespace MLPP
         }
         
         // Method that iterates through all images in given directory and return Mat4d with all images converted to Mat3d
-        static Mat4d<u_int8_t> prepare_training_data(const std::string& dir_path, const bool& resize = true, const bool& gray_scale = true, 
+        template <typename T>
+        static Mat4d<T> prepare_training_data(const std::string& dir_path, const bool& resize = true, const bool& gray_scale = true, 
                                                 const std::pair<size_t, size_t>& shape = {240,240})
         {
             if (!std::filesystem::exists(dir_path) && !std::filesystem::is_directory(dir_path)) {
                 std::cerr << "Error: Directory not valid" << std::endl;
-                return Mat4d<u_int8_t>();
+                return Mat4d<T>();
             }
 
             cv::Mat* imagePtr = new cv::Mat(); // Create pointer to store open cv matrices read from each image    
-            Mat4d<u_int8_t> training_data_mat; // Create 4d matrix that will hold all images matrices
+            Mat4d<T> training_data_mat; // Create 4d matrix that will hold all images matrices
 
             if (!gray_scale && resize) {
                 // Iterate over the contents of the directory
                 for (const auto &entry : std::filesystem::directory_iterator(dir_path)) {
                     *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
                     cv::resize(*imagePtr, *imagePtr, cv::Size(shape.first, shape.second)); // Re-scale image based on shape parameter
-                    Mat3d<u_int8_t>* converted_image_mat = convert_color_image(imagePtr); // Convert opencv matrix to Mat3d
+                    Mat3d<T>* converted_image_mat = convert_color_image<T>(imagePtr); // Convert opencv matrix to Mat3d
                     training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
-
+                    
                     delete converted_image_mat;
                 }
 
@@ -2016,12 +2179,12 @@ namespace MLPP
                 return training_data_mat;
             }
 
-            if (gray_scale && !resize) {    
+            if (gray_scale && !resize) {
                 // Iterate over the contents of the directory
                 for (const auto &entry : std::filesystem::directory_iterator(dir_path)) {
                     *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
                     cv::cvtColor(*imagePtr, *imagePtr, cv::COLOR_BGR2GRAY); // Convert image to gray scale
-                    Mat3d<u_int8_t>* converted_image_mat = convert_gray_image(imagePtr); // Convert opencv matrix to Mat3d
+                    Mat3d<T>* converted_image_mat = convert_gray_image<T>(imagePtr); // Convert opencv matrix to Mat3d
                     training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
 
                     delete converted_image_mat;
@@ -2031,15 +2194,17 @@ namespace MLPP
 
                 return training_data_mat;
             }
-
-           
+      
             if (gray_scale && resize) {
                 // Iterate over the contents of the directory
                 for (const auto &entry : std::filesystem::directory_iterator(dir_path)) {
+                    std::cout << entry.path() << std::endl;
                     *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
                     cv::resize(*imagePtr, *imagePtr, cv::Size(shape.first, shape.second)); // Re-scale image based on shape parameter
                     cv::cvtColor(*imagePtr, *imagePtr, cv::COLOR_BGR2GRAY); // Convert image to gray scale
-                    Mat3d<u_int8_t>* converted_image_mat = convert_gray_image(imagePtr); // Convert opencv matrix to Mat3d
+                    //cv::GaussianBlur(*imagePtr, *imagePtr, cv::Size(5, 5), 0);
+                    //cv::Canny(*imagePtr, *imagePtr, 50, 250);
+                    Mat3d<T>* converted_image_mat = convert_gray_image<T>(imagePtr); // Convert opencv matrix to Mat3d
                     training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
 
                     delete converted_image_mat;
@@ -2053,7 +2218,7 @@ namespace MLPP
             // Iterate over the contents of the directory
             for (const auto &entry : std::filesystem::directory_iterator(dir_path)) {
                 *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
-                Mat3d<u_int8_t>* converted_image_mat = convert_color_image(imagePtr); // Convert opencv matrix to Mat3d
+                Mat3d<T>* converted_image_mat = convert_color_image<T>(imagePtr); // Convert opencv matrix to Mat3d
                 training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
 
                 delete converted_image_mat;

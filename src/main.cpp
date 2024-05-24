@@ -79,9 +79,9 @@ int main2()
 }
 
 // Open CV Image testing
-int main3()
+int main()
 {
-    cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
+    /* cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
 	if (!imagePtr->data) { 
 		std::cerr << "Error: No image data" << std::endl; 
 		return -1; 
@@ -96,13 +96,13 @@ int main3()
     //cv::Mat* grayPtr = new cv::Mat(grayImage);
 
     auto start = startBenchmark();
-    auto nImagePtr = OpencvIntegration::convert_color_image(imagePtr);
+    auto nImagePtr = OpencvIntegration::convert_color_image<float>(imagePtr);
     auto end = stopBenchmark();
 
     cout << getDuration(start, end, Seconds) << endl;
 
     // Access the element at row 'i' and column 'j'
-    std::vector<uint8_t>& pixel = (*nImagePtr)[150][150];
+    std::vector<float>& pixel = (*nImagePtr)[150][150];
     cv::Vec3b& cvPixel = imagePtr->at<cv::Vec3b>(150, 150);
     // Now you can access individual channels of the pixel
     uint8_t blue = pixel[0];
@@ -114,7 +114,31 @@ int main3()
     cout << endl;
 
     delete imagePtr;
-    //delete rImagePtr;
+    //delete rImagePtr; */
+
+    cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
+	if (!imagePtr->data) { 
+		std::cerr << "Error: No image data" << std::endl; 
+		return -1; 
+	} 
+
+    cv::Mat resizedImage;  
+    cv::resize(*imagePtr, resizedImage, cv::Size(240, 240));
+
+    cv::Mat grayImage;
+    cv::cvtColor(resizedImage, grayImage, cv::COLOR_BGR2GRAY);
+
+    cv::namedWindow("Gray Scale Image", cv::WINDOW_AUTOSIZE);
+    cv::imshow("Gray Scale Image", grayImage);
+    cv::waitKey(0);
+
+    cv::Mat bev_image = OpencvIntegration::change_perspective_to_bev(grayImage);
+
+    cv::namedWindow("Birds Eye View", cv::WINDOW_AUTOSIZE);
+    cv::imshow("Birds Eye View", bev_image);
+    cv::waitKey(0);
+
+
     return 0;
 }
 
@@ -158,15 +182,15 @@ int main4()
 			break;
 		}
 
-        auto matPtr = OpencvIntegration::convert_color_image(framePtr);
+        auto matPtr = OpencvIntegration::convert_color_image<float>(framePtr);
 
         // Access the element at row 'i' and column 'j'
-        std::vector<uint8_t> &pixel = (*matPtr)[150][150];
+        std::vector<float> &pixel = (*matPtr)[150][150];
 
         // Now you can access individual channels of the pixel
-        uint8_t blue = pixel[0];
-        uint8_t green = pixel[1];
-        uint8_t red = pixel[2];
+        float blue = pixel[0];
+        float green = pixel[1];
+        float red = pixel[2];
         cout << framePtr->at<cv::Vec3b>(150, 150) << endl;
         cout << "[" << to_string(pixel[0]) << ", " << to_string(pixel[1]) << ", " << to_string(pixel[2]) << "]" << endl;
 
@@ -202,12 +226,12 @@ int main4()
 }
 
 // Mini tests for Open Cv integration + Neural network units
-int main()
+int main5()
 {
     string dir_path = "../tests/Images";
 
-    auto training_data = OpencvIntegration::prepare_training_data(dir_path, true, true, {28, 28});
-
+    auto training_data = OpencvIntegration::prepare_training_data<float>(dir_path, true, true, {28, 28});
+ 
     cout << "Input shape = ";
     cout << "(" << to_string(training_data.size()) << "," << to_string(training_data[0].size()) << ",";
     cout << to_string(training_data[0][0].size()) << "," << to_string(training_data[0][0][0].size()) << ")" << endl;
@@ -218,16 +242,9 @@ int main()
     cout << "(" << to_string(conv_output.size()) << "," << to_string(conv_output[0].size()) << ",";
     cout << to_string(conv_output[0][0].size()) << "," << to_string(conv_output[0][0][0].size()) << ")" << endl;
     
-    auto pool_output = NeuralNetwork::max_pooling(conv_output, 2, 2);
-
-    cout << "Pooling output shape = ";
-    cout << "(" << to_string(pool_output.size()) << "," << to_string(pool_output[0].size()) << ",";
-    cout << to_string(pool_output[0][0].size()) << "," << to_string(pool_output[0][0][0].size()) << ")" << endl;
-
     /*
-    for (size_t i = 0; i < conv_output.size(); i++)
-    {
-        auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&pool_output[i]);
+    for (size_t i = 0; i < conv_output.size(); i++) {
+        auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<float>(&conv_output[i], 4);
         string window_name = "Training data " + to_string(i + 1);
         cv::namedWindow(window_name, cv::WINDOW_AUTOSIZE);
         cv::imshow(window_name, cv2Image);
@@ -235,28 +252,57 @@ int main()
     } 
     */
     
+    auto pool_output = NeuralNetwork::pooling(conv_output, 2, 2);
+
+    cout << "Pooling output shape = ";
+    cout << "(" << to_string(pool_output.size()) << "," << to_string(pool_output[0].size()) << ",";
+    cout << to_string(pool_output[0][0].size()) << "," << to_string(pool_output[0][0][0].size()) << ")" << endl;
+
+    /*
+    for (size_t i = 0; i < pool_output.size(); i++) {
+        auto cv2Image = OpencvIntegration::get_open_cv_gray_mat<float>(&pool_output[i], 4);
+        string window_name = "Training data " + to_string(i + 1);
+        cv::namedWindow(window_name, cv::WINDOW_AUTOSIZE);
+        cv::imshow(window_name, cv2Image);
+        cv::waitKey(0);
+    } 
+    */
+     
     auto flatten_output = NeuralNetwork::flatten(pool_output);
     auto shape = NumPP::get_shape(flatten_output);
 
     cout << "Flatten output shape = ";
     cout << "(" << shape.first << ", " << shape.second << ")" << endl;
 
-    std::vector<u_int8_t> bias_vector = NumPP::ones<u_int8_t>(120);
-    Mat2d<u_int8_t> weight_matrix = NumPP::rand<u_int8_t>(flatten_output[0].size(), 120, -1, 1);
+    std::vector<float> bias_vector = NumPP::ones<float>(120);
+    Mat2d<float> weight_matrix = NumPP::rand<float>(flatten_output[0].size(), 120, -1, 1);
+    //Mat2d<float> weight_matrix = NumPP::ones<float>(flatten_output[0].size(), 120);
     auto dense_output = NeuralNetwork::dense(flatten_output, weight_matrix, bias_vector, 120, RELU);
+
     shape = NumPP::get_shape(dense_output);
 
     cout << "Dense 1 output shape = ";
     cout << "(" << shape.first << ", " << shape.second << ")" << endl;
 
-    bias_vector = NumPP::ones<u_int8_t>(10);
-    weight_matrix = NumPP::rand<u_int8_t>(dense_output[0].size(), 10, -1, 1);
-    auto dense_output_2 = NeuralNetwork::dense(dense_output, weight_matrix, bias_vector, 10, RELU);
-
+    bias_vector = NumPP::ones<float>(3);
+    weight_matrix = NumPP::rand<float>(dense_output[0].size(), 3, 0.0, 0.5);
+    //weight_matrix = NumPP::ones<float>(dense_output[0].size(), 3);
+    auto dense_output_2 = NeuralNetwork::dense(dense_output, weight_matrix, bias_vector, 3, SOFTMAX);
+    
     shape = NumPP::get_shape(dense_output_2);
 
     cout << "Dense 2 output shape = ";
     cout << "(" << shape.first << ", " << shape.second << ")" << endl;
+    
+    for (size_t i = 0; i < dense_output_2.size(); i++) {
+        cout << i << ", ";
+        for (size_t j = 0; j < dense_output_2[i].size(); j++) {
+            cout << dense_output_2[i][j] << ", ";
+        }
+        cout << endl;
+    }
+
+    Utils::check_softmax_sums(dense_output_2);
     
     return 0;
 }
@@ -305,8 +351,8 @@ int main6()
     cv::imshow("Convolution Result Image", cv2Image);
     cv::waitKey(0);
 
-    //auto pImage = ComputerVision::max_pooling(fImage);
-    //auto pImage = NeuralNetwork::max_pooling(rImage);
+    //auto pImage = ComputerVision::pooling(fImage);
+    //auto pImage = NeuralNetwork::pooling(rImage);
     //auto cv2Image_2 = OpencvIntegration::get_open_cv_gray_mat<u_int8_t>(&pImage);
     //auto cv2Image_2 = OpencvIntegration::get_open_cv_color_mat<int16_t>(&pImage);
 

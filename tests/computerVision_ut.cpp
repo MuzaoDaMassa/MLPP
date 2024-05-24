@@ -21,9 +21,9 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS")
             REQUIRE(imagePtr2->data);
             REQUIRE(imagePtr3->data);
 
-            auto cvt_ImagePtr1 = OpencvIntegration::convert_color_image(imagePtr1);
-            auto cvt_ImagePtr2 = OpencvIntegration::convert_color_image(imagePtr2);
-            auto cvt_ImagePtr3 = OpencvIntegration::convert_color_image(imagePtr3);
+            auto cvt_ImagePtr1 = OpencvIntegration::convert_color_image<float>(imagePtr1);
+            auto cvt_ImagePtr2 = OpencvIntegration::convert_color_image<float>(imagePtr2);
+            auto cvt_ImagePtr3 = OpencvIntegration::convert_color_image<float>(imagePtr3);
 
             for (size_t i = 0; i < imagePtr1->rows; i++) {
                 for (size_t j = 0; j < imagePtr1->cols; j++) {
@@ -80,9 +80,9 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS")
             REQUIRE(grayPtr2->data);
             REQUIRE(grayPtr3->data);
 
-            auto cvt_ImagePtr1 = OpencvIntegration::convert_color_image(grayPtr1);
-            auto cvt_ImagePtr2 = OpencvIntegration::convert_color_image(grayPtr2);
-            auto cvt_ImagePtr3 = OpencvIntegration::convert_color_image(grayPtr3);
+            auto cvt_ImagePtr1 = OpencvIntegration::convert_color_image<float>(grayPtr1);
+            auto cvt_ImagePtr2 = OpencvIntegration::convert_color_image<float>(grayPtr2);
+            auto cvt_ImagePtr3 = OpencvIntegration::convert_color_image<float>(grayPtr3);
 
             for (size_t i = 0; i < grayPtr1->rows; i++) {
                 for (size_t j = 0; j < grayPtr1->cols; j++) {
@@ -140,9 +140,9 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS")
             REQUIRE(rImagePtr2->data);
             REQUIRE(rImagePtr3->data);
             
-            auto cvt_ImagePtr1 = OpencvIntegration::convert_color_image(rImagePtr1);
-            auto cvt_ImagePtr2 = OpencvIntegration::convert_color_image(rImagePtr2);
-            auto cvt_ImagePtr3 = OpencvIntegration::convert_color_image(rImagePtr3);
+            auto cvt_ImagePtr1 = OpencvIntegration::convert_color_image<float>(rImagePtr1);
+            auto cvt_ImagePtr2 = OpencvIntegration::convert_color_image<float>(rImagePtr2);
+            auto cvt_ImagePtr3 = OpencvIntegration::convert_color_image<float>(rImagePtr3);
 
             for (size_t i = 0; i < rImagePtr1->rows; i++) {
                 for (size_t j = 0; j < rImagePtr1->cols; j++) {
@@ -214,9 +214,9 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS")
             REQUIRE(grayPtr2->data);
             REQUIRE(grayPtr3->data);
 
-            auto cvt_ImagePtr1 = OpencvIntegration::convert_color_image(grayPtr1);
-            auto cvt_ImagePtr2 = OpencvIntegration::convert_color_image(grayPtr2);
-            auto cvt_ImagePtr3 = OpencvIntegration::convert_color_image(grayPtr3);
+            auto cvt_ImagePtr1 = OpencvIntegration::convert_color_image<float>(grayPtr1);
+            auto cvt_ImagePtr2 = OpencvIntegration::convert_color_image<float>(grayPtr2);
+            auto cvt_ImagePtr3 = OpencvIntegration::convert_color_image<float>(grayPtr3);
 
             for (size_t i = 0; i < grayPtr1->rows; i++) {
                 for (size_t j = 0; j < grayPtr1->cols; j++) {
@@ -263,7 +263,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
             cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Color_Black.jpg"));
 
             auto start = startBenchmark();
-            auto cvt_ImagePtr = OpencvIntegration::convert_color_image(imagePtr);
+            auto cvt_ImagePtr = OpencvIntegration::convert_color_image<float>(imagePtr);
             auto stop = stopBenchmark();
 
             std::cout << "FULL SIZE COLOR IMAGE CONVERSION - ALL BLACK JPG BENCHMARK" << std::endl;
@@ -279,7 +279,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
             cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Color_White.jpg"));
 
             auto start = startBenchmark();
-            auto cvt_ImagePtr = OpencvIntegration::convert_color_image(imagePtr);
+            auto cvt_ImagePtr = OpencvIntegration::convert_color_image<float>(imagePtr);
             auto stop = stopBenchmark();
 
             std::cout << "FULL SIZE COLOR IMAGE CONVERSION - ALL WHITE JPG BENCHMARK" << std::endl;
@@ -295,7 +295,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
             cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
 
             auto start = startBenchmark();
-            auto cvt_ImagePtr = OpencvIntegration::convert_color_image(imagePtr);
+            auto cvt_ImagePtr = OpencvIntegration::convert_color_image<float>(imagePtr);
             auto stop = stopBenchmark();
 
             std::cout << "FULL SIZE COLOR IMAGE CONVERSION - TEST IMAGE JPG BENCHMARK" << std::endl;
@@ -314,7 +314,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
             cv::Mat* grayPtr = new cv::Mat(grayImage);
 
             auto start = startBenchmark();
-            auto cvt_ImagePtr = OpencvIntegration::convert_color_image(grayPtr);
+            auto cvt_ImagePtr = OpencvIntegration::convert_color_image<float>(grayPtr);
             auto stop = stopBenchmark();
 
             std::cout << "FULL SIZE GRAY IMAGE CONVERSION - ALL BLACK JPG BENCHMARK" << std::endl;
@@ -334,7 +334,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
             cv::Mat* grayPtr = new cv::Mat(grayImage);
 
             auto start = startBenchmark();
-            auto cvt_ImagePtr = OpencvIntegration::convert_color_image(grayPtr);
+            auto cvt_ImagePtr = OpencvIntegration::convert_color_image<float>(grayPtr);
             auto stop = stopBenchmark();
 
             std::cout << "FULL SIZE GRAY IMAGE CONVERSION - ALL WHITE JPG BENCHMARK" << std::endl;
@@ -354,7 +354,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
             cv::Mat* grayPtr = new cv::Mat(grayImage);
 
             auto start = startBenchmark();
-            auto cvt_ImagePtr = OpencvIntegration::convert_color_image(grayPtr);
+            auto cvt_ImagePtr = OpencvIntegration::convert_color_image<float>(grayPtr);
             auto stop = stopBenchmark();
 
             std::cout << "FULL SIZE GRAY IMAGE CONVERSION - TEST IMAGE JPG BENCHMARK" << std::endl;
@@ -374,7 +374,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
             cv::Mat* rImagePtr = new cv::Mat(resizedImage);
             
             auto start = startBenchmark();
-            auto cvt_ImagePtr = OpencvIntegration::convert_color_image(rImagePtr);
+            auto cvt_ImagePtr = OpencvIntegration::convert_color_image<float>(rImagePtr);
             auto stop = stopBenchmark();
 
             std::cout << "RESIZED COLOR IMAGE CONVERSION - ALL BLACK JPG BENCHMARK" << std::endl;
@@ -394,7 +394,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
             cv::Mat* rImagePtr = new cv::Mat(resizedImage);
             
             auto start = startBenchmark();
-            auto cvt_ImagePtr = OpencvIntegration::convert_color_image(rImagePtr);
+            auto cvt_ImagePtr = OpencvIntegration::convert_color_image<float>(rImagePtr);
             auto stop = stopBenchmark();
 
             std::cout << "RESIZED COLOR IMAGE CONVERSION - ALL WHITE JPG BENCHMARK" << std::endl;
@@ -414,7 +414,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
             cv::Mat* rImagePtr = new cv::Mat(resizedImage);
             
             auto start = startBenchmark();
-            auto cvt_ImagePtr = OpencvIntegration::convert_color_image(rImagePtr);
+            auto cvt_ImagePtr = OpencvIntegration::convert_color_image<float>(rImagePtr);
             auto stop = stopBenchmark();
 
             std::cout << "RESIZED COLOR IMAGE CONVERSION - TEST IMAGE JPG BENCHMARK" << std::endl;
@@ -437,7 +437,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
             cv::Mat* grayPtr = new cv::Mat(grayImage);
             
             auto start = startBenchmark();
-            auto cvt_ImagePtr = OpencvIntegration::convert_color_image(grayPtr);
+            auto cvt_ImagePtr = OpencvIntegration::convert_color_image<float>(grayPtr);
             auto stop = stopBenchmark();
 
             std::cout << "RESIZED GRAY IMAGE CONVERSION - ALL BLACK JPG BENCHMARK" << std::endl;
@@ -460,7 +460,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
             cv::Mat* grayPtr = new cv::Mat(grayImage);
             
             auto start = startBenchmark();
-            auto cvt_ImagePtr = OpencvIntegration::convert_color_image(grayPtr);
+            auto cvt_ImagePtr = OpencvIntegration::convert_color_image<float>(grayPtr);
             auto stop = stopBenchmark();
 
             std::cout << "RESIZED GRAY IMAGE CONVERSION - ALL WHITE JPG BENCHMARK" << std::endl;
@@ -483,7 +483,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
             cv::Mat* grayPtr = new cv::Mat(grayImage);
             
             auto start = startBenchmark();
-            auto cvt_ImagePtr = OpencvIntegration::convert_color_image(grayPtr);
+            auto cvt_ImagePtr = OpencvIntegration::convert_color_image<float>(grayPtr);
             auto stop = stopBenchmark();
 
             std::cout << "RESIZED GRAY IMAGE CONVERSION - TEST IMAGE JPG BENCHMARK" << std::endl;
