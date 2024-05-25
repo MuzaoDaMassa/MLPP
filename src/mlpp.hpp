@@ -70,6 +70,7 @@ namespace MLPP
     enum Padding { SAME, VALID };
 #pragma endregion
 
+#pragma region NumPP
     // Class that contains all methods that are needed for numeric computation
     class NumPP
     {
@@ -608,7 +609,7 @@ namespace MLPP
             // Find the maximum value in the input to improve numerical stability
             T max_input = static_cast<double>(NumPP::find_max_value(input_vector));
             // Determine a scaling factor to ensure values fall within a manageable range
-            const T scaling_factor = 10000.0;
+            const T scaling_factor = 100000.0;
             // Create vector to hold adjusted values
             std::vector<T> adjusted_values(input_vector.size());
 
@@ -863,6 +864,9 @@ namespace MLPP
         // Further methods to be implemented
     };
 
+#pragma endregion
+
+#pragma region DataAnalysis
     // Class that contains all methods that are needed for Data Analysis
     class DataAnalysis 
     {
@@ -1442,7 +1446,10 @@ namespace MLPP
         
         // Further methods to be implemented
     }; 
-    
+
+#pragma endregion
+
+#pragma region ComputerVision
     // Class that will hold support methods for now, and later will include all methods
     // Required for computer vision
     class ComputerVision
@@ -1518,6 +1525,162 @@ namespace MLPP
         }
 
     };
+
+#pragma endregion
+
+#pragma region NeuralNetwork
+    // Abstract base layer class
+    template <typename InputType, typename OutputType, typename DataType>
+    class Layer
+    {
+    public:
+        virtual void forward(const InputType& input, OutputType& output) = 0; 
+        virtual Mat3d<DataType> activation_process(const Mat3d<DataType>& mat, const Activation& activation_function) = 0;
+        //virtual std::vector<DataType> activation_process(const std::vector<DataType>& vec, const Activation& activation_function) = 0;
+        virtual Mat2d<DataType> get_2d_block_from_mat(const Mat3d<DataType>& mat, const int& block_size, const size_t& offset, std::pair<size_t, size_t>& output_loc,
+                                                const size_t& depth) = 0;
+        //virtual Mat3d<DataType> max_pool_process(const Mat3d<DataType>& mat, const int& size = 2, const int& stride = 2, 
+                                        //const int& depth = 1) = 0;
+
+        
+        virtual ~Layer() = default;
+    };
+
+    // Devired Layer Class that creates Convolutional layer
+    template <typename InputType, typename OutputType, typename DataType>
+    class Conv2d : public Layer<InputType,OutputType,DataType>
+    {
+    private:
+        const int m_number_of_filters; // Variable to hold passed number of filters
+        const int m_kernel_size; // Variable to hold kernel matrix size, square matrix so only 1 value needed
+        const Activation m_activation_function; // Variable to hold passed activation function method
+        const Padding m_padding; // Variable to hold passed padding to layer
+        //Mat3d<DataType> m_filters(number_of_filters, Mat2d<DataType>(kernel_size, std::vector<DataType>(kernel_size))); // Variable to hold all filters
+        Mat3d<DataType> m_feature_maps; // Variable to hold current created feature map
+        Mat3d<DataType> m_activated_feature_map; // Variable to hold current activated feature map
+        Mat2d<DataType> m_filter{{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}}; // !!! Testing only !!!
+
+        // Method that applies activation function 
+        Mat3d<DataType> activation_process(const Mat3d<DataType>& mat, const Activation& activation_function) override
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat3d<DataType>();
+            }
+
+            switch (activation_function)
+            {
+            case RELU:
+                return NumPP::relu(mat);
+            case TANH:
+                return NumPP::tanh(mat);
+            default:
+                return Mat3d<DataType>();
+            }
+        }
+
+        // Method that applies filter(kernel) to 3d matrix, will be used in Convolutional layer for neural network applications     
+        Mat3d<DataType> conv_2d_process(const Mat3d<DataType>& mat, const Mat2d<DataType>& kernel_mat, const Padding& padding, 
+                                        const int& kernel_size, const int& number_of_filters)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat3d<DataType>();
+            }
+            
+            size_t offset; // Create variable to store offset, determines output size
+
+            if (padding == SAME) {
+                offset = 0;
+            }
+            else {
+                offset = kernel_size - 1;
+            }
+
+            // Create filtered matrix variable to store and return result
+            Mat3d<DataType> feature_maps(mat.size()-offset, Mat2d<DataType>(mat[0].size()-offset, std::vector<DataType>(number_of_filters))); 
+            std::pair<size_t, size_t> output_location; // Create pair to store output(filtered matrix) current location
+            int channels = mat[0][0].size(); // Get depth of original image
+            std::vector<DataType> filtered_pixel(channels); // Create vector to store convolution iteration result    
+
+            // Loop through input matrix N times and fill feature maps based on number of filters
+            for (size_t f = 0; f < number_of_filters; f++) {
+                for (size_t i = 0; i < feature_maps.size(); i++) {
+                    for (size_t j = 0; j < feature_maps[i].size(); j++) {
+                        output_location = {i, j};
+                        for (size_t k = 0; k < channels; k++) { 
+                            Mat2d<DataType> block_mat = get_2d_block_from_mat(mat, kernel_size, offset, output_location, k);
+                            if (k == 0) {
+                                // Blue channel
+                                filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<DataType>(block_mat, kernel_mat);
+                            }
+                            else if (k == 1) {
+                                // Green channel
+                                filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<DataType>(block_mat, kernel_mat);
+                            }
+                            else {
+                                // Red channel
+                                filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<DataType>(block_mat, kernel_mat);
+                            }
+                        }
+                        feature_maps[i][j][f] = NumPP::get_sum_of_vector<DataType>(filtered_pixel) + 1; // Get sum of all channel and add bias, currently fixed to +1
+                    }
+                }
+            }
+
+            return feature_maps;
+        }
+        // Method that returns 2d matrix block taken from 3d matrix
+        
+        Mat2d<DataType> get_2d_block_from_mat(const Mat3d<DataType>& mat, const int& block_size, const size_t& offset, std::pair<size_t, size_t>& output_loc,
+                                                const size_t& depth) override
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input empty" << std::endl;
+                return Mat2d<DataType>();
+            }
+
+            Mat2d<DataType> b_mat(block_size, std::vector<DataType>(block_size)); // Create block mat variable to store result
+
+            for (size_t i = 0; i < b_mat.size(); i++) {
+                for (size_t j = 0; j < b_mat[i].size(); j++) {   
+                    std::pair<size_t, size_t> og_mat_loc = {output_loc.first+i, output_loc.second+j};
+                    if (og_mat_loc.first < mat.size() - offset && og_mat_loc.second < mat[i].size() - offset) {
+                        b_mat[i][j] = mat[og_mat_loc.first][og_mat_loc.second][depth];
+                    }
+                }
+            }
+
+            return b_mat;
+        }
+ 
+    public:
+        Conv2d(const int& number_of_filters, const int& kernel_size,
+        const Activation& activation_function, const Padding& padding):
+            m_number_of_filters(number_of_filters),
+            m_kernel_size(kernel_size),
+            m_activation_function(activation_function),
+            m_padding(padding)
+        {}
+
+        void forward(const InputType& input, OutputType& output) override 
+        {
+            // Create output matrix
+            Mat4d<DataType> output_mat(input.size(), Mat3d<DataType>(input[0].size(), Mat2d<DataType>(input[0][0].size(), std::vector<DataType>(m_number_of_filters)))); 
+
+            for (size_t i = 0; i < input.size(); i++)
+            {
+                m_feature_maps = conv_2d_process(input[i], m_filter, m_padding, m_kernel_size, m_number_of_filters); 
+                m_activated_feature_map = activation_process(m_feature_maps, m_activation_function);
+                output_mat[i] = m_activated_feature_map;
+            }
+
+            output = output_mat;
+        }
+    };
+
+    // Derived Layer Class that creates Max Pooling layer
+
 
     // Class that contains all methods that are needed for Neural Network usage
     class NeuralNetwork
@@ -1896,9 +2059,12 @@ namespace MLPP
         // Further methods to be implemented
     };
 
+#pragma endregion
+
+#pragma region OpenCvIntegration
     // Class that transforms open cv data structures into mine for later analysis
     // This is temporary, I do not plan to use open cv in public release, this is for learning and testing purposes
-    class OpencvIntegration
+    class OpenCvIntegration
     {
     private:
         // Method that caculate parameters necessary to apply warp perspective method
@@ -1962,7 +2128,59 @@ namespace MLPP
             return result;
 
         }
+    
+        // Method that pre-process image based on parameters
+        static cv::Mat pre_process_image(const cv::Mat* src_image_ptr, const bool& resize, const std::pair<size_t, size_t>& shape, const bool& gray_scale, 
+                                            const bool& apply_blurring, const bool& apply_edge_detection)
+        {
+            if (src_image_ptr->empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return cv::Mat();
+            }
+            
+            cv::Mat p_image = *src_image_ptr; // Create variable to store processed image data
+
+            if (resize) {
+                cv::resize(p_image, p_image, cv::Size(shape.first, shape.second)); // Re-scale image based on shape parameter
+            }
+
+            if (gray_scale) {
+                cv::cvtColor(p_image, p_image, cv::COLOR_BGR2GRAY); // Convert image to gray scale
+            }
+
+            if (apply_blurring) {
+                cv::GaussianBlur(p_image, p_image, cv::Size(5, 5), 0);
+            }
+
+            if (apply_edge_detection) {
+                cv::Canny(p_image, p_image, 50, 250);
+            }
+
+            return p_image;
+        }
     public:
+        // Struct to hold parameters for prepare_training_data method
+        struct TrainingDataParameters
+        {
+            const std::string dir_path;
+            const bool resize = false;
+            const std::pair<size_t, size_t> shape = {240, 240};
+            const bool gray_scale = false;
+            const bool apply_blurring = false;
+            const bool apply_edge_detection = false;
+
+            TrainingDataParameters(const std::string& dir_path, const bool& resize, const std::pair<size_t, size_t>& shape, 
+            const bool& gray_scale, const bool& apply_blurring, const bool& apply_edge_detection):
+                dir_path(dir_path),
+                resize(resize),
+                shape(shape),
+                gray_scale(gray_scale),
+                apply_blurring(apply_blurring), 
+                apply_edge_detection(apply_edge_detection)
+            
+            {}
+        };
+
         // Method that applies Warp perspective to image and return image in 
         // Bird's Eye View (bev) perspective
         static cv::Mat change_perspective_to_bev(const cv::Mat& src_image)
@@ -2089,7 +2307,7 @@ namespace MLPP
                     for (int i = 0; i < rows; i++) {
                         for (int j = 0; j < cols; j++) {
                             if (depth == 1) {
-                                opencv_mat.at<cv::Vec<T, 1>>(i, j)[d] = static_cast<float>((*matPtr)[i][j][d]);
+                                opencv_mat.at<cv::Vec<T, 1>>(i, j)[d] = static_cast<T>((*matPtr)[i][j][d]);
                             } else if (depth == 2) {
                                 opencv_mat.at<cv::Vec<T, 2>>(i, j)[d] = static_cast<T>((*matPtr)[i][j][d]);
                             } else {
@@ -2152,10 +2370,9 @@ namespace MLPP
         
         // Method that iterates through all images in given directory and return Mat4d with all images converted to Mat3d
         template <typename T>
-        static Mat4d<T> prepare_training_data(const std::string& dir_path, const bool& resize = true, const bool& gray_scale = true, 
-                                                const std::pair<size_t, size_t>& shape = {240,240})
+        static Mat4d<T> prepare_training_data(const TrainingDataParameters& params)
         {
-            if (!std::filesystem::exists(dir_path) && !std::filesystem::is_directory(dir_path)) {
+            if (!std::filesystem::exists(params.dir_path) && !std::filesystem::is_directory(params.dir_path)) {
                 std::cerr << "Error: Directory not valid" << std::endl;
                 return Mat4d<T>();
             }
@@ -2163,48 +2380,12 @@ namespace MLPP
             cv::Mat* imagePtr = new cv::Mat(); // Create pointer to store open cv matrices read from each image    
             Mat4d<T> training_data_mat; // Create 4d matrix that will hold all images matrices
 
-            if (!gray_scale && resize) {
+            if (!(params.resize || params.gray_scale || params.apply_blurring || params.apply_edge_detection)) {
                 // Iterate over the contents of the directory
-                for (const auto &entry : std::filesystem::directory_iterator(dir_path)) {
-                    *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
-                    cv::resize(*imagePtr, *imagePtr, cv::Size(shape.first, shape.second)); // Re-scale image based on shape parameter
-                    Mat3d<T>* converted_image_mat = convert_color_image<T>(imagePtr); // Convert opencv matrix to Mat3d
-                    training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
-                    
-                    delete converted_image_mat;
-                }
-
-                delete imagePtr;
-
-                return training_data_mat;
-            }
-
-            if (gray_scale && !resize) {
-                // Iterate over the contents of the directory
-                for (const auto &entry : std::filesystem::directory_iterator(dir_path)) {
-                    *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
-                    cv::cvtColor(*imagePtr, *imagePtr, cv::COLOR_BGR2GRAY); // Convert image to gray scale
-                    Mat3d<T>* converted_image_mat = convert_gray_image<T>(imagePtr); // Convert opencv matrix to Mat3d
-                    training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
-
-                    delete converted_image_mat;
-                }
-
-                delete imagePtr;
-
-                return training_data_mat;
-            }
-      
-            if (gray_scale && resize) {
-                // Iterate over the contents of the directory
-                for (const auto &entry : std::filesystem::directory_iterator(dir_path)) {
+                for (const auto &entry : std::filesystem::directory_iterator(params.dir_path)) {
                     std::cout << entry.path() << std::endl;
                     *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
-                    cv::resize(*imagePtr, *imagePtr, cv::Size(shape.first, shape.second)); // Re-scale image based on shape parameter
-                    cv::cvtColor(*imagePtr, *imagePtr, cv::COLOR_BGR2GRAY); // Convert image to gray scale
-                    //cv::GaussianBlur(*imagePtr, *imagePtr, cv::Size(5, 5), 0);
-                    //cv::Canny(*imagePtr, *imagePtr, 50, 250);
-                    Mat3d<T>* converted_image_mat = convert_gray_image<T>(imagePtr); // Convert opencv matrix to Mat3d
+                    Mat3d<T>* converted_image_mat = convert_color_image<T>(imagePtr); // Convert opencv matrix to Mat3d
                     training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
 
                     delete converted_image_mat;
@@ -2215,10 +2396,14 @@ namespace MLPP
                 return training_data_mat;
             }
 
+            cv::Mat p_image; // Create pointer to store image after pre-processing
+
             // Iterate over the contents of the directory
-            for (const auto &entry : std::filesystem::directory_iterator(dir_path)) {
+            for (const auto &entry : std::filesystem::directory_iterator(params.dir_path)) {
+                std::cout << entry.path() << std::endl;
                 *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
-                Mat3d<T>* converted_image_mat = convert_color_image<T>(imagePtr); // Convert opencv matrix to Mat3d
+                p_image = pre_process_image(imagePtr, params.resize, params.shape, params.gray_scale, params.apply_blurring, params.apply_edge_detection);
+                Mat3d<T>* converted_image_mat = convert_gray_image<T>(&p_image); // Convert opencv matrix to Mat3d
                 training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
 
                 delete converted_image_mat;
@@ -2227,10 +2412,13 @@ namespace MLPP
             delete imagePtr;
 
             return training_data_mat;
+        
         }
 
         // Further methods to be implemented
     };
-    
+
+#pragma endregion
+
     // Further classes to be implemented
 }
