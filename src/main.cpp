@@ -156,11 +156,11 @@ int main4()
     }
 
     // Create a window to display the video
-    cv::namedWindow("Video Stream", cv::WINDOW_NORMAL);
+    cv::namedWindow("Video Stream", cv::WINDOW_AUTOSIZE);
     
 	// Set capture resolution
-	cap.set(cv::CAP_PROP_FRAME_WIDTH, 420);
-	cap.set(cv::CAP_PROP_FRAME_HEIGHT, 240);
+	cap.set(cv::CAP_PROP_FRAME_WIDTH, 64);
+	cap.set(cv::CAP_PROP_FRAME_HEIGHT, 64);
 
 	// Variables for fps calculation
     double fps;
@@ -182,7 +182,7 @@ int main4()
 			break;
 		}
 
-        auto matPtr = OpenCvIntegration::convert_color_image<float>(framePtr);
+/*         auto matPtr = OpenCvIntegration::convert_color_image<float>(framePtr);
 
         // Access the element at row 'i' and column 'j'
         std::vector<float> &pixel = (*matPtr)[150][150];
@@ -193,7 +193,7 @@ int main4()
         float red = pixel[2];
         cout << framePtr->at<cv::Vec3b>(150, 150) << endl;
         cout << "[" << to_string(pixel[0]) << ", " << to_string(pixel[1]) << ", " << to_string(pixel[2]) << "]" << endl;
-
+ */
 		// Convert the frame to grayscale
 		//cv::Mat gray;
 		//cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
@@ -225,100 +225,10 @@ int main4()
     return 0;	
 }
 
-// Mini tests for Open Cv integration + Neural network units
-int main5()
-{
-    auto params = OpenCvIntegration::TrainingDataParameters("../tests/Images", true, {240, 240}, true, true, true);
-
-    auto training_data = OpenCvIntegration::prepare_training_data<float>(params);
- 
-    cout << "Input shape = ";
-    cout << "(" << to_string(training_data.size()) << "," << to_string(training_data[0].size()) << ",";
-    cout << to_string(training_data[0][0].size()) << "," << to_string(training_data[0][0][0].size()) << ")" << endl;
-    
-    
-    for (size_t i = 0; i < training_data.size(); i++) {
-        auto cv2Image = OpenCvIntegration::get_open_cv_gray_mat(&training_data[i], 0);
-        string window_name = "Training data " + to_string(i + 1);
-        cv::namedWindow(window_name, cv::WINDOW_AUTOSIZE);
-        cv::imshow(window_name, cv2Image);
-        cv::waitKey(0);
-    } 
-    
-
-    auto conv_output = NeuralNetwork::conv_2d(training_data, 5, 3, RELU, SAME);
-
-    cout << "Convolution output shape = ";
-    cout << "(" << to_string(conv_output.size()) << "," << to_string(conv_output[0].size()) << ",";
-    cout << to_string(conv_output[0][0].size()) << "," << to_string(conv_output[0][0][0].size()) << ")" << endl;
-    
-    
-    for (size_t i = 0; i < conv_output.size(); i++) {
-        auto cv2Image = OpenCvIntegration::get_open_cv_gray_mat<float>(&conv_output[i], 4);
-        string window_name = "Training data " + to_string(i + 1);
-        cv::namedWindow(window_name, cv::WINDOW_AUTOSIZE);
-        cv::imshow(window_name, cv2Image);
-        cv::waitKey(0);
-    } 
-    
-    
-    auto pool_output = NeuralNetwork::pooling(conv_output, 2, 2);
-
-    cout << "Pooling output shape = ";
-    cout << "(" << to_string(pool_output.size()) << "," << to_string(pool_output[0].size()) << ",";
-    cout << to_string(pool_output[0][0].size()) << "," << to_string(pool_output[0][0][0].size()) << ")" << endl;
-
-    
-    for (size_t i = 0; i < pool_output.size(); i++) {
-        auto cv2Image = OpenCvIntegration::get_open_cv_gray_mat<float>(&pool_output[i], 4);
-        string window_name = "Training data " + to_string(i + 1);
-        cv::namedWindow(window_name, cv::WINDOW_AUTOSIZE);
-        cv::imshow(window_name, cv2Image);
-        cv::waitKey(0);
-    } 
-    
-    auto flatten_output = NeuralNetwork::flatten(pool_output);
-    auto shape = NumPP::get_shape(flatten_output);
-
-    cout << "Flatten output shape = ";
-    cout << "(" << shape.first << ", " << shape.second << ")" << endl;
-
-    std::vector<float> bias_vector = NumPP::ones<float>(120);
-    Mat2d<float> weight_matrix = NumPP::rand<float>(flatten_output[0].size(), 120, -1, 1);
-    //Mat2d<float> weight_matrix = NumPP::ones<float>(flatten_output[0].size(), 120);
-    auto dense_output = NeuralNetwork::dense(flatten_output, weight_matrix, bias_vector, 120, RELU);
-
-    shape = NumPP::get_shape(dense_output);
-
-    cout << "Dense 1 output shape = ";
-    cout << "(" << shape.first << ", " << shape.second << ")" << endl;
-
-    bias_vector = NumPP::ones<float>(3);
-    weight_matrix = NumPP::rand<float>(dense_output[0].size(), 3, 0.0, 0.5);
-    //weight_matrix = NumPP::ones<float>(dense_output[0].size(), 3);
-    auto dense_output_2 = NeuralNetwork::dense(dense_output, weight_matrix, bias_vector, 3, SOFTMAX);
-    
-    shape = NumPP::get_shape(dense_output_2);
-
-    cout << "Dense 2 output shape = ";
-    cout << "(" << shape.first << ", " << shape.second << ")" << endl;
-    
-    for (size_t i = 0; i < dense_output_2.size(); i++) {
-        cout << i << ", ";
-        for (size_t j = 0; j < dense_output_2[i].size(); j++) {
-            cout << dense_output_2[i][j] << ", ";
-        }
-        cout << endl;
-    }
-
-    Utils::check_softmax_sums(dense_output_2);
-    
-    return 0;
-}
-
 // Mini tests for Sequential neural network with open cv
 int main()
 {
+/*  
     auto params = OpenCvIntegration::TrainingDataParameters("../tests/Images", true, {240, 240}, true, true, true);
 
     auto training_data = OpenCvIntegration::prepare_training_data<float>(params);
@@ -336,21 +246,143 @@ int main()
     }  
     
     Mat4d<float> conv_output;
-    Conv2d<Mat4d<float>, Mat4d<float>, float> conv_2d(5, 3, RELU, SAME);
+    Conv2D<Mat4d<float>, Mat4d<float>, float> conv_2d(5, 3, RELU, SAME);
     conv_2d.forward(training_data, conv_output);
 
-    cout << "Output shape = ";
+    cout << "Convolution Output shape = ";
     cout << "(" << to_string(conv_output.size()) << "," << to_string(conv_output[0].size()) << ",";
     cout << to_string(conv_output[0][0].size()) << "," << to_string(conv_output[0][0][0].size()) << ")" << endl;
 
     for (size_t i = 0; i < conv_output.size(); i++) {
-        auto cv2Image = OpenCvIntegration::get_open_cv_gray_mat<float>(&conv_output[i], 0);
+        auto cv2Image = OpenCvIntegration::get_open_cv_gray_mat<float>(&conv_output[i], 4);
         string window_name = "Training data " + to_string(i + 1);
         cv::namedWindow(window_name, cv::WINDOW_AUTOSIZE);
         cv::imshow(window_name, cv2Image);
         cv::waitKey(0);
     } 
 
+    Mat4d<float> pool_output;
+    MaxPooling2D<Mat4d<float>, Mat4d<float>, float> max_pool_2d(2, 2);
+    max_pool_2d.forward(conv_output, pool_output);
+
+    cout << "Max Pooling Output shape = ";
+    cout << "(" << to_string(pool_output.size()) << "," << to_string(pool_output[0].size()) << ",";
+    cout << to_string(pool_output[0][0].size()) << "," << to_string(pool_output[0][0][0].size()) << ")" << endl;
+
+    for (size_t i = 0; i < pool_output.size(); i++) {
+        auto cv2Image = OpenCvIntegration::get_open_cv_gray_mat<float>(&pool_output[i], 4);
+        string window_name = "Training data " + to_string(i + 1);
+        cv::namedWindow(window_name, cv::WINDOW_AUTOSIZE);
+        cv::imshow(window_name, cv2Image);
+        cv::waitKey(0);
+    }
+
+    Mat2d<float> flatten_output;
+    Flatten<Mat4d<float>, Mat2d<float>, float> flatten;
+    flatten.forward(pool_output, flatten_output);
+
+    auto shape = NumPP::get_shape(flatten_output);
+
+    cout << "Flatten output shape = ";
+    cout << "(" << shape.first << ", " << shape.second << ")" << endl;
+
+    Mat2d<float> dense_output_1;
+    Dense<Mat2d<float>, Mat2d<float>, float> dense_1(120, RELU);
+    dense_1.forward(flatten_output, dense_output_1);
+
+    shape = NumPP::get_shape(dense_output_1);
+
+    cout << "Dense 1 output shape = ";
+    cout << "(" << shape.first << ", " << shape.second << ")" << endl;
+
+    Mat2d<float> dense_output_2;
+    Dense<Mat2d<float>, Mat2d<float>, float> dense_2(3, SOFTMAX);
+    dense_2.forward(dense_output_1, dense_output_2);
+
+    shape = NumPP::get_shape(dense_output_2);
+
+    cout << "Dense 2 output shape = ";
+    cout << "(" << shape.first << ", " << shape.second << ")" << endl;
+    
+    for (size_t i = 0; i < dense_output_2.size(); i++) {
+        cout << i << ", ";
+        for (size_t j = 0; j < dense_output_2[i].size(); j++) {
+            cout << dense_output_2[i][j] << ", ";
+        }
+        cout << endl;
+    }
+
+    Utils::check_softmax_sums(dense_output_2);
+
+ */
+
+    auto params = OpenCvIntegration::TrainingDataParameters("../tests/Images", true, {256, 256}, true, true, true);
+
+    auto training_data = OpenCvIntegration::prepare_training_data<_Float32>(params);
+ 
+    cout << "Input shape = ";
+    cout << "(" << to_string(training_data.size()) << "," << to_string(training_data[0].size()) << ",";
+    cout << to_string(training_data[0][0].size()) << "," << to_string(training_data[0][0][0].size()) << ")" << endl;
+
+    NeuralNetwork model;
+    // testing
+    Mat4d<_Float32>* inputPtr = &training_data;
+    void* outPtr = new void*(); 
+
+    model.add_layer(new Conv2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(5, 3, RELU, SAME));
+    model.add_layer(new MaxPooling2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(2,2));
+    //model.add_layer(new Conv2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(16, 3, RELU, SAME));
+    //model.add_layer(new MaxPooling2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(2,2));
+    //model.add_layer(new Conv2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(32, 3, RELU, SAME));
+    //model.add_layer(new MaxPooling2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(2,2));
+    //model.add_layer(new Conv2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(64, 3, RELU, SAME));
+    //model.add_layer(new MaxPooling2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(2,2));
+    //model.add_layer(new Conv2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(128, 3, RELU, SAME));
+    //model.add_layer(new MaxPooling2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(2,2));
+    model.add_layer(new Flatten<Mat4d<_Float32>, Mat2d<_Float32>, _Float32>());
+    model.add_layer(new Dense<Mat2d<_Float32>, Mat2d<_Float32>, _Float32>(120, RELU));
+    model.add_layer(new Dense<Mat2d<_Float32>, Mat2d<_Float32>, _Float32>(3, SIGMOID));
+
+    Mat2d<_Float32> result = model.fit<_Float32>(inputPtr, 5);
+
+    /* Mat4d<_Float32>* pool_output = static_cast<Mat4d<_Float32>*>(outPtr);
+
+    cout << pool_output->size() << endl;
+
+    cout << "Max Pooling Output shape = ";
+    cout << "(" << to_string((*pool_output).size()) << "," << to_string((*pool_output)[0].size()) << ",";
+    cout << to_string((*pool_output)[0][0].size()) << "," << to_string((*pool_output)[0][0][0].size()) << ")" << endl;
+
+    for (size_t i = 0; i < (*pool_output).size(); i++) {
+        auto cv2Image = OpenCvIntegration::get_open_cv_gray_mat<_Float32>((*pool_output)[i], 0);
+        string window_name = "Training data " + to_string(i + 1);
+        cv::namedWindow(window_name, cv::WINDOW_AUTOSIZE);
+        cv::imshow(window_name, cv2Image);
+        cv::waitKey(0);
+    }  */
+        
+
+    /* Mat2d<_Float32>* flatten_output = static_cast<Mat2d<_Float32>*>(outPtr);
+
+    auto shape = NumPP::get_shape(*flatten_output);
+
+    cout << "Flatten output shape = ";
+    cout << "(" << shape.first << ", " << shape.second << ")" << endl;  */ 
+
+    /* auto shape = NumPP::get_shape(result);
+
+    cout << "Output layer shape = ";
+    cout << "(" << shape.first << ", " << shape.second << ")" << endl;
+
+    for (size_t i = 0; i < result.size(); i++) {
+        cout << i << ", ";
+        for (size_t j = 0; j < result[i].size(); j++) {
+            cout << result[i][j] << ", ";
+        }
+        cout << endl;
+    } */
+ 
+    
     return 0;
 }
 

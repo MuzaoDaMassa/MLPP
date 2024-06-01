@@ -31,6 +31,7 @@ SOFTWARE.
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <any>
 #include <type_traits>
 #include <vector>
 #include <random>
@@ -591,6 +592,30 @@ namespace MLPP
             }
             
             return result;        
+        }
+
+        // Method that applies sigmoid function to vector
+        template <typename T> 
+        static std::vector<T> sigmoid(const std::vector<T>& input_vector)
+        {
+            if (input_vector.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return std::vector<T>();
+            }
+
+            std::vector<T> output_vector(input_vector.size());
+            const T scaling_factor = 10000.0; // Smooth values to fit c++ calculations limit
+            T adjusted_value = 0.0;
+
+            for (size_t i = 0; i < output_vector.size(); i++) {
+                adjusted_value = input_vector[i];        
+               
+                //std::cout << adjusted_value << std::endl;
+                output_vector[i] = static_cast<T>(1 / (1 + std::exp(static_cast<double>(-adjusted_value))));
+                adjusted_value = 0;
+            }
+
+            return output_vector;
         }
 
         // Method that applies softmax function to vector
@@ -1530,34 +1555,53 @@ namespace MLPP
 
 #pragma region NeuralNetwork
     // Abstract base layer class
+    class LayerBase 
+    {
+    protected:
+        const bool m_use_weights_and_biases;
+    public:
+        LayerBase(const bool use_weights_and_biases) : m_use_weights_and_biases(use_weights_and_biases) {}
+        virtual ~LayerBase() = default;
+        //virtual void forward(void* input, void* output) = 0;
+        //virtual void forward(void* input, void* output, void* weights, void* bias) = 0;
+        virtual void forward(void* input, void* output, std::any& weights, std::any& bias) = 0;
+        bool get_w_and_b() {return m_use_weights_and_biases;} // testing only
+    };
+
+    // Basic layer methods and define layer input, output, and data types
     template <typename InputType, typename OutputType, typename DataType>
-    class Layer
+    class Layer : public LayerBase
     {
     public:
-        virtual void forward(const InputType& input, OutputType& output) = 0; 
-        virtual Mat3d<DataType> activation_process(const Mat3d<DataType>& mat, const Activation& activation_function) = 0;
-        //virtual std::vector<DataType> activation_process(const std::vector<DataType>& vec, const Activation& activation_function) = 0;
-        virtual Mat2d<DataType> get_2d_block_from_mat(const Mat3d<DataType>& mat, const int& block_size, const size_t& offset, std::pair<size_t, size_t>& output_loc,
-                                                const size_t& depth) = 0;
-        //virtual Mat3d<DataType> max_pool_process(const Mat3d<DataType>& mat, const int& size = 2, const int& stride = 2, 
-                                        //const int& depth = 1) = 0;
-
-        
+        Layer(const bool use_weights_and_biases) : LayerBase(use_weights_and_biases) {};
         virtual ~Layer() = default;
+    protected:
+        //void forward(void* input, void* output) override {}
+        //void forward(void* input, void* output, void* weights, void* bias) override {}
+        void forward(void* input, void* output, std::any& weights, std::any& bias) override {}
+        virtual Mat3d<DataType> activation_process(const Mat3d<DataType>& mat, const Activation& activation_function) {return Mat3d<DataType>();}
+        virtual std::vector<DataType> activation_process(const std::vector<DataType>& vec, const Activation& activation_function) {return std::vector<DataType>();}
+        virtual Mat3d<DataType> conv_2d_process(const Mat3d<DataType>& mat, const Mat3d<DataType>& kernel_mats, const std::vector<DataType>& bias_vec, 
+                                                const Padding& padding, const int& kernel_size, const int& number_of_filters) {return Mat3d<DataType>();}
+        virtual std::vector<DataType> flatten_process(const Mat3d<DataType>& mat) {return std::vector<DataType>();}
+        virtual Mat2d<DataType> get_2d_block_from_mat(const Mat3d<DataType>& mat, const int& block_size, const size_t& offset, std::pair<size_t, size_t>& output_loc,
+                                                        const size_t& depth) {return Mat2d<DataType>();}
+        virtual Mat3d<DataType> max_pool_process(const Mat3d<DataType>& mat, const int& size, const int& stride, const int& depth) {return Mat3d<DataType>();}
     };
 
     // Devired Layer Class that creates Convolutional layer
     template <typename InputType, typename OutputType, typename DataType>
-    class Conv2d : public Layer<InputType,OutputType,DataType>
+    class Conv2D : public Layer<InputType,OutputType,DataType>
     {
     private:
-        const int m_number_of_filters; // Variable to hold passed number of filters
-        const int m_kernel_size; // Variable to hold kernel matrix size, square matrix so only 1 value needed
-        const Activation m_activation_function; // Variable to hold passed activation function method
-        const Padding m_padding; // Variable to hold passed padding to layer
-        //Mat3d<DataType> m_filters(number_of_filters, Mat2d<DataType>(kernel_size, std::vector<DataType>(kernel_size))); // Variable to hold all filters
-        Mat3d<DataType> m_feature_maps; // Variable to hold current created feature map
-        Mat3d<DataType> m_activated_feature_map; // Variable to hold current activated feature map
+        const int m_number_of_filters; // Member Variable to hold passed number of filters
+        const int m_kernel_size; // Member Variable to hold kernel matrix size, square matrix so only 1 value needed
+        const Activation m_activation_function; // Member Variable to hold passed activation function method
+        const Padding m_padding; // Member Variable to hold passed padding to layer
+        //Mat3d<DataType> m_filters; // Member Variable to hold all filters
+        std::vector<DataType> m_bias_vector; // Member variable to holl bias vector
+        Mat3d<DataType> m_feature_maps; // Member Variable to hold current created feature map
+        Mat3d<DataType> m_activated_feature_map; // Member Variable to hold current activated feature map
         Mat2d<DataType> m_filter{{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}}; // !!! Testing only !!!
 
         // Method that applies activation function 
@@ -1580,8 +1624,8 @@ namespace MLPP
         }
 
         // Method that applies filter(kernel) to 3d matrix, will be used in Convolutional layer for neural network applications     
-        Mat3d<DataType> conv_2d_process(const Mat3d<DataType>& mat, const Mat2d<DataType>& kernel_mat, const Padding& padding, 
-                                        const int& kernel_size, const int& number_of_filters)
+        Mat3d<DataType> conv_2d_process(const Mat3d<DataType>& mat, const Mat3d<DataType>& kernel_mats, const std::vector<DataType>& bias_vec, 
+                                        const Padding& padding, const int& kernel_size, const int& number_of_filters) override
         {
             if (mat.empty()) {
                 std::cerr << "Error: Input is empty" << std::endl;
@@ -1610,7 +1654,8 @@ namespace MLPP
                         output_location = {i, j};
                         for (size_t k = 0; k < channels; k++) { 
                             Mat2d<DataType> block_mat = get_2d_block_from_mat(mat, kernel_size, offset, output_location, k);
-                            if (k == 0) {
+                            filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<DataType>(block_mat, kernel_mats[f]);
+                           /*  if (k == 0) {
                                 // Blue channel
                                 filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<DataType>(block_mat, kernel_mat);
                             }
@@ -1621,17 +1666,17 @@ namespace MLPP
                             else {
                                 // Red channel
                                 filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<DataType>(block_mat, kernel_mat);
-                            }
+                            } */
                         }
-                        feature_maps[i][j][f] = NumPP::get_sum_of_vector<DataType>(filtered_pixel) + 1; // Get sum of all channel and add bias, currently fixed to +1
+                        feature_maps[i][j][f] = NumPP::get_sum_of_vector<DataType>(filtered_pixel) + bias_vec[f]; // Get sum of all channel and add bias
                     }
                 }
             }
 
             return feature_maps;
         }
-        // Method that returns 2d matrix block taken from 3d matrix
         
+        // Method that returns 2d matrix block taken from 3d matrix   
         Mat2d<DataType> get_2d_block_from_mat(const Mat3d<DataType>& mat, const int& block_size, const size_t& offset, std::pair<size_t, size_t>& output_loc,
                                                 const size_t& depth) override
         {
@@ -1655,34 +1700,300 @@ namespace MLPP
         }
  
     public:
-        Conv2d(const int& number_of_filters, const int& kernel_size,
+        // Class constructor to receive correct hyperparameters
+        Conv2D(const int& number_of_filters, const int& kernel_size,
         const Activation& activation_function, const Padding& padding):
+            Layer<InputType, OutputType, DataType>(true), 
             m_number_of_filters(number_of_filters),
             m_kernel_size(kernel_size),
             m_activation_function(activation_function),
             m_padding(padding)
         {}
 
-        void forward(const InputType& input, OutputType& output) override 
+        // Override of layer forward method declared in base class
+        void forward(void* input, void* output, std::any& weights, std::any& bias) override 
         {
-            // Create output matrix
-            Mat4d<DataType> output_mat(input.size(), Mat3d<DataType>(input[0].size(), Mat2d<DataType>(input[0][0].size(), std::vector<DataType>(m_number_of_filters)))); 
+            if (input == nullptr) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return;
+            }   
+            
+            InputType* typedInput = static_cast<InputType*>(input);
+            OutputType* typedOutput = static_cast<OutputType*>(output);
+            size_t size = typedInput->size();
 
-            for (size_t i = 0; i < input.size(); i++)
-            {
-                m_feature_maps = conv_2d_process(input[i], m_filter, m_padding, m_kernel_size, m_number_of_filters); 
-                m_activated_feature_map = activation_process(m_feature_maps, m_activation_function);
-                output_mat[i] = m_activated_feature_map;
+            if (!weights.has_value()) {
+                weights = Mat3d<DataType>();
             }
 
-            output = output_mat;
+            if (!bias.has_value()) {
+                bias = std::vector<DataType>();
+            }
+
+            Mat3d<DataType>* weights_input = std::any_cast<Mat3d<DataType>>(&weights);       
+            std::vector<DataType>* biases_input = std::any_cast<std::vector<DataType>>(&bias);
+
+            if (weights_input->size() == 0) {
+                 for (size_t i = 0; i < m_number_of_filters; i++) {
+                    weights_input->push_back(m_filter);
+                }
+            } 
+
+            if (biases_input->size() == 0) {
+                for (size_t i = 0; i < m_number_of_filters; i++) {
+                    biases_input->push_back(0);
+                }
+            } 
+     
+            // !!! Need to optimize this !!!
+            if (typedOutput->size() == 0) {
+                // Loop through image and apply max pooling process
+                for (size_t i = 0; i < size; i++) {
+                    m_feature_maps = conv_2d_process((*typedInput)[i], *weights_input, *biases_input, m_padding, m_kernel_size, m_number_of_filters); 
+                    m_activated_feature_map = activation_process(m_feature_maps, m_activation_function);
+                    typedOutput->push_back(m_activated_feature_map);
+                }
+
+                return;
+            } 
+
+            // Loop through image and apply max pooling process
+            for (size_t i = 0; i < size; i++) {
+                m_feature_maps = conv_2d_process((*typedInput)[i], *weights_input, *biases_input, m_padding, m_kernel_size, m_number_of_filters); 
+                m_activated_feature_map = activation_process(m_feature_maps, m_activation_function);
+                //typedOutput->push_back(m_activated_feature_map);
+                (*typedOutput)[i] = m_activated_feature_map;
+            }    
+        }
+    };
+
+     // Derived Layer Class that creates Max Pooling layer
+    template <typename InputType, typename OutputType, typename DataType>
+    class MaxPooling2D : public Layer<InputType,OutputType,DataType>
+    {
+    private:
+        const int m_size; // Member variable to store how many pixels to pool
+        const int m_stride; // Member variable to store stride to traverse through image
+        int m_depth; // Member variable to store image depth
+        Mat3d<DataType> m_pooled_mat; // Member variable to store current pooled matrix
+
+        // Method that returns 2d matrix block taken from 3d matrix   
+        Mat2d<DataType> get_2d_block_from_mat(const Mat3d<DataType>& mat, const int& block_size, const size_t& offset, std::pair<size_t, size_t>& output_loc,
+                                                const size_t& depth) override
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input empty" << std::endl;
+                return Mat2d<DataType>();
+            }
+
+            Mat2d<DataType> b_mat(block_size, std::vector<DataType>(block_size)); // Create block mat variable to store result
+
+            for (size_t i = 0; i < b_mat.size(); i++) {
+                for (size_t j = 0; j < b_mat[i].size(); j++) {   
+                    std::pair<size_t, size_t> og_mat_loc = {output_loc.first+i, output_loc.second+j};
+                    if (og_mat_loc.first < mat.size() - offset && og_mat_loc.second < mat[i].size() - offset) {
+                        b_mat[i][j] = mat[og_mat_loc.first][og_mat_loc.second][depth];
+                    }
+                }
+            }
+
+            return b_mat;
+        }
+
+        // Method that iterates through 3d matrix and reduces it by selecting max value for each iteration
+        Mat3d<DataType> max_pool_process(const Mat3d<DataType>& mat, const int& size, const int& stride, const int& depth) override
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat3d<DataType>();
+            }
+
+            Mat3d<DataType> pool_mat(mat.size()/2, Mat2d<DataType>(mat[0].size()/2, std::vector<DataType>(depth)));
+            std::pair<size_t, size_t> og_mat_loc = {0, 0};
+
+            for (size_t f = 0; f < depth; f++) {
+                og_mat_loc.first = 0;
+                for (size_t i = 0; i < pool_mat.size(); i++) {
+                    og_mat_loc.second = 0;
+                    for (size_t j = 0; j < pool_mat[i].size(); j++) {
+                        Mat2d<DataType> block_mat = get_2d_block_from_mat(mat, size, 0, og_mat_loc, f);
+                        pool_mat[i][j][f] = NumPP::find_max_value(block_mat);
+                        og_mat_loc.second += stride;
+                    }
+                    og_mat_loc.first += stride;
+                }
+            }
+
+            return pool_mat;
+        } 
+
+    public:
+        // Class constructor to receive correct hyperparameters
+        MaxPooling2D(const int& size, const int& stride):
+            Layer<InputType, OutputType, DataType>(false), 
+            m_size(size),
+            m_stride(stride)
+        {}
+
+        // Override of layer forward method declared in base class
+        void forward(void* input, void* output, std::any& weights, std::any& bias) override
+        {
+            if (input == nullptr) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return;
+            }
+
+            InputType* typedInput = static_cast<InputType*>(input);
+            OutputType* typedOutput = static_cast<OutputType*>(output);
+
+            m_depth = (*typedInput)[0][0][0].size();
+            size_t size = typedInput->size();
+
+            // Loop through image and apply max pooling process
+            for (size_t i = 0; i < size; i++) {
+                m_pooled_mat = max_pool_process((*typedInput)[i], m_size, m_stride, m_depth);
+                //typedOutput->push_back(m_pooled_mat);
+                (*typedOutput)[i] = m_pooled_mat;
+            }
+            
+            output = static_cast<void*>(typedOutput);
+        }
+    };
+
+    // Derived Layer Class that creates Flattening layer
+    template <typename InputType, typename OutputType, typename DataType>
+    class Flatten : public Layer<InputType,OutputType,DataType>
+    {
+    private:
+
+        std::vector<DataType> m_image_vector; // Member variable to store current image vector
+
+        //Method that flattens 3d matrix into vector
+        std::vector<DataType> flatten_process(const Mat3d<DataType>& mat) override
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return std::vector<DataType>();
+            }
+
+            int depth = mat[0][0].size();
+            std::vector<DataType> output_vector;
+
+            for (size_t d = 0; d < depth; d++) {
+                for (size_t i = 0; i < mat.size(); i++) {
+                    for (size_t j = 0; j < mat[i].size(); j++) {
+                        output_vector.push_back(mat[i][j][d]);
+                    }
+                }
+            }
+            
+            return output_vector;
+        }
+    
+    public:
+        Flatten() : Layer<InputType, OutputType, DataType>(false) {}
+
+        // Override of layer forward method declared in base class
+        void forward(void* input, void* output, std::any& weights, std::any& bias) override
+        {
+            if (input == nullptr) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return;
+            }
+
+            InputType* typedInput = static_cast<InputType*>(input);
+            OutputType* typedOutput = static_cast<OutputType*>(output);
+
+            for (size_t i = 0; i < typedInput->size(); i++)
+            {
+                m_image_vector = flatten_process((*typedInput)[i]);
+                (*typedOutput)[i] = m_image_vector;
+            }
         }
     };
 
     // Derived Layer Class that creates Max Pooling layer
+    template <typename InputType, typename OutputType, typename DataType>
+    class Dense : public Layer<InputType,OutputType,DataType>
+    {
+    private:
+        const int m_output_size; // Member Variable to hold layer output size
+        const Activation m_activation_function; // Member Variable to hold passed activation function method
+        std::vector<DataType> m_transformed_vector; // Member variable to store current result of linear transformation
+        std::vector<DataType> m_activated_vector; // Member variable to store current result of activation function
+        std::vector<DataType> m_bias_vector; // Testing only while backward propagation isn't ready
+        Mat2d<DataType> m_weight_matrix; // Testing only while backward propagation isn't ready
 
+        // Overload of activation process method to work with vectors
+        std::vector<DataType> activation_process(const std::vector<DataType>& vec, const Activation& activation_function) override
+        {
+            if (vec.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return std::vector<DataType>();
+            }
 
-    // Class that contains all methods that are needed for Neural Network usage
+            switch (activation_function)
+            {
+            case RELU:
+                return NumPP::relu(vec);
+            case TANH:
+                return NumPP::tanh(vec);
+            case SIGMOID:
+                return NumPP::sigmoid(vec);
+            case SOFTMAX:
+                return NumPP::softmax(vec);
+            default:
+                return std::vector<DataType>();
+            }
+        }
+
+    public:
+        // Class constructor to receive correct hyperparameters
+        Dense(const int& output_size, const Activation& activation_function):
+            Layer<InputType, OutputType, DataType>(true),
+            m_output_size(output_size),
+            m_activation_function(activation_function)
+        {}
+
+        // Override of layer forward method declared in base class
+        void forward(void* input, void* output, std::any& weights, std::any& bias) override
+        {
+            if (input == nullptr) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return;
+            }
+
+            InputType* typedInput = static_cast<InputType*>(input);
+            OutputType* typedOutput = static_cast<OutputType*>(output);
+
+            if (!weights.has_value()) {
+                weights = Mat2d<DataType>();
+            }
+
+            if (!bias.has_value()) {
+                bias = std::vector<DataType>();
+            }
+ 
+            Mat2d<DataType>* weights_input = std::any_cast<Mat2d<DataType>>(&weights);
+            std::vector<DataType>* biases_input = std::any_cast<std::vector<DataType>>(&bias); 
+
+            if (weights_input->size() == 0) {
+                *weights_input = NumPP::rand<DataType>((*typedInput)[0].size(), m_output_size, 0.0, 0.5);
+            } 
+
+            if (biases_input->size()  == 0) {
+                *biases_input = NumPP::zeros<DataType>(m_output_size);
+            }     
+
+            for (size_t i = 0; i < typedInput->size(); i++) {
+                m_transformed_vector = NumPP::add(NumPP::dot((*typedInput)[i], *weights_input), *biases_input);
+                m_activated_vector = activation_process(m_transformed_vector, m_activation_function);
+                (*typedOutput)[i] = m_activated_vector;
+            }
+        }
+    };
+
+    // Class to design neural network architecture
     class NeuralNetwork
     {
     private:
@@ -1697,176 +2008,34 @@ namespace MLPP
         Mat2d<double> m_b2; // Bias vector for the second hidden layer
         Mat2d<double> m_b3; // Bias vector for the output layer
         */
-
-        // Method that returns 2d matrix block taken from 3d matrix
-        template <typename T>
-        static Mat2d<T> get_2d_block_from_mat(const Mat3d<T>& mat, const int& block_size, const size_t& offset, std::pair<size_t, size_t>& output_loc,
-                                                const size_t& depth)
-        {
-            if (mat.empty()) {
-                std::cerr << "Error: Input empty" << std::endl;
-                return Mat2d<T>();
-            }
-
-            Mat2d<T> b_mat(block_size, std::vector<T>(block_size)); // Create block mat variable to store result
-
-            for (size_t i = 0; i < b_mat.size(); i++) {
-                for (size_t j = 0; j < b_mat[i].size(); j++) {   
-                    std::pair<size_t, size_t> og_mat_loc = {output_loc.first+i, output_loc.second+j};
-                    if (og_mat_loc.first < mat.size() - offset && og_mat_loc.second < mat[i].size() - offset) {
-                        b_mat[i][j] = mat[og_mat_loc.first][og_mat_loc.second][depth];
-                    }
-                }
-            }
-
-            return b_mat;
-        }
         
-        // Method that applies filter(kernel) to 3d matrix, will be used in Convolutional layer for neural network applications
-        template <typename T>
-        static Mat3d<T> conv_2d_process(const Mat3d<T>& mat, const Mat2d<T>& kernel_mat, const Padding& padding, const int& kernel_size, 
-                                        const int& number_of_filters)
+        // Member variable that store base class to determine sequence of layers in forward and backward pass
+        std::vector<LayerBase*> m_layers; 
+        std::vector<std::any> m_weights;
+        std::vector<std::any> m_biases;
+        void* m_current_input;
+        void* m_current_output;
+        
+
+        // Method that applies forward propagation with given layer sequence
+        void forward_pass(void* input, void* output) 
         {
-            if (mat.empty()) {
-                std::cerr << "Error: Input is empty" << std::endl;
-                return Mat3d<T>();
-            }
-            
-            size_t offset; // Create variable to store offset, determines output size
+            m_current_input = input;
+            m_current_output = output;
 
-            if (padding == SAME) {
-                offset = 0;
-            }
-            else {
-                offset = kernel_size - 1;
-            }
+            int counter = 0; // testing only
 
-            // Create filtered matrix variable to store and return result
-            Mat3d<T> feature_maps(mat.size()-offset, Mat2d<T>(mat[0].size()-offset, std::vector<T>(number_of_filters))); 
-            std::pair<size_t, size_t> output_location; // Create pair to store output(filtered matrix) current location
-            int channels = mat[0][0].size(); // Get depth of original image
-            std::vector<T> filtered_pixel(channels); // Create vector to store convolution iteration result    
+            for (auto &layer : m_layers) {
+                /// !!! Still need to figure out how to clear current pointers !!!
+                layer->forward(m_current_input, m_current_output, m_weights[counter], m_biases[counter]);  
+                m_current_input = m_current_output; // Update input for next layer  
 
-            // Loop through input matrix N times and fill feature maps based on number of filters
-            for (size_t f = 0; f < number_of_filters; f++) {
-                for (size_t i = 0; i < feature_maps.size(); i++) {
-                    for (size_t j = 0; j < feature_maps[i].size(); j++) {
-                        output_location = {i, j};
-                        for (size_t k = 0; k < channels; k++) { 
-                            Mat2d<T> block_mat = get_2d_block_from_mat(mat, kernel_size, offset, output_location, k);
-                            if (k == 0) {
-                                // Blue channel
-                                filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T>(block_mat, kernel_mat);
-                            }
-                            else if (k == 1) {
-                                // Green channel
-                                filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T>(block_mat, kernel_mat);
-                            }
-                            else {
-                                // Red channel
-                                filtered_pixel[k] = NumPP::sum_mat_mul_matching_elements<T>(block_mat, kernel_mat);
-                            }
-                        }
-                        feature_maps[i][j][f] = NumPP::get_sum_of_vector<T>(filtered_pixel) + 1; // Get sum of all channel and add bias, currently fixed to +1
-                    }
-                }
+                if (layer->get_w_and_b()) {
+                    counter++;
+                }  
             }
 
-            return feature_maps;
-        }
-
-        // Method that applies activation function
-        template <typename T>
-        static Mat3d<T> activation_process(const Mat3d<T>& mat, const Activation& activation_function)
-        {
-            if (mat.empty()) {
-                std::cerr << "Error: Input is empty" << std::endl;
-                return Mat3d<T>();
-            }
-
-            switch (activation_function)
-            {
-            case RELU:
-                return NumPP::relu(mat);
-            case TANH:
-                return NumPP::tanh(mat);
-            default:
-                return Mat3d<T>();
-            }
-        }
-
-        // Overload of activation process method to work with vectors
-        template <typename T>
-        static std::vector<T> activation_process(const std::vector<T>& vec, const Activation& activation_function)
-        {
-            if (vec.empty()) {
-                std::cerr << "Error: Input is empty" << std::endl;
-                return std::vector<T>();
-            }
-
-            switch (activation_function)
-            {
-            case RELU:
-                return NumPP::relu(vec);
-            case TANH:
-                return NumPP::tanh(vec);
-            case SOFTMAX:
-                return NumPP::softmax(vec);
-            default:
-                return std::vector<T>();
-            }
-        }
-    
-        // Method that iterates through 3d matrix and reduces it by selecting max value for each iteration
-        template <typename T>
-        static Mat3d<T> max_pool_process(const Mat3d<T>& mat, const int& size = 2, const int& stride = 2, 
-                                        const int& depth = 1)
-        {
-            if (mat.empty()) {
-                std::cerr << "Error: Input is empty" << std::endl;
-                return Mat3d<T>();
-            }
-
-            Mat3d<T> pool_mat(mat.size()/2, Mat2d<T>(mat[0].size()/2, std::vector<T>(depth)));
-            std::pair<size_t, size_t> og_mat_loc = {0, 0};
-
-            for (size_t f = 0; f < depth; f++) {
-                og_mat_loc.first = 0;
-                for (size_t i = 0; i < pool_mat.size(); i++) {
-                    og_mat_loc.second = 0;
-                    for (size_t j = 0; j < pool_mat[i].size(); j++) {
-                        Mat2d<T> block_mat = get_2d_block_from_mat(mat, size, 0, og_mat_loc, f);
-                        pool_mat[i][j][f] = NumPP::find_max_value(block_mat);
-                        og_mat_loc.second += stride;
-                    }
-                    og_mat_loc.first += stride;
-                }
-            }
-
-            return pool_mat;
-        }    
-
-        // Method that flattens 3d matrix into vector
-        template <typename T>
-        static std::vector<T> flatten_process(const Mat3d<T>& mat)
-        {
-            if (mat.empty()) {
-                std::cerr << "Error: Input is empty" << std::endl;
-                return std::vector<T>();
-            }
-
-            int depth = mat[0][0].size();
-            std::vector<T> output_vector;
-
-            for (size_t d = 0; d < depth; d++) {
-                for (size_t i = 0; i < mat.size(); i++) {
-                    for (size_t j = 0; j < mat[i].size(); j++) {
-                        output_vector.push_back(mat[i][j][d]);
-                    }
-                }
-            }
-            
-            return output_vector;
+            //output = m_current_input;
         }
 
     public:
@@ -1964,96 +2133,99 @@ namespace MLPP
         }
         */
         
-        // Method that "creates" convolutional layer for training a CNN
-        template <typename T>
-        static Mat4d<T> conv_2d(const Mat4d<T>& input_mat, const int& number_of_filters = 5, const int& kernel_size = 3,
-                                    const Activation& activation_function = RELU, const Padding& padding = SAME)
+        // Method that creates and add layer to sequence
+        void add_layer(LayerBase* layerPtr)
         {
-            if (input_mat.empty()) {
-                std::cerr << "Error: Input is empty" << std::endl;
-                return Mat4d<T>();
+            //void* w = nullptr;
+            //void* b = nullptr;
+            std::any w;
+            std::any b;
+
+            m_layers.push_back(layerPtr);
+
+            if (layerPtr->get_w_and_b()) {   
+                m_weights.push_back(w);
+                m_biases.push_back(b);
             }
+        }
 
-            // Create output matrix
-            Mat4d<T> output_mat(input_mat.size(), Mat3d<T>(input_mat[0].size(), Mat2d<T>(input_mat[0][0].size(), std::vector<T>(number_of_filters)))); 
-            Mat2d<T> filter{{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}}; // !!! Testing only !!!
-            Mat3d<T> feature_maps;
-            Mat3d<T> activated_feature_map;
+        // Method that applies training for neural network
+        template<typename T>
+        Mat2d<T> fit(void *input, const size_t &epochs) 
+        {
+            void* output = nullptr;
+            for (size_t epoch = 0; epoch < epochs; epoch++) {
+                output = new void*();
+                forward_pass(input, output);
 
-            for (size_t i = 0; i < input_mat.size(); i++)
+                Mat2d<T>* epoch_result = static_cast<Mat2d<T>*>(output);
+                auto shape = NumPP::get_shape(*epoch_result);
+            
+                std::cout << shape.first << std::endl;
+                std::cout << shape.second << std::endl;
+                DataAnalysis::display_all(*epoch_result);
+            }  
+
+            /* Debbuging
+
+            std::cout << "==========================" << std::endl;
+            std::cout << m_weights.size() << std::endl;
+            std::cout << m_biases.size() << std::endl;
+            std::cout << "==========================" << std::endl;
+            std::cout << m_weights[0].has_value() << std::endl;
+            std::cout << m_biases[0].has_value() << std::endl;
+            std::cout << "==========================" << std::endl;
+            std::cout << m_weights[1].has_value() << std::endl;
+            std::cout << m_biases[1].has_value() << std::endl;
+            std::cout << "==========================" << std::endl;
+            std::cout << m_weights[2].has_value() << std::endl;
+            std::cout << m_biases[2].has_value() << std::endl;
+
+            Mat3d<_Float32>* weights_output = std::any_cast<Mat3d<_Float32>>(&m_weights[0]);       
+            std::cout << weights_output->size() << std::endl; 
+
+            for (size_t i = 0; i < weights_output->size(); i++)
             {
-                feature_maps = conv_2d_process<T>(input_mat[i], filter, padding, kernel_size, number_of_filters); 
-                activated_feature_map = activation_process(feature_maps, activation_function);
-                output_mat[i] = activated_feature_map;
+                DataAnalysis::display_all((*weights_output)[i]);         
             }
+             
+            std::vector<_Float32>* biases_outputs = std::any_cast<std::vector<_Float32>>(& m_biases[0]);
+            std::cout << biases_outputs->size() << std::endl; 
 
-            return output_mat;     
-        }
-
-        // Method that "creates" pooling layer for training a CNN
-        template <typename T> 
-        static Mat4d<T> pooling(const Mat4d<T>& input_mat, const int& size = 2, const int& stride = 2)
-        {
-            if (input_mat.empty()) {
-                std::cerr << "Error: Input is empty" << std::endl;
-                return Mat4d<T>();
-            }
-
-            int depth = input_mat[0][0][0].size();
-            Mat4d<T> output_mat;
-            Mat3d<T> pooled_mat;
-
-            for (size_t i = 0; i < input_mat.size(); i++) {
-                pooled_mat = max_pool_process(input_mat[i], size, stride, depth);
-                output_mat.push_back(pooled_mat);
-            }
-
-            return output_mat;
-        }
-        
-        // Method that flattens multi dimension matrices into single vector with every value stored in matrices
-        // Resulting vector for every image will be a new row in new 2d matrix
-        template <typename T>
-        static Mat2d<T> flatten(const Mat4d<T>& input_mat)
-        {
-            if (input_mat.empty()) {
-                std::cerr << "Error: Input is empty" << std::endl;
-                return Mat2d<T>();
-            }
-
-            Mat2d<T> output_matrix;
-            std::vector<T> image_vector;
-
-            for (size_t i = 0; i < input_mat.size(); i++)
+            for (size_t i = 0; i < biases_outputs->size(); i++)
             {
-                image_vector = flatten_process(input_mat[i]);
-                output_matrix.push_back(image_vector);
-            }
+                std::cout << (*biases_outputs)[i] << std::endl;
+            } 
+            
+            Mat2d<_Float32>* weights_output = std::any_cast<Mat2d<_Float32>>(&m_weights[2]);
+            std::cout << weights_output->size() << std::endl;
+            DataAnalysis::display_all(*weights_output);
 
-            return output_matrix;
+            std::vector<_Float32>* biases_outputs = std::any_cast<std::vector<_Float32>>(&m_biases[2]);
+            std::cout << biases_outputs->size() << std::endl; 
+
+            for (size_t i = 0; i < biases_outputs->size(); i++)
+            {
+                std::cout << (*biases_outputs)[i] << std::endl;
+            }  
+            */
+
+
+            std::cout << "==========================" << std::endl;
+            Mat2d<T>* result = static_cast<Mat2d<T>*>(output);
+            auto shape = NumPP::get_shape(*result);
+            
+            std::cout << shape.first << std::endl;
+            std::cout << shape.second << std::endl;
+
+            return *result;
         }
 
-        // Method that applis linear transformation to input, i.e, condenses input into a smaller size
-        template <typename T>
-        static Mat2d<T> dense(const Mat2d<T>& input_mat, const Mat2d<T>& weight_matrix, const std::vector<T>& bias_vector, 
-                                const int& output_size, const Activation& activation_function)
+        ~NeuralNetwork()
         {
-            if (input_mat.empty()) {
-                std::cerr << "Error: Input is empty" << std::endl;
-                return Mat2d<T>();
+            for (auto &layer : m_layers) {
+                delete layer;
             }
-
-            Mat2d<T> output_mat; // Create output matrix
-            std::vector<T> transformed_vector; // Create vector to store result of linear transformation
-            std::vector<T> activated_vector; // Create vector to store result of activation function
-
-            for (size_t i = 0; i < input_mat.size(); i++) {
-                transformed_vector = NumPP::add(NumPP::dot(input_mat[i], weight_matrix), bias_vector);
-                activated_vector = activation_process(transformed_vector, activation_function);
-                output_mat.push_back(activated_vector);
-            }
-
-            return output_mat;
         }
 
         // Further methods to be implemented
@@ -2346,22 +2518,22 @@ namespace MLPP
         // Added conv_channel parameter to test if all convolutional feature maps are being
         // generated correctly
         template <typename T>
-        static cv::Mat get_open_cv_gray_mat(const Mat3d<T>* matPtr, int conv_channel = 0)
+        static cv::Mat get_open_cv_gray_mat(const Mat3d<T>& matPtr, int conv_channel = 0)
         {
-            if (matPtr == nullptr) {
+            if (matPtr.empty()) {
                 std::cerr << "Error: Input is empty" << std::endl;
                 return cv::Mat();
             }
 
             // Get dimensions of the input matrix
-            int rows = matPtr->size();
-            int cols = (*matPtr)[0].size();
+            int rows = matPtr.size();
+            int cols = matPtr[0].size();
 
             cv::Mat opencv_mat(rows, cols, CV_8UC1);
 
             for (int i = 0; i < rows; i++) {
                 for (int j = 0; j < cols; j++) {
-                    opencv_mat.at<uchar>(i, j) = static_cast<uchar>((*matPtr)[i][j][conv_channel]);
+                    opencv_mat.at<uchar>(i, j) = static_cast<uchar>(matPtr[i][j][conv_channel]);
                 }
             }
 
