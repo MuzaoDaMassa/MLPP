@@ -230,18 +230,29 @@ int main()
 {
     auto params = OpenCvIntegration::TrainingDataParameters("../tests/Images", true, {28, 28}, true, true, true);
 
-    auto training_data = OpenCvIntegration::prepare_training_data<_Float32>(params);
- 
+    auto training_data = OpenCvIntegration::prepare_training_data<double>(params); 
+
     cout << "Input shape = ";
     cout << "(" << to_string(training_data.size()) << "," << to_string(training_data[0].size()) << ",";
     cout << to_string(training_data[0][0].size()) << "," << to_string(training_data[0][0][0].size()) << ")" << endl;
 
-    NeuralNetwork model;
-    // testing
-    Mat2d<_Float32> labels = {{0,0,1},{0,1,0},{1,0,0},{0,0,1},{0,1,0},{1,0,0},{0,0,1},{0,1,0},{1,0,0}};
+    // Data normalization, since max value is 255, all values will be between 0 and 1
+    for (size_t i = 0; i < training_data.size(); i++) {
+        for (size_t j = 0; j < training_data[i].size(); j++) {
+            for (size_t k = 0; k < training_data[i][j].size(); k++) {
+                for (size_t l = 0; l < training_data[i][j][k].size(); l++) {
+                    training_data[i][j][k][l] /= 255.0;
+                }
+            }
+        }
+    } 
 
-    model.add_layer(new Conv2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(5, 3, RELU, SAME));
-    model.add_layer(new MaxPooling2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(2,2));
+    NeuralNetwork model;
+    // testing                                   0       1       2       3       4       5       6       7
+    const Mat2d<double> hot_encoded_labels = {{0,0,1},{0,1,0},{1,0,0},{0,1,0},{0,1,0},{0,0,1},{0,1,0},{1,0,0}};
+
+    model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(5, 3, RELU, SAME));
+    model.add_layer(new MaxPooling2D<Mat4d<double>, Mat4d<double>, double>(2,2));
     //model.add_layer(new Conv2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(16, 3, RELU, SAME));
     //model.add_layer(new MaxPooling2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(2,2));
     //model.add_layer(new Conv2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(32, 3, RELU, SAME));
@@ -250,17 +261,18 @@ int main()
     //model.add_layer(new MaxPooling2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(2,2));
     //model.add_layer(new Conv2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(128, 3, RELU, SAME));
     //model.add_layer(new MaxPooling2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(2,2));
-    model.add_layer(new Flatten<Mat4d<_Float32>, Mat2d<_Float32>, _Float32>());
-    model.add_layer(new Dense<Mat2d<_Float32>, Mat2d<_Float32>, _Float32>(120, RELU));
-    model.add_layer(new Dense<Mat2d<_Float32>, Mat2d<_Float32>, _Float32>(3, SOFTMAX));
+    model.add_layer(new Flatten<Mat4d<double>, Mat2d<double>, double>());
+    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(120, RELU));
+    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(3, SOFTMAX));
 
     auto t1 = startBenchmark();
-    Mat2d<_Float32> result = model.fit<_Float32>(training_data, labels, 2);
+    Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 10, 0.001);
     auto t2 = stopBenchmark();
 
     cout << "================================" << endl;
     cout << getDuration(t1, t2, Seconds) << endl;
-    //Mat4d<_Float32> result2 = model.fit2<_Float32>(training_data, labels, 2);
+    cout << "================================" << endl;
+    //Mat4d<_Float32> result2 = model.fit2<_Float32>(training_data, hot_encoded_labels, 2);
 
     /* cout << "Max Pooling Output shape = ";
     cout << "(" << to_string(result2.size()) << "," << to_string(result2[0].size()) << ",";
@@ -289,7 +301,7 @@ int main()
     for (size_t i = 0; i < result.size(); i++) {
         cout << i << ", ";
         for (size_t j = 0; j < result[i].size(); j++) {
-            cout << result[i][j] << ", ";
+            cout << std::to_string(result[i][j]) << ", ";
         }
         cout << endl;
     } 

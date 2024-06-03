@@ -25,20 +25,21 @@ SOFTWARE.
 #pragma once
 
 #pragma region Includes
-#include <iostream>
-#include <filesystem>
 #include <algorithm>
-#include <fstream>
-#include <sstream>
-#include <string>
 #include <any>
-#include <type_traits>
-#include <vector>
-#include <random>
+#include <cmath>
 #include <cstdlib>
 #include <ctime>
-#include <cmath>
+#include <iostream>
+#include <filesystem>
+#include <fstream>
+#include <random>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <typeinfo>
 #include <valarray>
+#include <vector>
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
 #include "../tests/testUtils.hpp" // Used for benchmarking
@@ -287,13 +288,34 @@ namespace MLPP
             return vecPtr->size()/2;
         }
        
-        // Method that returns rows and columns size of 2d matrix
+        // Method that returns dimensions (shape) of 2d matrix
         template <typename T>
         static std::pair<int, int> get_shape(const Mat2d<T>& mat)
         {
             int rows = mat.size();
             int cols = (rows > 0) ? mat[0].size() : 0;
             return std::make_pair(rows, cols);
+        }
+
+        // Overload of get shape method that returns dimensions(shape) of 3d matrix
+        template <typename T>
+        static std::array<int, 3> get_shape(const Mat3d<T>& mat)
+        {
+            int rows = mat.size();
+            int cols = (rows > 0) ? mat[0].size() : 0;
+            int depth = (cols > 0) ? mat[0][0].size() : 0;
+            return {rows, cols, depth};
+        }
+
+        // Overload of get shape method that returns dimensions(shape) of 3d matrix
+        template <typename T>
+        static std::array<int, 4> get_shape(const Mat4d<T>& mat)
+        {
+            int samples = mat.size();
+            int rows = (samples > 0) ? mat[0].size() : 0;
+            int cols = (rows > 0) ? mat[0][0].size() : 0;
+            int depth = (cols > 0) ? mat[0][0][0].size() : 0;
+            return {samples, rows, cols, depth};
         }
        
         // Method that returns sum of all elements in vector
@@ -466,10 +488,30 @@ namespace MLPP
             std::vector<T> output_vector(vec.size());
 
             for (size_t i = 0; i < output_vector.size(); i++) {
-                output_vector[i] = NumPP::relu(vec[i]);
+                output_vector[i] = relu(vec[i]);
             }
 
             return output_vector;
+        }
+
+        // Overload method that applies Rectified Linear Unit to every value in 3d matrix
+        template <typename T>
+        static Mat2d<T> relu(const Mat2d<T>& mat)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat2d<T>();
+            }
+
+            Mat2d<T> relu_mat(mat.size(),std::vector<T>(mat[0].size()));
+
+            for (size_t i = 0; i < relu_mat.size(); i++) {
+                for (size_t j = 0; j < relu_mat[i].size(); j++) {
+                    relu_mat[i][j] = relu(mat[i][j]);
+                }
+            }
+
+            return relu_mat;
         }
 
         // Overload method that applies Rectified Linear Unit to every value in 3d matrix
@@ -486,12 +528,121 @@ namespace MLPP
             for (size_t i = 0; i < relu_mat.size(); i++) {
                 for (size_t j = 0; j < relu_mat[i].size(); j++) {
                     for (size_t k = 0; k < relu_mat[i][j].size(); k++) {
-                        relu_mat[i][j][k] = NumPP::relu(mat[i][j][k]);
+                        relu_mat[i][j][k] = relu(mat[i][j][k]);
                     }
                 }
             }
 
             return relu_mat;
+        }
+
+        // Method that applies Rectified Linear Unit derivative function to input
+        template <typename T>
+        static T relu_derivative(const T& input)
+        {
+            if (input <= 0) {
+                return 0;
+            }
+            return 1;
+        }
+
+        // Overload method that applies Rectified Linear Unit derivative to every value in vector
+        template <typename T>
+        static std::vector<T> relu_derivative(const std::vector<T>& vec)
+        {
+            if (vec.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return std::vector<T>();
+            }
+
+            std::vector<T> output_vector(vec.size());
+
+            for (size_t i = 0; i < output_vector.size(); i++) {
+                output_vector[i] = relu_derivative(vec[i]);
+            }
+
+            return output_vector;
+        }
+
+        // Overload method that applies Rectified Linear Unit derivative to every value in 3d matrix
+        template <typename T>
+        static Mat2d<T> relu_derivative(const Mat2d<T>& mat)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat2d<T>();
+            }
+
+            Mat2d<T> relu_mat(mat.size(),std::vector<T>(mat[0].size()));
+
+            for (size_t i = 0; i < relu_mat.size(); i++) {
+                for (size_t j = 0; j < relu_mat[i].size(); j++) {
+                    relu_mat[i][j] = relu_derivative(mat[i][j]);
+                }
+            }
+
+            return relu_mat;
+        }
+
+        // Overload method that applies Rectified Linear Unit derivative to every value in 3d matrix
+        template <typename T>
+        static Mat3d<T> relu_derivative(const Mat3d<T>& mat)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return Mat3d<T>();
+            }
+
+            Mat3d<T> relu_mat(mat.size(), Mat2d<T>(mat[0].size(), std::vector<T>(mat[0][0].size())));
+
+            for (size_t i = 0; i < relu_mat.size(); i++) {
+                for (size_t j = 0; j < relu_mat[i].size(); j++) {
+                    for (size_t k = 0; k < relu_mat[i][j].size(); k++) {
+                        relu_mat[i][j][k] = relu_derivative(mat[i][j][k]);
+                    }
+                }
+            }
+
+            return relu_mat;
+        }
+
+        // Method that reshapes 2d matrix into 4d matrix
+        template <typename T>
+        static Mat4d<T> reshape(const Mat2d<T>& input, const std::array<int, 4>& output_shape)
+        {
+            if (input.empty() || output_shape.empty()) {
+                return Mat4d<T>();
+            }
+
+            int batch_size = output_shape[0]; // Store batch size value
+            int rows = output_shape[1]; // Store output rows size
+            int cols = output_shape[2]; // Store output columns size
+            int depth = output_shape[3]; // Store output depth size
+            
+            Mat4d<T> reshaped_matrix; // Create variable to store reshaped matrix
+            
+            // Iterate through batch samples
+            for (size_t i = 0; i < batch_size; i++) {
+                Mat3d<T> current_sample_matrix = Mat3d<T>(); // Create empty 3d matrix to store to be created reshaped sample 
+                std::vector<T> sample_vector = input[i]; // Assign current sample to sample vector
+                int counter = 0; // Counter to keep track of sample vector index
+                for (size_t j = 0; j < rows; j++) {
+                    Mat2d<T> row_mat = Mat2d<T>(); // Store resized 2d matrix to store in current sample matrix
+                    for (size_t k = 0; k < cols; k++) {
+                        std::vector<T> resized_vector = std::vector<T>(); // Create empty vector to store
+                        for (size_t d = 0; d < depth; d++) {
+                            resized_vector.push_back(sample_vector[counter]);
+                            counter++;
+                        }
+                        row_mat.push_back(resized_vector);
+                    }
+                    //std::cout << counter << std::endl;
+                    current_sample_matrix.push_back(row_mat);
+                }
+                reshaped_matrix.push_back(current_sample_matrix); // Push final sample matrix into desired reshaped matrix
+            }
+
+            return reshaped_matrix;
         }
 
         // Method that multiplies given number with all elements in matrix
@@ -636,7 +787,7 @@ namespace MLPP
             // Find the maximum value in the input to improve numerical stability
             T max_input = static_cast<double>(NumPP::find_max_value(input_vector));
             // Determine a scaling factor to ensure values fall within a manageable range
-            const T scaling_factor = 100000.0;
+            const T scaling_factor = 0.1;
             // Create vector to hold adjusted values
             std::vector<T> adjusted_values(input_vector.size());
 
@@ -644,10 +795,12 @@ namespace MLPP
             for (size_t i = 0; i < adjusted_values.size(); i++)
             {   
                 // Get adjusted value for current input value
-                adjusted_values[i] = (input_vector[i] - max_input) / scaling_factor;
+                //adjusted_values[i] = (input_vector[i] - max_input) * scaling_factor;
+                //adjusted_values[i] = (input_vector[i] - max_input);
                 //std::cout << "Adjusted Value " << i << ": " << adjusted_values[i] << std::endl;
                 // Apply exponential function to adjusted value
-                exp_values[i] = std::exp(adjusted_values[i]); 
+                //exp_values[i] = std::exp(adjusted_values[i]);
+                exp_values[i] = std::exp(input_vector[i]); 
                 //std::cout << "Exp Value " << i << ": " << exp_values[i] << std::endl;
             }         
             
@@ -1008,6 +1161,48 @@ namespace MLPP
             std::cerr << "Error: Data Matrix is empty" << std::endl;
         }
         
+        // Method to display 2d matrix dimensions(shape)
+        template <typename T> 
+        static void display_shape(const Mat2d<T>& dataMatrix)
+        {
+            if (dataMatrix.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return;
+            }
+
+            auto shape = NumPP::get_shape(dataMatrix);
+            std::cout << "Matrix shape = " << "(" << shape.first;
+            std::cout << "," << shape.second << ")" << std::endl;
+        }
+
+        // Method to display 3d matrix dimensions(shape)
+        template <typename T> 
+        static void display_shape(const Mat3d<T>& dataMatrix)
+        {
+            if (dataMatrix.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return;
+            }
+
+            auto shape = NumPP::get_shape(dataMatrix);
+            std::cout << "Matrix shape = " << "(" << shape[0] << ",";
+            std::cout << shape[1] << "," << shape[2] << ")" << std::endl;
+        }
+
+        // Method to display 3d matrix dimensions(shape)
+        template <typename T> 
+        static void display_shape(const Mat4d<T>& dataMatrix)
+        {
+            if (dataMatrix.empty()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return;
+            }
+
+            auto shape = NumPP::get_shape(dataMatrix);
+            std::cout << "Matrix shape = " << "(" << shape[0] << "," << shape[1];
+            std::cout << "," << shape[2] << "," << shape[3] << ")" << std::endl;
+        }
+
         // Method to search data matrix for first appearance of desired element, return first position found
         template <typename T> 
         static std::vector<int> find(const Mat2d<T>& dataMatrix, const T& desiredElement)
@@ -1565,9 +1760,10 @@ namespace MLPP
         LayerBase(const bool use_weights_and_biases) : m_use_weights_and_biases(use_weights_and_biases) {}
         virtual ~LayerBase() = default;
         // Declaration of virtual backward method, every layer has own method implementation
-        virtual void backward(std::any& input, std::any& target, std::any& weights, std::any& bias) = 0;
+        virtual void backward(std::vector<std::any>& layer_output, std::vector<std::any>& layer_linear_outputs, std::vector<std::any>& layer_weights, 
+                                std::vector<std::any>& layer_biases, const std::any& target_labels, const std::any& learning_rate) = 0;
         // Declaration of virtual forward method, every layer has own method implementation
-        virtual void forward(std::any& input, std::any& output, std::any& weights, std::any& bias) = 0;
+        virtual void forward(std::any& input, std::any& output, std::any& linear_output, std::any& weights, std::any& bias) = 0;
 
         bool get_w_and_b() {return m_use_weights_and_biases;} // testing only
     };
@@ -1581,9 +1777,10 @@ namespace MLPP
         virtual ~Layer() = default;
     protected:
         // Basic empty backward overrirde from LayerBase, so correct method gets called in specialized layer 
-        void backward(std::any& input, std::any& target, std::any& weights, std::any& bias) override {}
+        void backward(std::vector<std::any>& layer_output, std::vector<std::any>& layer_linear_outputs, std::vector<std::any>& layer_weights, 
+                        std::vector<std::any>& layer_biases, const std::any& target_labels, const std::any& learning_rate) override {}
         // Basic empty forward overrirde from LayerBase, so correct method gets called in specialized layer
-        void forward(std::any& input, std::any& output, std::any& weights, std::any& bias) override {}
+        void forward(std::any& input, std::any& output, std::any& linear_output, std::any& weights, std::any& bias) override {}
         // Virtual declaration of activation function application, to be implemented in applicable specialized layers
         virtual Mat3d<DataType> activation_process(const Mat3d<DataType>& mat, const Activation& activation_function) {return Mat3d<DataType>();}
         // Virtual method override declaration of activation function application(std::vector)
@@ -1598,6 +1795,8 @@ namespace MLPP
                                                         std::pair<size_t, size_t>& output_loc, const size_t& depth) {return Mat2d<DataType>();}
         // Virtual declaration of max pooling process for max pooling layer, implemented in max pooling specialized layer
         virtual Mat3d<DataType> max_pool_process(const Mat3d<DataType>& mat, const int& size, const int& stride, const int& depth) {return Mat3d<DataType>();}
+        // Virtual declaration of method to update weights and biases for layer during backward propagation, implemented on specialized layers
+        //virtual void update_weights_and_biases(std::any& weights, std::any& biases) = 0;
     };
 
     // Specialized Layer Class that creates Convolutional layer
@@ -1613,7 +1812,7 @@ namespace MLPP
         std::vector<DataType> m_bias_vector; // Member variable to holl bias vector
         Mat3d<DataType> m_feature_maps; // Member Variable to hold current created feature map
         Mat3d<DataType> m_activated_feature_map; // Member Variable to hold current activated feature map
-        Mat2d<DataType> m_filter{{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}}; // !!! Testing only !!!
+        //Mat2d<DataType> m_filter{{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}}; // !!! Testing only !!!
 
         // Method that applies activation function 
         Mat3d<DataType> activation_process(const Mat3d<DataType>& mat, const Activation& activation_function) override
@@ -1722,7 +1921,7 @@ namespace MLPP
         {}
 
         // Specialized override of layer forward method declared in base class (LayerBase)
-        void forward(std::any& input, std::any& output, std::any& weights, std::any& bias) override 
+        void forward(std::any& input, std::any& output, std::any& linear_output, std::any& weights, std::any& bias) override
         {
             if (!input.has_value()) {
                 std::cerr << "Error: Input is empty" << std::endl;
@@ -1747,7 +1946,7 @@ namespace MLPP
 
             if (weights_input->size() == 0) {
                  for (size_t i = 0; i < m_number_of_filters; i++) {
-                    weights_input->push_back(m_filter);
+                    weights_input->push_back(NumPP::rand<DataType>(m_kernel_size, m_kernel_size, 0.0, 0.5));
                 }
             } 
 
@@ -1837,7 +2036,7 @@ namespace MLPP
 
 
         // Specialized override of layer forward method declared in base class (LayerBase)
-        void forward(std::any& input, std::any& output, std::any& weights, std::any& bias) override 
+        void forward(std::any& input, std::any& output, std::any& linear_output, std::any& weights, std::any& bias) override
         {
             if (!input.has_value()) {
                 std::cerr << "Error: Input is empty" << std::endl;
@@ -1865,7 +2064,6 @@ namespace MLPP
     class Flatten : public Layer<InputType,OutputType,DataType>
     {
     private:
-
         std::vector<DataType> m_image_vector; // Member variable to store current image vector
 
         //Method that flattens 3d matrix into vector
@@ -1885,7 +2083,7 @@ namespace MLPP
                         output_vector.push_back(mat[i][j][d]);
                     }
                 }
-            }
+            } 
             
             return output_vector;
         }
@@ -1893,8 +2091,56 @@ namespace MLPP
     public:
         Flatten() : Layer<InputType, OutputType, DataType>(false) {}
 
+        // Specialized override of layer backward method declared in base class (LayerBase)
+        void backward(std::vector<std::any>& layer_output, std::vector<std::any>& layer_linear_outputs, std::vector<std::any>& layer_weights,
+                        std::vector<std::any>& layer_biases, const std::any& target_labels, const std::any& learning_rate) override
+        {
+            /*  !!! Basic steps for backward propagation that layers without weights and biases go through (For testing example) !!!
+                A few things to consider first:
+                    a)  For now we have a lot of parts hard coded and kind of set to debugging example, these will be optimized in the future, so the 
+                        methods we have now used to compute gradients for each layer, most likely won't be the same for every network architecture
+                        and activation functions  
+                    b)  Let's consider that we're traversing the layers in reverse order, so next layer will mean previous in forward propagation, and vice versa.
+
+                Generic steps:           
+                    For each layer backward propagation, we need to perform a few steps:
+                        1 - Get gradient of loss with respect to previous layer output 
+                            Step 1 will return in dA_previous
+                        2 - Get gradient of loss with respect to current layer output 
+                            Step 2 will return in dA_current
+                        3 - Reshape gradient to match layer input shape
+                            Step 3 reshape dA_flatten into next layer output shape
+            */
+
+            if (layer_output.empty() || layer_weights.empty() || layer_biases.empty() || !target_labels.has_value()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return;
+            }  
+
+            OutputType* output_layer_output = std::any_cast<OutputType>(&layer_output[4]); // Access final layer forward output, for now hardcoded (Output layer)
+            OutputType* output_layer_weights = std::any_cast<OutputType>(&layer_weights[2]); // Access output layer weights
+            OutputType* dense_layer_weights = std::any_cast<OutputType>(&layer_weights[1]); // Access this layer forward weights, for now hard coded (Dense 1 layer)
+            InputType* pool_layer_output = std::any_cast<InputType>(&layer_output[1]); // Get input of layer so we can get its shape
+            const OutputType* true_labels = std::any_cast<OutputType>(&target_labels); // Access true labels of input, i.e, correct classes for batch sample
+            auto pool_layer_output_shape = NumPP::get_shape(*pool_layer_output);
+
+            OutputType* testing = std::any_cast<OutputType>(&layer_output[2]);
+
+            // For now we compute thes values again, need to optimize
+            // Compute the gradient of the loss with respect to the output of output layer
+            Mat2d<DataType> dZ_output = NumPP::subtract<DataType>(*output_layer_output, *true_labels);
+            // Compute gradient of the loss with respect to the weights of dense layer
+            Mat2d<DataType> dA_dense = NumPP::dot(dZ_output, NumPP::transpose(*output_layer_weights));
+
+            // Actual flatten backward propagation
+            // Compute gradient of the loss with respect to the flatten layer
+            Mat2d<DataType> dA_flatten = NumPP::dot(dA_dense, NumPP::transpose(*dense_layer_weights));
+            // Reshape gradient to match the original input shape of flatten layer
+            InputType dA_original = NumPP::reshape<DataType>(dA_flatten, pool_layer_output_shape);
+        }
+
         // Specialized override of layer forward method declared in base class (LayerBase)
-        void forward(std::any& input, std::any& output, std::any& weights, std::any& bias) override 
+        void forward(std::any& input, std::any& output, std::any& linear_output, std::any& weights, std::any& bias) override 
         {
             if (!input.has_value()) {
                 std::cerr << "Error: Input is empty" << std::endl;
@@ -1923,10 +2169,10 @@ namespace MLPP
         const Activation m_activation_function; // Member Variable to hold passed activation function method
         std::vector<DataType> m_transformed_vector; // Member variable to store current result of linear transformation
         std::vector<DataType> m_activated_vector; // Member variable to store current result of activation function
-        std::vector<DataType> m_bias_vector; // Testing only while backward propagation isn't ready
-        Mat2d<DataType> m_weight_matrix; // Testing only while backward propagation isn't ready
+        OutputType m_linear_output;
 
-        // Overload of activation process method to work with vectors
+        // Overload of activation process method to work with vectors (Layer)
+        // Applies selected activation function to vector
         std::vector<DataType> activation_process(const std::vector<DataType>& vec, const Activation& activation_function) override
         {
             if (vec.empty()) {
@@ -1949,6 +2195,28 @@ namespace MLPP
             }
         }
 
+        // Overload of update weights and biases method, !!! to be declared (Layer) !!!
+        void update_weights_and_biases(std::any& weights, std::any& biases, const Mat2d<DataType>& dW, 
+                                        const std::vector<DataType>& dB, const std::any& learning_rate)
+        {
+            if (!weights.has_value() || !biases.has_value() || !learning_rate.has_value()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return;
+            }  
+            
+            Mat2d<DataType>* weights_input = std::any_cast<Mat2d<DataType>>(&weights); // Get weights for this layer
+            std::vector<DataType>* biases_input = std::any_cast<std::vector<DataType>>(&biases); // Get biases for this layer
+            const DataType* learn_rate = std::any_cast<DataType>(&learning_rate); // Get learning rate set on fit method (Neural Network)
+
+            // Update weights for this layer
+            Mat2d<DataType> weights_output = NumPP::subtract(*weights_input, NumPP::scalar_mat_mul<DataType>(dW, *learn_rate));
+            // Update biases for this layer
+            std::vector<DataType> biases_output = NumPP::subtract(*biases_input, NumPP::scalar_vec_mul(dB, *learn_rate));
+
+            weights = weights_output;
+            biases = biases_output;
+        }
+
     public:
         // Class constructor to receive correct hyperparameters
         Dense(const int& output_size, const Activation& activation_function):
@@ -1958,13 +2226,88 @@ namespace MLPP
         {}
 
         // Specialized override of layer backward method declared in base class (LayerBase)
-        void backward(std::any& input, std::any& target, std::any& weights, std::any& bias) override 
+        void backward(std::vector<std::any>& layer_output, std::vector<std::any>& layer_linear_outputs, std::vector<std::any>& layer_weights, 
+                        std::vector<std::any>& layer_biases,const std::any& target_labels, const std::any& learning_rate) override 
         {
+            /*  !!! Basic steps for backward propagation that layers with weights and biases go through (For testing example) !!!
+                A few things to consider first:
+                    a)  For now we have a lot of parts hard coded and kind of set to debugging example, these will be optimized in the future, so the 
+                        methods we have now used to compute gradients for each layer, most likely won't be the same for every network architecture
+                        and activation functions  
+                    b)  Let's consider that we're traversing the layers in reverse order, so next layer will mean previous in forward propagation, and vice versa.
 
+                Generic steps:           
+                    For each layer backward propagation, we need to perform a few steps:
+                        1 - Get gradient of loss with respect to previous layer output (Output layer skips this step)
+                            Step 1 will return in dZ_previous
+                        2 - Get gradient of loss with respect to current layer output (In our example Output dA = dZ, so we go straight to dZ)
+                            Step 2 will return in dA_current
+                        3 - Get gradient of loss with respect to current layer linear output
+                            Step 3 will return in dZ_current
+                        4 - Get gradient of loss with respect to current layer weights 
+                            Step 4 will return in dW_current
+                        5 - Get gradient of loss with respect to current layer biases
+                            Step 5 will return in dB_current
+                        6 - Update weights and biases
+                            Step 6 will store new updated weights and biases for current layer
+            */
+
+            if (layer_output.empty() || layer_weights.empty() || layer_biases.empty() || !target_labels.has_value()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return;
+            }  
+
+            // Output layer backward propagation, will be optimized in the future
+            if (m_activation_function == SOFTMAX) {
+                InputType* previous_layer_output = std::any_cast<InputType>(&layer_output[3]); // Access previous layer forward pass output, for now hardcoded (Dense 1 layer)
+                OutputType* current_layer_output = std::any_cast<OutputType>(&layer_output[4]); // Access this layer forward output, for now hardcoded (Output layer)
+                const OutputType* true_labels = std::any_cast<OutputType>(&target_labels); // Access true labels of input, i.e, correct classes for batch sample
+                const DataType batch_size = true_labels->size(); // Get number of samples, used for data normalization
+
+                // Compute the gradient of the loss with respect to the output of this layers forward output
+                Mat2d<DataType> dZ_output = NumPP::subtract<DataType>(*current_layer_output, *true_labels);
+                // Compute the gradient of the loss with respect to the weights of the current layer
+                Mat2d<DataType> dW_output = NumPP::scalar_mat_mul(NumPP::dot(NumPP::transpose(*previous_layer_output), dZ_output), (1/batch_size));
+                // Compute the gradient of the loss with respect to the biases of the current layer
+                std::vector<DataType> dB_output = NumPP::scalar_vec_mul<DataType>(NumPP::sum(dZ_output, 1), (1/batch_size));
+                // Update weights and biases for this layer
+                update_weights_and_biases(layer_weights[2], layer_biases[2], dW_output, dB_output,  learning_rate);
+                return;
+
+                //auto shape = NumPP::get_shape(*previous_layer_output);
+                //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+                //DataAnalysis::display_all(*current_layer_output);
+                //std::cout << shape.first << ", " << shape.second << std::endl;
+                //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+                //DataAnalysis::display_all(*true_labels);
+            }
+
+            // Dense 1 layer backward propagation, will be optimized in the future
+            InputType* previous_layer_output = std::any_cast<InputType>(&layer_output[2]); // Access previous layer forward pass output, for now hardcoded (Flatten layer)
+            //OutputType* current_layer_output = std::any_cast<OutputType>(&layer_output[3]); // Access this layer forward output, for now hardcoded (Dense 1 layer)
+            OutputType* current_layer_linear_output = std::any_cast<OutputType>(&layer_linear_outputs[3]); // Access this layer forward linear output, for now hardcoded (Dense 1 layer)
+            OutputType* output_layer_output = std::any_cast<OutputType>(&layer_output[4]); // Access final layer forward output, for now hardcoded (Output layer)
+            OutputType* output_layer_weights = std::any_cast<OutputType>(&layer_weights[2]); // Access output layer weights
+            const OutputType* true_labels = std::any_cast<OutputType>(&target_labels); // Access true labels of input, i.e, correct classes for batch sample
+            const DataType batch_size = true_labels->size(); // Get number of samples, used for data normalization
+
+            // For now we compute thes values again, need to optimize
+            // Compute the gradient of the loss with respect to the output of output layer 
+            Mat2d<DataType> dZ_output = NumPP::subtract<DataType>(*output_layer_output, *true_labels);
+            // Compute gradient of the loss with respect to the weights of output layer 
+            Mat2d<DataType> dA_dense = NumPP::dot(dZ_output, NumPP::transpose(*output_layer_weights));
+            // Compute gradient of the loss with respect to the linear output of the current layer
+            Mat2d<DataType> dZ_dense = NumPP::mat_mul_matching_elements(dA_dense, NumPP::relu_derivative<DataType>(*current_layer_linear_output));
+            // Compute gradient of the loss with respect to the weights of the current layer
+            Mat2d<DataType> dW_dense = NumPP::scalar_mat_mul(NumPP::dot(NumPP::transpose(*previous_layer_output), dZ_dense), (1/batch_size));
+            // Compute gradient of the loss with respect to the biases of the current layer
+            std::vector<DataType> dB_dense = NumPP::scalar_vec_mul(NumPP::sum(dZ_dense, 1), (1/batch_size));       
+            // Update weights and biases for this layer  
+            update_weights_and_biases(layer_weights[1], layer_biases[1], dW_dense, dB_dense,  learning_rate);  
         }
 
         // Specialized override of layer forward method declared in base class (LayerBase)
-        void forward(std::any& input, std::any& output, std::any& weights, std::any& bias) override 
+        void forward(std::any& input, std::any& output, std::any& linear_output, std::any& weights, std::any& bias) override 
         {
             if (!input.has_value()) {
                 std::cerr << "Error: Input is empty" << std::endl;
@@ -1975,6 +2318,7 @@ namespace MLPP
 
             InputType* typedInput = std::any_cast<InputType>(&input);
             OutputType* typedOutput = std::any_cast<OutputType>(&output);
+            OutputType non_activated_output;
 
             if (!weights.has_value()) {
                 weights = Mat2d<DataType>();
@@ -1999,7 +2343,10 @@ namespace MLPP
                 m_transformed_vector = NumPP::add(NumPP::dot((*typedInput)[i], *weights_input), *biases_input);
                 m_activated_vector = activation_process(m_transformed_vector, m_activation_function);
                 typedOutput->push_back(m_activated_vector);
+                non_activated_output.push_back(m_transformed_vector); // testing
             }
+
+            linear_output = non_activated_output; // testing
         } 
 
     };
@@ -2010,27 +2357,39 @@ namespace MLPP
     private:
         // Member variable that store base class to determine sequence of layers in forward and backward pass
         std::vector<LayerBase*> m_layers; // Member vector that stores network class sequence
+        std::vector<std::any> m_outputs; // Member vector that stores each layer result to use in backward propagation
+        std::vector<std::any> m_linear_outputs; // Member vector that stores layer linear output, if no activation function is the same as layer output
         std::vector<std::any> m_weights; // Member vector that, if applicable, stores weight values for layer
         std::vector<std::any> m_biases; // Member vector that, if applicable, stores biases values for layer
         std::any m_current_input; // Member blank variable to store current input in forward pass
         std::any m_current_output; // Member blank variable to store current output in forward pass
         
         // Method that applies backward propagation with given layer sequence
-        void backward_pass(std::any& input, std::any& target, std::vector<std::any>& weights, std::vector<std::any>& biases)
+        void backward_pass(const std::any& target_labels, const std::any& learning_rate)
         {
-            if (!input.has_value())  {
-                std::cerr << "Error: Params for forward pass are null" << std::endl;
+            if (!target_labels.has_value())  {
+                std::cerr << "Error: Params for backward pass are null" << std::endl;
                 return;
             } 
 
+            //int it = 0; // Debugging
+
+            // Iterate through layers in reverse order for backward propagation
             for (auto i = m_layers.rbegin(); i != m_layers.rend(); i++) {
                 auto& layer = *i;
+                layer->backward(m_outputs, m_linear_outputs, m_weights, m_biases, target_labels, learning_rate);
+                
+                // Debugging
+                //it++;
+                //if (it >= 2) {
+                //    break;
+                //}
             }
         }
 
         // Method that calculates batch loss for epoch iteration
         template <typename T>
-        T calc_batch_loss(std::any& predictions, std::any& true_labels)
+        T calc_batch_loss(std::any& predictions, const std::any& true_labels)
         {
             if (!predictions.has_value() || !true_labels.has_value()) {
                 std::cerr << "Error: Params for batch loss are null" << std::endl;
@@ -2038,7 +2397,7 @@ namespace MLPP
             } 
 
             Mat2d<T>* epoch_result = std::any_cast<Mat2d<T>>(&predictions); // Get typed predictions pointer
-            Mat2d<T>* labels = std::any_cast<Mat2d<T>>(&true_labels); // Get typed labels pointer
+            const Mat2d<T>* labels = std::any_cast<Mat2d<T>>(&true_labels); // Get typed labels pointer
             T batch_size = epoch_result->size(); // Get number of elements in batch (i.e number of images)
             T loss = 0; // Variable to store single batch loss (i.e single image loss)
             T sum = 0; // Variable to store the sum of all losses in batch (i.e all images losses)
@@ -2068,13 +2427,17 @@ namespace MLPP
             T log_result = 0; // Variable to store current .log result
             T loss = 0; // Variable to store loss
             
-            for (size_t i = 0; i < predictions.size(); i++)
-            {
-                log_result = std::log(predictions[i]); // Apply natural logarithm to prediction values (base e)
-                loss += log_result * target[i]; // Multiply log result with target value 
-                log_result = 0; // Clear log result
+            for (size_t i = 0; i < predictions.size(); i++) {
+                //std::cout << "Predictions " << i << ": " << predictions[i] << std::endl;
+                if (predictions[i] != 0) {
+                    log_result = std::log(predictions[i]); // Apply natural logarithm to prediction values (base e)
+                    //std::cout << "Log result " << i << ": " << std::to_string(log_result) << std::endl;
+                    loss += log_result * target[i]; // Multiply log result with target value 
+                    log_result = 0; // Clear log result
+                }    
             }
 
+            //std::cout << loss << std::endl;
             return -(loss); // Return negative value of loss
         }
 
@@ -2086,96 +2449,111 @@ namespace MLPP
                 return;
             } 
 
-            m_current_input = input;
-            m_current_output = output;
+            m_current_input = input; // Assign current input to initial input data
+            m_current_output = output; // Assign output reference ot current output
+            std::any m_current_linear_output; // Assign blank container to store current liner output
 
-            int counter = 0; // testing only
+            int w_and_b_counter = 0; // Determine which element of weights and biases vectors
+            int it_counter = 0; // Counts layer iterations to assign correct layer output to layer results vector
 
+            // Iterate through network layers and call layer method for forward propagation
             for (auto &layer : m_layers) {
-                m_current_output.reset();
-                layer->forward(m_current_input, m_current_output, m_weights[counter], m_biases[counter]); 
-                m_current_input.reset(); 
+                m_current_output.reset(); // Clear current output for next layer
+                m_current_linear_output.reset(); // Clear current linear output for next layer
+                // Call current layer forward method
+                layer->forward(m_current_input, m_current_output, m_current_linear_output, m_weights[w_and_b_counter], m_biases[w_and_b_counter]); 
+                m_current_input.reset(); // Clear current input for next layer
                 m_current_input = m_current_output; // Update input for next layer  
                 
+                // Check if layer has weights and biases flag, if so add to counter
                 if (layer->get_w_and_b()) {
-                    counter++;
+                    w_and_b_counter++;
                 }  
+
+                m_outputs[it_counter] = m_current_output; // Assign current layer output to correct layer results element
+                m_linear_outputs[it_counter] = m_current_linear_output;
+                it_counter++; // Increase iteration counter
             }
 
-            output = m_current_output;
+            output = m_current_output; // Assign output of final layer to passed output reference
         }
-   
+
     public:
         // Method that creates and add layer to sequence
         void add_layer(LayerBase* layerPtr)
         {
-            //void* w = nullptr;
-            //void* b = nullptr;
-            std::any w;
-            std::any b;
+            std::any o; // Create empty any container to store layer output
+            std::any lo; // Create empty any container to store layer linear output
 
-            m_layers.push_back(layerPtr);
+            m_layers.push_back(layerPtr); // Store created layer into member layers vector
+            m_outputs.push_back(o); // Store empty container in member layer outputs vector
+            m_linear_outputs.push_back(lo);
 
+            // Check if layer has weights and biases flag
             if (layerPtr->get_w_and_b()) {   
-                m_weights.push_back(w);
-                m_biases.push_back(b);
+                std::any w; // Create empty any container for weights
+                std::any b; // Create empty any container for biases 
+                m_weights.push_back(w); // Store empty container in member weights vector
+                m_biases.push_back(b); // Store empty container in member biases vector
             }
         }
 
-        // Method that applies training for neural network
+        // Method that applies training to created neural network
         template<typename T>
-        Mat2d<T> fit(std::any input, std::any input_labels, const size_t &epochs) 
+        Mat2d<T> fit(std::any input, const std::any target_labels, const size_t &epochs, const T& learning_rate) 
         {
-            std::any output; // Create null any class reference
+            std::any output; // Create null any class container
             T epoch_batch_loss = 0; // Initialize batch loss variable with network data type
+
+            // Perform training steps for declared number of epochs
             for (size_t epoch = 0; epoch < epochs; epoch++) {
                 output.reset(); // Reset output for each iteration
-                auto t1 = Benchmark::startBenchmark();
-                forward_pass(input, output);
-                auto t2 = Benchmark::stopBenchmark();
-                epoch_batch_loss = calc_batch_loss<T>(output, input_labels);
-                backward_pass(output, input_labels, m_weights, m_biases);
 
-                // Debugging
-                std::cout << epoch_batch_loss << std::endl;
+                forward_pass(input, output); // Apply forward pass
 
-                Mat2d<T>* epoch_result = std::any_cast<Mat2d<T>>(&output);
-                auto shape = NumPP::get_shape(*epoch_result);
-            
-                std::cout << "-------------------" << std::endl;
-                DataAnalysis::display_all(*epoch_result);
-                std::cout << "-------------------" << std::endl;
+                // !!! NEED TO LOOK DEEPER INTO LOSS CALCULATION !!!
+                epoch_batch_loss = calc_batch_loss<T>(output, target_labels); // Get batch loss for performance checking
+                std::cout << "Epoch: " << epoch + 1 << " Loss: " << std::to_string(epoch_batch_loss) << std::endl;
+                
+                // !!! STILL IN PROGRESS !!!
+                backward_pass(target_labels, learning_rate); // Apply backward pass
+                //break;
 
-                std::cout << Benchmark::getDuration(t1, t2, Benchmark::Seconds) << std::endl;
-
-                /* for (size_t i = 0; i < m_weights.size(); i++) {
-                    m_weights[i].reset();
-                }
-
-                for (size_t i = 0; i < m_biases.size(); i++) {
-                    m_biases[i].reset();
-                } */         
-            
+                //Debugging code
+                //Mat2d<T>* epoch_result = std::any_cast<Mat2d<T>>(&output);
+                //auto shape = NumPP::get_shape(*epoch_result);
+                //std::cout << "-------------------" << std::endl;
+                //DataAnalysis::display_all(*epoch_result);
+                //std::cout << "-------------------" << std::endl;                
+                //auto t1 = Benchmark::startBenchmark(); // Performance benchmarking
+                //auto t2 = Benchmark::stopBenchmark(); // Performance benchmarking
+                //std::cout << Benchmark::getDuration(t1, t2, Benchmark::Seconds) << std::endl; // Performance benchmarking   
             }  
+
+            /* Debugging code
+            Mat4d<T>* conv2d_output = std::any_cast<Mat4d<T>>(&m_outputs[0]);
+            std::cout << "Convolution Output shape = ";
+            std::cout << "(" << std::to_string((*conv2d_output).size()) << "," << std::to_string((*conv2d_output)[0].size()) << ",";
+            std::cout << std::to_string((*conv2d_output)[0][0].size()) << "," << std::to_string((*conv2d_output)[0][0][0].size()) << ")" << std::endl;
+            Mat4d<T>* max_pooling_output = std::any_cast<Mat4d<T>>(&m_outputs[1]);
+            std::cout << "Max Pooling Output shape = ";
+            std::cout << "(" << std::to_string((*max_pooling_output).size()) << "," << std::to_string((*max_pooling_output)[0].size()) << ",";
+            std::cout << std::to_string((*max_pooling_output)[0][0].size()) << "," << std::to_string((*max_pooling_output)[0][0][0].size()) << ")" << std::endl;
+            Mat2d<T>* flatten_output = std::any_cast<Mat2d<T>>(&m_outputs[2]);
+            auto shape = NumPP::get_shape(*flatten_output);
+            std::cout << "Flatten layer shape = ";
+            std::cout << "(" << shape.first << ", " << shape.second << ")" << std::endl;
+            Mat2d<T>* dense_output = std::any_cast<Mat2d<T>>(&m_outputs[3]);
+            shape = NumPP::get_shape(*dense_output);
+            std::cout << "Dense layer shape = ";
+            std::cout << "(" << shape.first << ", " << shape.second << ")" << std::endl;
+            Mat2d<T>* output_output = std::any_cast<Mat2d<T>>(&m_outputs[4]);
+            shape = NumPP::get_shape(*output_output);
+            std::cout << "Output layer shape = ";
+            std::cout << "(" << shape.first << ", " << shape.second << ")" << std::endl;
+            */
 
             Mat2d<T>* result = std::any_cast<Mat2d<T>>(&output);
-
-            return *result;
-        }
-
-        // Debbuging method
-        template<typename T>
-        Mat4d<T> fit2(std::any input, std::any input_labels, const size_t &epochs) 
-        {
-            std::any output; // Create null any class reference
-            T epoch_batch_loss = 0; // Initialize batch loss variable with network data type
-            for (size_t epoch = 0; epoch < epochs; epoch++) {
-                output.reset(); // Reset output for each iteration
-                forward_pass(input, output);
-                //epoch_batch_loss = calc_batch_loss<T>(output, input_labels);               
-            }  
-
-            Mat4d<T>* result = std::any_cast<Mat4d<T>>(&output);
 
             return *result;
         }
