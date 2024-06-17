@@ -253,45 +253,17 @@ int main()
 
     model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(5, 3, RELU, SAME));
     model.add_layer(new MaxPooling2D<Mat4d<double>, Mat4d<double>, double>(2,2));
-    //model.add_layer(new Conv2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(16, 3, RELU, SAME));
-    //model.add_layer(new MaxPooling2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(2,2));
-    //model.add_layer(new Conv2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(32, 3, RELU, SAME));
-    //model.add_layer(new MaxPooling2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(2,2));
-    //model.add_layer(new Conv2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(64, 3, RELU, SAME));
-    //model.add_layer(new MaxPooling2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(2,2));
-    //model.add_layer(new Conv2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(128, 3, RELU, SAME));
-    //model.add_layer(new MaxPooling2D<Mat4d<_Float32>, Mat4d<_Float32>, _Float32>(2,2));
     model.add_layer(new Flatten<Mat4d<double>, Mat2d<double>, double>());
     model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(120, RELU));
     model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(3, SOFTMAX));
 
     auto t1 = startBenchmark();
-    Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 10, 0.001);
+    Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 1, 0.001);
     auto t2 = stopBenchmark();
 
     cout << "================================" << endl;
     cout << getDuration(t1, t2, Seconds) << endl;
     cout << "================================" << endl;
-    //Mat4d<_Float32> result2 = model.fit2<_Float32>(training_data, hot_encoded_labels, 2);
-
-    /* cout << "Max Pooling Output shape = ";
-    cout << "(" << to_string(result2.size()) << "," << to_string(result2[0].size()) << ",";
-    cout << to_string(result2[0][0].size()) << "," << to_string(result2[0][0][0].size()) << ")" << endl;
-
-    for (size_t i = 0; i < result2.size(); i++) {
-        auto cv2Image = OpenCvIntegration::get_open_cv_gray_mat<_Float32>(result2[i], 0);
-        string window_name = "Training data " + to_string(i + 1);
-        cv::namedWindow(window_name, cv::WINDOW_AUTOSIZE);
-        cv::imshow(window_name, cv2Image);
-        cv::waitKey(0);
-    }   */
-        
-    /* Mat2d<_Float32>* flatten_output = static_cast<Mat2d<_Float32>*>(outPtr);
-
-    auto shape = NumPP::get_shape(*flatten_output);
-
-    cout << "Flatten output shape = ";
-    cout << "(" << shape.first << ", " << shape.second << ")" << endl;  */ 
 
     auto shape = NumPP::get_shape(result);
 
@@ -309,6 +281,51 @@ int main()
     return 0;
 }
 
+// GS Artifical Intelligence
+int main6()
+{
+    NeuralNetwork model;
+
+    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Documents/School/Asignments/GS_1/AI/GS_Dataset/train", true, {14, 14}, true, false, false);
+
+    auto training_data = OpenCvIntegration::prepare_training_data<double>(params); 
+
+    DataAnalysis::display_shape(training_data);
+
+    // Data normalization, since max value is 255, all values will be between 0 and 1
+    for (size_t i = 0; i < training_data.size(); i++) { 
+        for (size_t j = 0; j < training_data[i].size(); j++) {
+            for (size_t k = 0; k < training_data[i][j].size(); k++) {
+                for (size_t l = 0; l < training_data[i][j][k].size(); l++) {
+                    training_data[i][j][k][l] /= 255.0;
+                }
+            }
+        }
+    } 
+    
+    auto hot_encoded_labels = DataAnalysis::one_hot_label_encoding<double>("/home/muzaodamassa/Documents/School/Asignments/GS_1/AI/GS_Dataset/train");
+
+    DataAnalysis::display_shape(hot_encoded_labels);
+    DataAnalysis::display_head(hot_encoded_labels);
+
+    model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(3, 3, RELU, SAME));
+    model.add_layer(new MaxPooling2D<Mat4d<double>, Mat4d<double>, double>(2,2));
+    model.add_layer(new Flatten<Mat4d<double>, Mat2d<double>, double>());
+    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(120, RELU));
+    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(3, SOFTMAX));
+
+    auto t1 = startBenchmark();
+    Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 1, 0.01);
+    auto t2 = stopBenchmark();
+
+    cout << "================================" << endl;
+    cout << getDuration(t1, t2, Seconds) << endl;
+    cout << "================================" << endl;
+    
+    DataAnalysis::display_head(result);
+ 
+    return 0;
+}
 
 /*  Mini tests for Neural Network unit
 int main6()
