@@ -65,13 +65,14 @@ int main2()
     Mat2d<int16_t>* aPtr = new Mat2d<int16_t>(a);
     Mat2d<int16_t>* bPtr = new Mat2d<int16_t>(b);
     //auto r = NumPP::sum_mat_mul_matching_elements(aPtr, bPtr);
-    //Mat2d<double> r = NumPP::scalar_mat_mul<int16_t, double>(aPtr, 2.0);
+    Mat2d<double> r = NumPP::scalar_mat_mul<int16_t, double>(b, 2.0);
     //cout << to_string(r) << endl;
 
     //vector<u_int8_t> v {255, 255, 255};
     //cout << to_string(NumPP::get_sum_of_vector<u_int8_t, u_int16_t>(v)) << endl;
 
-    //DataAnalysis::display_all(r);
+    DataAnalysis::display_all(r);
+    std::cout << to_string(NumPP::get_average(r)) << std::endl;
     std::cout << "-------------------------------------------------------------" << std::endl;
     //DataAnalysis::display_all(r1);
 
@@ -228,7 +229,7 @@ int main4()
 // Mini tests for Sequential neural network with open cv
 int main()
 {
-    auto params = OpenCvIntegration::TrainingDataParameters("../tests/Images", true, {28, 28}, true, true, true);
+    auto params = OpenCvIntegration::TrainingDataParameters("../tests/Training", true, {28, 28}, true, true, true);
 
     auto training_data = OpenCvIntegration::prepare_training_data<double>(params); 
 
@@ -248,17 +249,17 @@ int main()
     } 
 
     NeuralNetwork model;
-    // testing                                   0       1       2       3       4       5       6       7
-    const Mat2d<double> hot_encoded_labels = {{0,0,1},{0,1,0},{1,0,0},{0,1,0},{0,1,0},{0,0,1},{0,1,0},{1,0,0}};
+    // testing                                   0       1       2       3       4       5       6       7       8
+    const Mat2d<double> hot_encoded_labels = {{0,0,1},{0,1,0},{1,0,0},{0,1,0},{0,1,0},{0,0,1},{0,1,0},{0,1,0},{1,0,0}};
 
     model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(5, 3, RELU, SAME));
-    model.add_layer(new MaxPooling2D<Mat4d<double>, Mat4d<double>, double>(2,2));
+    model.add_layer(new AveragePooling2d<Mat4d<double>, Mat4d<double>, double>(2,2));
     model.add_layer(new Flatten<Mat4d<double>, Mat2d<double>, double>());
     model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(120, RELU));
     model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(3, SOFTMAX));
 
     auto t1 = startBenchmark();
-    Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 1, 0.001);
+    Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 150, 0.001);
     auto t2 = stopBenchmark();
 
     cout << "================================" << endl;
@@ -269,6 +270,7 @@ int main()
 
     cout << "Output layer shape = ";
     cout << "(" << shape.first << ", " << shape.second << ")" << endl;
+    
 
     for (size_t i = 0; i < result.size(); i++) {
         cout << i << ", ";
@@ -277,8 +279,28 @@ int main()
         }
         cout << endl;
     } 
- 
+
     return 0;
+    
+    /* Halt Execution
+    char input;
+    std::cout << "Program is running. Press 'q' to quit, or any other key to continue." << endl;
+    
+    while (true) {
+        input = cin.get();
+
+        if (input == 'q' || input == 'Q') {
+            cout << "Program ended" << endl;
+            return 0;
+        }
+        if (input != 'q' || input != 'Q') {
+            break;
+        }
+    }
+    
+    cout << "Program resumed" << endl;
+    return 0;
+    */
 }
 
 // GS Artifical Intelligence
