@@ -2117,76 +2117,73 @@ namespace MLPP
             }
         }
 
-        // Method that propagates gradient to next layer
-        OutputType backward_process(const OutputType& a_Previous, const Mat4d<DataType>& dA_current)
+        // Method that computes and returns gradient of loss with respect to bias
+        std::vector<DataType> compute_db(const OutputType& dZ_L_4)
         {
-            auto result_shape = NumPP::get_shape(a_Previous);
-            OutputType result = NumPP::zeros<DataType>(result_shape[0], result_shape[1], result_shape[2], result_shape[3]);        
-            auto da_current_shape = NumPP::get_shape(dA_current);
+            if (dZ_L_4.empty()) {
+                std::cerr << "Error: Input is empyt" << std::endl;
+                return std::vector<DataType>();
+            }
 
-            for (size_t i = 0; i < da_current_shape[0]; i++) {
-                std::pair<size_t, size_t> og_mat_loc = {0, 0};
-                for (size_t d = 0; d < da_current_shape[3]; d++) {
-                    og_mat_loc.first = 0;
-                    for (size_t h = 0; h < da_current_shape[1]; h++) {
-                        og_mat_loc.second = 0;
-                        for (size_t w = 0; w < da_current_shape[2]; w++) {
-                            Mat2d<DataType> block_mat = get_2d_block_from_mat(a_Previous[i], 2, 0, og_mat_loc, d);
-                            std::pair<size_t, size_t> max_index = NumPP::get_max_element_pos(block_mat);
-                            result[i][og_mat_loc.first + max_index.first][og_mat_loc.second + max_index.second][d] += dA_current[i][h][w][d];
-                            og_mat_loc.second += 2; // Pool stride hard coded for now
+            std::vector<DataType> db = NumPP::zeros<DataType>(m_number_of_filters); // Create vector with the size equals to number of filters
+
+            for (size_t f = 0; f < db.size(); f++) { // Loop over filters = channels
+                for (size_t i = 0; i < dZ_L_4.size(); i++) { // Loop over all examples in batch
+                    for (size_t h = 0; h < dZ_L_4[i].size(); h++) { // Loop over current example height
+                        for (size_t w = 0; w < dZ_L_4[i][h].size(); w++) { // Loop over current example width
+                            // Get sum of all examples in current channel f and 
+                            // store sum to corresponding filter in bias vector
+                            db[f] += dZ_L_4[i][h][w][f];
                         }
-                        og_mat_loc.first += 2; // Pool stride hard coded for now
                     }
                 }
             }
 
-            return result;
+            return db;
         }
 
-        // This is a testing method, not sure if will make it to final version
-        // Method that calculates dW(Gradient of the loss with respect to the weights of the Conv2D layer)
-        Mat3d<DataType> calculate_dW(const OutputType& dZ_current)
+        // Method that computes and returns gradient of loss with respect to weigths (Filter=Kernels)
+        Mat3d<DataType> compute_dW(const OutputType& dZ_L_4, const InputType& A_L_5)
         {
-            Mat3d<DataType> dW = NumPP::zeros<DataType>(5, 3, 3); // Initialize dW with zeros, size hard coded for now
+            if (dZ_L_4.empty() || A_L_5.empty()) {
+                std::cerr << "Error: Input is empyt" << std::endl;
+                return Mat3d<DataType>();
+            }
 
-            for (size_t f = 0; f < dW.size(); f++) {
-                Mat2d<DataType> current_result = NumPP::zeros<DataType>(m_kernel_size, m_kernel_size); 
-                for (size_t i = 0; i < m_input.size(); i++) {
-                    std::pair<size_t, size_t> loc = {0,0};
-                    for (size_t j = 0; j < m_input[i].size(); j++) {
-                        for (size_t k = 0; k < m_input[i][j].size(); k++) {
-                            Mat2d<DataType> block_mat = get_2d_block_from_mat(m_input[i], m_kernel_size, 0, loc, 0);
-                            current_result = NumPP::add(current_result, NumPP::scalar_mat_mul(block_mat, dZ_current[i][j][k][f]));          
-                            loc.second += 3;
+            Mat3d<DataType> dW = NumPP::zeros<DataType>(m_number_of_filters, m_kernel_size, m_kernel_size); // Initialize dW with zeros and same dimensions as layer weight matrix
+            const size_t batch_size = dZ_L_4.size(); // Get number of examples in current batch
+            const size_t examples_height = dZ_L_4[0].size(); // Get number of height (rows) of examples in batch
+            const size_t examples_width = dZ_L_4[0][0].size(); // Get number of width (columns) of examples in batch
+
+            for (size_t f = 0; f < dW.size(); f++) { // Loop over each filter f
+                for (size_t i = 0; i < batch_size; i++) { // Loop over each example in batch 
+                    for (size_t h_prime = 0; h_prime < examples_height; h_prime++) { // Loop over height of gradient upstream (dZ_L_4)
+                        for (size_t w_prime = 0; w_prime < examples_width; w_prime++) { // Loop over width of gradient upstream (dZ_L_4)
+                            DataType dZ_value = dZ_L_4[i][h_prime][w_prime][f]; // Extract the current value of gradient at (i,h',w',f) pos
+
+                            for (size_t h = 0; h < dW[f].size(); h++) { // Loop over each position in current filter
+                                for (size_t w = 0; w < dW[f][h].size(); w++) {
+                                    // Calculate the corresponding position in the input A_L_5
+                                    // h_input and w_input are is the height and width position
+                                    // for where the filter's current element was applied during 
+                                    // forward propagation, making this step necessary for adjusting
+                                    // the weights for next pass of forward propagation
+                                    size_t h_input = h_prime - h; 
+                                    size_t w_input = w_prime - w;
+
+                                    // Ensure we are within bounds of input matrix
+                                    if ((h_input >= 0 && h_input < examples_height) && (w_input >= 0 && w_input < examples_width)) {
+                                        DataType A_value = A_L_5[i][h_input][w_input][0]; // Corresponding value from input
+                                        dW[f][h][w] += (dZ_value * A_value); // Update gradient for current filter at position (h,w)
+                                    }
+                                }
+                            }
                         }
-                        loc.first += 3;
-                        loc.second = 0;
                     }
                 }
-                dW[f] = current_result;
             }
 
             return dW;
-        }
-
-        // This is a testing method, not sure if will make it to final version
-        // Method that calculates dB(Gradient of the loss with respect to the biases of the Conv2D layer)
-        std::vector<DataType> calculate_dB(const OutputType& dZ_current)
-        {
-            std::vector<DataType> dB = NumPP::zeros<DataType>(m_number_of_filters);
-
-            for (size_t f = 0; f < dB.size(); f++) {
-                for (size_t i = 0; i < dZ_current.size(); i++) {
-                    for (size_t j = 0; j < dZ_current[i].size(); j++) {
-                        for (size_t k = 0; k < dZ_current[i][j].size(); k++) {
-                            dB[f] += dZ_current[i][j][k][f];
-                        }
-                    }
-                }
-            }
-
-            return dB;
         }
 
         // Method that applies filter(kernel) to 3d matrix, will be used in Convolutional layer for neural network applications     
@@ -2298,62 +2295,23 @@ namespace MLPP
             m_padding(padding)
         {}
 
-       /*  // Specialized override of layer backward method declared in base class (LayerBase)
+        // Specialized override of layer backward method declared in base class (LayerBase)
         void backward(std::vector<std::any>& layer_output, std::vector<std::any>& layer_linear_outputs, std::vector<std::any>& layer_weights, 
-                        std::vector<std::any>& layer_biases,const std::any& target_labels, const std::any& learning_rate) override 
+                        std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const std::any& target_labels, const std::any& learning_rate) override 
         {
-              !!! Basic steps for backward propagation that layers with weights and biases go through (For testing example) !!!
-                A few things to consider first:
-                    a)  For now we have a lot of parts hard coded and kind of set to debugging example, these will be optimized in the future, so the 
-                        methods we have now used to compute gradients for each layer, most likely won't be the same for every network architecture
-                        and activation functions  
-                    b)  Let's consider that we're traversing the layers in reverse order, so next layer will mean previous in forward propagation, and vice versa.
+            OutputType* dA_L_4 = std::any_cast<OutputType>(&gradients[3]); // Get gradient propagated from previously executed layer (Avrg Pooling Layer)
+            OutputType* Z_L_4 = std::any_cast<OutputType>(&layer_linear_outputs[0]); // Get the linear output of current layer (ReLU Conv Layer L-4)
+            InputType A_L_5 = m_input; // Get input of current layer, for now, training batch
 
-                Generic steps:           
-                    For each layer backward propagation, we need to perform a few steps:
-                        1 - Get gradient of loss with respect to previous layer output (Output layer skips this step)
-                            Step 1 will return in dZ_previous
-                        2 - Get gradient of loss with respect to current layer output (In our example Output dA = dZ, so we go straight to dZ)
-                            Step 2 will return in dA_current
-                        3 - Get gradient of loss with respect to current layer linear output
-                            Step 3 will return in dZ_current
-                        4 - Get gradient of loss with respect to current layer weights 
-                            Step 4 will return in dW_current
-                        5 - Get gradient of loss with respect to current layer biases
-                            Step 5 will return in dB_current
-                        6 - Update weights and biases
-                            Step 6 will store new updated weights and biases for current layer
-
-
-            !!! Still need work, basic structure of how method is supposed to look like is implemented, but network is not learning when this method is !!!
-            !!! active, so now focus is to get the backward propagation for this layer working so we can move forward into exporting and prediction methods !!!
-
-
-            if (layer_output.empty() || layer_weights.empty() || layer_biases.empty() || !target_labels.has_value()) {
-                std::cerr << "Error: Input is empty" << std::endl;
-                return;
-            } 
-
-            Mat4d<DataType>* pool_layer_output = std::any_cast<OutputType>(&layer_output[1]); // Get output of pooling layer, for now hard coded (Max Pooling 2d layer)
-            OutputType* conv_layer_linear_output = std::any_cast<OutputType>(&layer_linear_outputs[0]); // Get linear output of convolutional layer, for now hard coded (Conv 2d layer)
-            OutputType* conv_layer_output = std::any_cast<InputType>(&layer_output[0]); // Get output of convolutional layer, for now hard coded (Conv 2d layer)
-
-            // Compute these values again, need to optmize
-            OutputType a_previous = *conv_layer_output;
-            Mat4d<DataType> dA_previous = *pool_layer_output;
-            OutputType dA_pooling = backward_process(a_previous, dA_previous);
-
-            // Actual convolutional backward propagation
-            // Compute gradient of the loss with respect to the linear output of this layer, for now hard coded (Conv 2d layer)
-            OutputType dZ_conv = NumPP::mat_mul_matching_elements(dA_pooling, NumPP::relu_derivative(*conv_layer_linear_output));
-            // Compute gradient of the loss with respect to the weights of this layer, for now hard coded (Conv 2d layer)
-            Mat3d<DataType> dW_conv = calculate_dW(dZ_conv);
-            // Compute gradient of the loss with respect to the biases of this layer, for now hard coded (Conv 2d layer)
-            std::vector<DataType> dB_conv = calculate_dB(dZ_conv);
-            // Update layer weights and biases
-            update_weights_and_biases(layer_weights[0], layer_biases[0], dW_conv, dB_conv, learning_rate);
+            // Compute gradient of the loss with respect to Convolutional Layer Linear Output (L-4)
+            OutputType dZ_L_4 = NumPP::mat_mul_matching_elements<DataType>(*dA_L_4, NumPP::relu_derivative(*Z_L_4));
+            // Compute gradient of the loss with respect to to weights of convolutional layer (L-4)
+            Mat3d<DataType> dW_L_4 = compute_dW(dZ_L_4, A_L_5);
+            // Compute gradient of the loss with respect to to biases of convolutional layer (L-4)
+            std::vector<DataType> db_L_4 = compute_db(dZ_L_4);
+            // Update weights and biases for next forward pass
+            update_weights_and_biases(layer_weights[0], layer_biases[0], dW_L_4, db_L_4, learning_rate);
         }
-     */
 
         // Specialized override of layer forward method declared in base class (LayerBase)
         void forward(std::any& input, std::any& output, std::any& linear_output, std::any& weights, std::any& bias) override
@@ -2596,9 +2554,9 @@ namespace MLPP
         } 
 
         // Method that distributes the gradients from previous layers in backward propagation equally to pooling windows 
-        void backward_propagation_process(InputType& dA_L_minus_4, const OutputType* dA_L_minus_3) 
+        void backward_propagation_process(InputType& dA_L_4, const OutputType* dA_L_3) 
         {
-            auto pooled_mat_shape = NumPP::get_shape(*dA_L_minus_3); // Get current layer output dimensions
+            auto pooled_mat_shape = NumPP::get_shape(*dA_L_3); // Get current layer output dimensions
             //std::pair<size_t, size_t> pooled_mat_loc = {0, 0}; // Pair to keep track of spacial dimensions to select correct pooling windows
             DataType pooling_window_size = m_size * m_size; // Get pooling window size for average distribution
 
@@ -2606,10 +2564,10 @@ namespace MLPP
                 for (size_t c = 0; c < pooled_mat_shape[3]; c++) { // Iterate through channels in batch
                     for (size_t j = 0; j < pooled_mat_shape[1]; j++) { // Iterate through rows in batch
                         for (size_t k = 0; k < pooled_mat_shape[2]; k++) { // Iterate through columns in batch
-                            DataType gradient_value = (*dA_L_minus_3)[i][j][k][c]; // Get gradient from previous layer
+                            DataType gradient_value = (*dA_L_3)[i][j][k][c]; // Get gradient from previous layer
                             DataType average_value = gradient_value / pooling_window_size; // Average gradient value to distribute gradient equally throughout window
                             std::vector<size_t> pos = {j,k,c}; // Get current position in pooled mat
-                            distribute_gradient_to_pooling_window(dA_L_minus_4[i], pos, average_value);
+                            distribute_gradient_to_pooling_window(dA_L_4[i], pos, average_value);
                         }
                     }
                 }
@@ -2676,14 +2634,18 @@ namespace MLPP
                 return;
             }  
 
-            InputType* A_L_minus_4 = std::any_cast<InputType>(&layer_output[0]); // Get output of previous layer output (Conv 2d Layer L-4)
-            OutputType* dA_L_minus_3 = std::any_cast<OutputType>(&gradients[2]); // Get reshaped gradient calculated in previously executed layer (Flatten Layer L-3)
-            auto input_shape = NumPP::get_shape<DataType>(*A_L_minus_4); // Get shape of input to current layer, used to initialize gradient to be propagated
+            InputType* A_L_4 = std::any_cast<InputType>(&layer_output[0]); // Get output of previous layer output (Conv 2d Layer L-4)
+            OutputType* dA_L_3 = std::any_cast<OutputType>(&gradients[2]); // Get reshaped gradient calculated in previously executed layer (Flatten Layer L-3)
+            auto input_shape = NumPP::get_shape<DataType>(*A_L_4); // Get shape of input to current layer, used to initialize gradient to be propagated
 
             // Initialize gradient of loss with respect to output of previous layer (Conv 2d Layer L-4)
-            InputType dA_L_minus_4 = NumPP::zeros<DataType>(input_shape[0],input_shape[1],input_shape[2],input_shape[3]);
-            // Calculate gradient of loss with respect to output of previous layer (dA_L_minus_4) from Output gradient (dA_L_minus_3)
-            backward_propagation_process(dA_L_minus_4, dA_L_minus_3);
+            InputType dA_L_4 = NumPP::zeros<DataType>(input_shape[0],input_shape[1],input_shape[2],input_shape[3]);
+            // Calculate gradient of loss with respect to output of previous layer (dA_L_4) from Output gradient (dA_L_3)
+            backward_propagation_process(dA_L_4, dA_L_3);
+            // Store gradients calculated in this layer to propagate backwards to previous layers
+            // This is important, otherwise we will need to make the same calculations over and over again, 
+            // greatly impacting performance, look into optimizing later
+            gradients.push_back(dA_L_4);
         }
 
         // Specialized override of layer forward method declared in base class (LayerBase)
@@ -2751,13 +2713,13 @@ namespace MLPP
                 return;
             }  
 
-            InputType* A_L_minus_3 = std::any_cast<InputType>(&layer_output[1]); // Get output from previous forward pass layer (Average Pooling Layer L-3)
-            OutputType* dA_L_minus_2 = std::any_cast<OutputType>(&gradients[1]); // Get propagated gradient calculated in previously executed layer (ReLU dense layer = L-1)
-            InputType dA_L_minus_3 = NumPP::reshape<DataType>(*dA_L_minus_2, NumPP::get_shape(*A_L_minus_3)); // Reshape gradient into original shape
+            InputType* A_L_3 = std::any_cast<InputType>(&layer_output[1]); // Get output from previous forward pass layer (Average Pooling Layer L-3)
+            OutputType* dA_L_2 = std::any_cast<OutputType>(&gradients[1]); // Get propagated gradient calculated in previously executed layer (ReLU dense layer = L-1)
+            InputType dA_L_3 = NumPP::reshape<DataType>(*dA_L_2, NumPP::get_shape(*A_L_3)); // Reshape gradient into original shape
             // Store gradients calculated in this layer to propagate backwards to previous layers
             // This is important, otherwise we will need to make the same calculations over and over again, 
             // greatly impacting performance, look into optimizing later
-            gradients.push_back(dA_L_minus_3);
+            gradients.push_back(dA_L_3);
         }
         
         // Specialized override of layer forward method declared in base class (LayerBase)
@@ -2858,7 +2820,7 @@ namespace MLPP
                 const OutputType* Y = std::any_cast<OutputType>(&target_labels); // Get true labels matrix
                 const DataType batch_size = Y->size(); // Get number of samples in batch, used for data normalization
                 OutputType* W_L = std::any_cast<OutputType>(&layer_weights[2]); // Get weights matrix for softmax layer (L)
-                InputType* A_L_minus_1 = std::any_cast<InputType>(&layer_output[3]); // Get activated output of previous layer (L-1)
+                InputType* A_L_1 = std::any_cast<InputType>(&layer_output[3]); // Get activated output of previous layer (L-1)
                 OutputType* A_L = std::any_cast<OutputType>(&layer_output[4]); // Get activated output of sofmax layer (L)         
                 
                 // Calculate gradient of loss with respect to output
@@ -2866,44 +2828,44 @@ namespace MLPP
                 // with respect to linear and activated outputs are the same
                 Mat2d<DataType> dZ_L = NumPP::subtract<DataType>(*A_L, *Y);
                 // Calculate gradient of loss with respect to weights
-                Mat2d<DataType> dW_L = NumPP::scalar_mat_mul(NumPP::dot(NumPP::transpose(*A_L_minus_1), dZ_L), 1/batch_size);
+                Mat2d<DataType> dW_L = NumPP::scalar_mat_mul(NumPP::dot(NumPP::transpose(*A_L_1), dZ_L), 1/batch_size);
                 // Calculate gradient of loss with respect to biases
                 std::vector db_L = NumPP::scalar_vec_mul(NumPP::sum(dZ_L, 1), 1/batch_size);
                 // Calculate gradient of loss with respect to previous forward pass layer activated input
-                Mat2d<DataType> dA_L_minus_1 = NumPP::dot(dZ_L, NumPP::transpose(*W_L));
+                Mat2d<DataType> dA_L_1 = NumPP::dot(dZ_L, NumPP::transpose(*W_L));
                 // Update weights and biases for next pass
                 update_weights_and_biases(layer_weights[2], layer_biases[2], dW_L, db_L, learning_rate);
                 
                 // Store gradients calculated in this layer to propagate backwards to previous layers
                 // This is important, otherwise we will need to make the same calculations over and over again, 
                 // greatly impacting performance, look into optimizing later
-                gradients.push_back(dA_L_minus_1);
+                gradients.push_back(dA_L_1);
                 return;
             }
 
             // Dense 1 layer backward propagation, will be optimized in the future
             const OutputType* Y = std::any_cast<OutputType>(&target_labels); // Get true labels matrix
             const DataType batch_size = Y->size(); // Get number of samples in batch, used for data normalization
-            OutputType* W_L_minus_1 = std::any_cast<OutputType>(&layer_weights[1]); // Get weights matrix for ReLu dense layer (L-1)
-            OutputType* dA_L_minus_1 = std::any_cast<OutputType>(&gradients[0]); // Get propagated gradient calculated in previously executed layer (Output layer = L)
-            OutputType* Z_L_minus_1 = std::any_cast<OutputType>(&layer_linear_outputs[3]); // Get linear output for current layer (ReLU dense layer = L-1)
-            InputType* A_L_minus_2 = std::any_cast<InputType>(&layer_output[2]); // Get activated output from forward pass previous layer (Flatten Layer = L-2)
+            OutputType* W_L_1 = std::any_cast<OutputType>(&layer_weights[1]); // Get weights matrix for ReLu dense layer (L-1)
+            OutputType* dA_L_1 = std::any_cast<OutputType>(&gradients[0]); // Get propagated gradient calculated in previously executed layer (Output layer = L)
+            OutputType* Z_L_1 = std::any_cast<OutputType>(&layer_linear_outputs[3]); // Get linear output for current layer (ReLU dense layer = L-1)
+            InputType* A_L_2 = std::any_cast<InputType>(&layer_output[2]); // Get activated output from forward pass previous layer (Flatten Layer = L-2)
 
             // Calculate gradient of loss with respect to linear output of current layer
-            OutputType dZ_L_minus_1 = NumPP::mat_mul_matching_elements(*dA_L_minus_1, NumPP::relu_derivative(*Z_L_minus_1));
+            OutputType dZ_L_1 = NumPP::mat_mul_matching_elements(*dA_L_1, NumPP::relu_derivative(*Z_L_1));
             // Calculate gradient of loss with respect to weights 
-            Mat2d<DataType> dW_L_minus_1 = NumPP::scalar_mat_mul(NumPP::dot(NumPP::transpose(*A_L_minus_2), dZ_L_minus_1), 1/batch_size);
+            Mat2d<DataType> dW_L_1 = NumPP::scalar_mat_mul(NumPP::dot(NumPP::transpose(*A_L_2), dZ_L_1), 1/batch_size);
             // Calculate gradient of loss with respect to biases
-            std::vector db_L_minus_1 = NumPP::scalar_vec_mul(NumPP::sum(dZ_L_minus_1, 1), 1/batch_size);
+            std::vector db_L_1 = NumPP::scalar_vec_mul(NumPP::sum(dZ_L_1, 1), 1/batch_size);
             // Calculate gradient of loss with respect to previous forward pass layer activated output
-            Mat2d<DataType> dA_L_minus_2 = NumPP::dot(dZ_L_minus_1, NumPP::transpose(*W_L_minus_1));
+            Mat2d<DataType> dA_L_2 = NumPP::dot(dZ_L_1, NumPP::transpose(*W_L_1));
             // Update weights and biases for next pass
-            update_weights_and_biases(layer_weights[1], layer_biases[1], dW_L_minus_1, db_L_minus_1, learning_rate);
+            update_weights_and_biases(layer_weights[1], layer_biases[1], dW_L_1, db_L_1, learning_rate);
 
             // Store gradients calculated in this layer to propagate backwards to previous layers
             // This is important, otherwise we will need to make the same calculations over and over again, 
             // greatly impacting performance, look into optimizing later
-            gradients.push_back(dA_L_minus_2);  
+            gradients.push_back(dA_L_2);  
         }
 
         // Specialized override of layer forward method declared in base class (LayerBase)
@@ -3109,7 +3071,7 @@ namespace MLPP
 
                 // !!! NEED TO LOOK DEEPER INTO LOSS CALCULATION !!!
                 epoch_batch_loss = calc_batch_loss<T>(output, target_labels); // Get batch loss for performance checking
-                std::cout << "Epoch " << epoch << " Loss: " << std::to_string(epoch_batch_loss) << std::endl;
+                std::cout << "Epoch " << (epoch + 1) << " Loss: " << std::to_string(epoch_batch_loss) << std::endl;
                 
                 // !!! STILL IN PROGRESS !!!
                 backward_pass(target_labels, learning_rate); // Apply backward pass

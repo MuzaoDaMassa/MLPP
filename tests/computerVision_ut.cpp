@@ -13,9 +13,9 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS")
     {
         SECTION("FULL SIZE COLOR IMAGE CONVERSION")
         {
-            cv::Mat* imagePtr1 = new cv::Mat(cv::imread("../tests/Images/Color_Black.jpg"));
-            cv::Mat* imagePtr2 = new cv::Mat(cv::imread("../tests/Images/Color_White.jpg"));
-            cv::Mat* imagePtr3 = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
+            cv::Mat* imagePtr1 = new cv::Mat(cv::imread("../tests/Training/Pista11.jpg"));
+            cv::Mat* imagePtr2 = new cv::Mat(cv::imread("../tests/Training/Color_White.jpg"));
+            cv::Mat* imagePtr3 = new cv::Mat(cv::imread("../tests/Training/Pista1.jpg"));
 
             REQUIRE(imagePtr1->data);
             REQUIRE(imagePtr2->data);
@@ -58,9 +58,9 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS")
 
         SECTION("FULL SIZE GRAY IMAGE CONVERSION")
         {
-            cv::Mat* imagePtr1 = new cv::Mat(cv::imread("../tests/Images/Color_White.jpg"));
-            cv::Mat* imagePtr2 = new cv::Mat(cv::imread("../tests/Images/Color_Black.jpg"));
-            cv::Mat* imagePtr3 = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
+            cv::Mat* imagePtr1 = new cv::Mat(cv::imread("../tests/Training/Pista11.jpg"));
+            cv::Mat* imagePtr2 = new cv::Mat(cv::imread("../tests/Training/Color_White.jpg"));
+            cv::Mat* imagePtr3 = new cv::Mat(cv::imread("../tests/Training/Pista1.jpg"));
 
             REQUIRE(imagePtr1->data);
             REQUIRE(imagePtr2->data);
@@ -118,9 +118,9 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS")
 
         SECTION("RESIZED COLOR IMAGE CONVERSION")
         {
-            cv::Mat* imagePtr1 = new cv::Mat(cv::imread("../tests/Images/Color_Black.jpg"));
-            cv::Mat* imagePtr2 = new cv::Mat(cv::imread("../tests/Images/Color_White.jpg"));
-            cv::Mat* imagePtr3 = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
+            cv::Mat* imagePtr1 = new cv::Mat(cv::imread("../tests/Training/Pista11.jpg"));
+            cv::Mat* imagePtr2 = new cv::Mat(cv::imread("../tests/Training/Color_White.jpg"));
+            cv::Mat* imagePtr3 = new cv::Mat(cv::imread("../tests/Training/Pista1.jpg"));
 
             REQUIRE(imagePtr1->data);
             REQUIRE(imagePtr2->data);
@@ -178,9 +178,9 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS")
     
         SECTION("RESIZED GRAY IMAGE CONVERSION")
         {
-            cv::Mat* imagePtr1 = new cv::Mat(cv::imread("../tests/Images/Color_White.jpg"));
-            cv::Mat* imagePtr2 = new cv::Mat(cv::imread("../tests/Images/Color_Black.jpg"));
-            cv::Mat* imagePtr3 = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
+            cv::Mat* imagePtr1 = new cv::Mat(cv::imread("../tests/Training/Pista11.jpg"));
+            cv::Mat* imagePtr2 = new cv::Mat(cv::imread("../tests/Training/Color_White.jpg"));
+            cv::Mat* imagePtr3 = new cv::Mat(cv::imread("../tests/Training/Pista1.jpg"));
 
             REQUIRE(imagePtr1->data);
             REQUIRE(imagePtr2->data);
@@ -260,7 +260,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
     {
         SECTION("FULL SIZE COLOR IMAGE CONVERSION - ALL BLACK JPG BENCHMARK")
         {
-            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Color_Black.jpg"));
+            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Training/Color_White.jpg"));
 
             auto start = startBenchmark();
             auto cvt_ImagePtr = OpenCvIntegration::convert_color_image<float>(imagePtr);
@@ -276,7 +276,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
 
         SECTION("FULL SIZE COLOR IMAGE CONVERSION - ALL WHITE JPG BENCHMARK")
         {
-            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Color_White.jpg"));
+            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Training/Color_White.jpg"));
 
             auto start = startBenchmark();
             auto cvt_ImagePtr = OpenCvIntegration::convert_color_image<float>(imagePtr);
@@ -292,7 +292,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
 
         SECTION("FULL SIZE COLOR IMAGE CONVERSION - TEST IMAGE JPG BENCHMARK")
         {
-            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
+            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Training/Color_White.jpg"));
 
             auto start = startBenchmark();
             auto cvt_ImagePtr = OpenCvIntegration::convert_color_image<float>(imagePtr);
@@ -308,7 +308,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
 
         SECTION("FULL SIZE GRAY IMAGE CONVERSION - ALL BLACK JPG BENCHMARK")
         {
-            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Color_Black.jpg"));
+            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Training/Color_Whitejpg"));
             cv::Mat grayImage;
             cv::cvtColor(*imagePtr, grayImage, cv::COLOR_BGR2GRAY);
             cv::Mat* grayPtr = new cv::Mat(grayImage);
@@ -328,7 +328,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
 
         SECTION("FULL SIZE GRAY IMAGE CONVERSION - ALL WHITE JPG BENCHMARK")
         {
-            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Color_White.jpg"));
+            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Training/Color_White.jpg"));
             cv::Mat grayImage;
             cv::cvtColor(*imagePtr, grayImage, cv::COLOR_BGR2GRAY);
             cv::Mat* grayPtr = new cv::Mat(grayImage);
@@ -348,7 +348,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
 
         SECTION("FULL SIZE GRAY IMAGE CONVERSION - TEST IMAGE JPG BENCHMARK")
         {
-            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
+            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Training/Color_White.jpg"));
             cv::Mat grayImage;
             cv::cvtColor(*imagePtr, grayImage, cv::COLOR_BGR2GRAY);
             cv::Mat* grayPtr = new cv::Mat(grayImage);
@@ -368,7 +368,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
 
         SECTION("RESIZED COLOR IMAGE CONVERSION - ALL BLACK JPG")
         {
-            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Color_Black.jpg"));
+            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Training/Color_White.jpg"));
             cv::Mat resizedImage;  
             cv::resize(*imagePtr, resizedImage, cv::Size(420, 240));
             cv::Mat* rImagePtr = new cv::Mat(resizedImage);
@@ -388,7 +388,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
 
         SECTION("RESIZED COLOR IMAGE CONVERSION - ALL WHITE JPG")
         {
-            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Color_White.jpg"));
+            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Training/Color_White.jpg"));
             cv::Mat resizedImage;  
             cv::resize(*imagePtr, resizedImage, cv::Size(420, 240));
             cv::Mat* rImagePtr = new cv::Mat(resizedImage);
@@ -408,7 +408,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
 
         SECTION("RESIZED COLOR IMAGE CONVERSION - TEST IMAGE JPG")
         {
-            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
+            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Training/Color_White.jpg"));
             cv::Mat resizedImage;  
             cv::resize(*imagePtr, resizedImage, cv::Size(420, 240));
             cv::Mat* rImagePtr = new cv::Mat(resizedImage);
@@ -428,7 +428,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
 
         SECTION("RESIZED GRAY IMAGE CONVERSION - ALL BLACK JPG")
         {
-            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Color_Black.jpg"));
+            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Training/Color_White.jpg"));
             cv::Mat resizedImage;  
             cv::resize(*imagePtr, resizedImage, cv::Size(420, 240));
             cv::Mat* rImagePtr = new cv::Mat(resizedImage);
@@ -451,7 +451,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
 
         SECTION("RESIZED GRAY IMAGE CONVERSION - ALL WHITE JPG")
         {
-            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Color_White.jpg"));
+            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Training/Color_White.jpg"));
             cv::Mat resizedImage;  
             cv::resize(*imagePtr, resizedImage, cv::Size(420, 240));
             cv::Mat* rImagePtr = new cv::Mat(resizedImage);
@@ -474,7 +474,7 @@ TEST_CASE("OPEN_CV_INTEGRATION_METHODS_BENCHHMARKS", "[.OpenCV_Integration_Bench
         
         SECTION("RESIZED GRAY IMAGE CONVERSION - TEST IMAGE JPG")
         {
-            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Pista1.jpg"));
+            cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Training/Color_White.jpg"));
             cv::Mat resizedImage;  
             cv::resize(*imagePtr, resizedImage, cv::Size(420, 240));
             cv::Mat* rImagePtr = new cv::Mat(resizedImage);

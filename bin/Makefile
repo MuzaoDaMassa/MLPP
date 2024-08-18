@@ -238,6 +238,30 @@ home/muzaodamassa/MLPP/tests/main_test.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests_mlpp.dir/build.make CMakeFiles/tests_mlpp.dir/home/muzaodamassa/MLPP/tests/main_test.cpp.s
 .PHONY : home/muzaodamassa/MLPP/tests/main_test.cpp.s
 
+home/muzaodamassa/MLPP/tests/neuralNetwork_ut.o: home/muzaodamassa/MLPP/tests/neuralNetwork_ut.cpp.o
+.PHONY : home/muzaodamassa/MLPP/tests/neuralNetwork_ut.o
+
+# target to build an object file
+home/muzaodamassa/MLPP/tests/neuralNetwork_ut.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests_mlpp.dir/build.make CMakeFiles/tests_mlpp.dir/home/muzaodamassa/MLPP/tests/neuralNetwork_ut.cpp.o
+.PHONY : home/muzaodamassa/MLPP/tests/neuralNetwork_ut.cpp.o
+
+home/muzaodamassa/MLPP/tests/neuralNetwork_ut.i: home/muzaodamassa/MLPP/tests/neuralNetwork_ut.cpp.i
+.PHONY : home/muzaodamassa/MLPP/tests/neuralNetwork_ut.i
+
+# target to preprocess a source file
+home/muzaodamassa/MLPP/tests/neuralNetwork_ut.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests_mlpp.dir/build.make CMakeFiles/tests_mlpp.dir/home/muzaodamassa/MLPP/tests/neuralNetwork_ut.cpp.i
+.PHONY : home/muzaodamassa/MLPP/tests/neuralNetwork_ut.cpp.i
+
+home/muzaodamassa/MLPP/tests/neuralNetwork_ut.s: home/muzaodamassa/MLPP/tests/neuralNetwork_ut.cpp.s
+.PHONY : home/muzaodamassa/MLPP/tests/neuralNetwork_ut.s
+
+# target to generate assembly for a file
+home/muzaodamassa/MLPP/tests/neuralNetwork_ut.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/tests_mlpp.dir/build.make CMakeFiles/tests_mlpp.dir/home/muzaodamassa/MLPP/tests/neuralNetwork_ut.cpp.s
+.PHONY : home/muzaodamassa/MLPP/tests/neuralNetwork_ut.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -260,6 +284,9 @@ help:
 	@echo "... home/muzaodamassa/MLPP/tests/main_test.o"
 	@echo "... home/muzaodamassa/MLPP/tests/main_test.i"
 	@echo "... home/muzaodamassa/MLPP/tests/main_test.s"
+	@echo "... home/muzaodamassa/MLPP/tests/neuralNetwork_ut.o"
+	@echo "... home/muzaodamassa/MLPP/tests/neuralNetwork_ut.i"
+	@echo "... home/muzaodamassa/MLPP/tests/neuralNetwork_ut.s"
 .PHONY : help
 
 

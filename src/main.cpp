@@ -259,7 +259,7 @@ int main()
     model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(3, SOFTMAX));
 
     auto t1 = startBenchmark();
-    Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 150, 0.001);
+    Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 150, 0.01);
     auto t2 = stopBenchmark();
 
     cout << "================================" << endl;
@@ -269,8 +269,7 @@ int main()
     auto shape = NumPP::get_shape(result);
 
     cout << "Output layer shape = ";
-    cout << "(" << shape.first << ", " << shape.second << ")" << endl;
-    
+    cout << "(" << shape.first << ", " << shape.second << ")" << endl; 
 
     for (size_t i = 0; i < result.size(); i++) {
         cout << i << ", ";

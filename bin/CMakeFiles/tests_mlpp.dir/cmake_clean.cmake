@@ -5,6 +5,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/tests_mlpp.dir/home/muzaodamassa/MLPP/tests/dataAnalysis_ut.cpp.o.d"
   "CMakeFiles/tests_mlpp.dir/home/muzaodamassa/MLPP/tests/main_test.cpp.o"
   "CMakeFiles/tests_mlpp.dir/home/muzaodamassa/MLPP/tests/main_test.cpp.o.d"
+  "CMakeFiles/tests_mlpp.dir/home/muzaodamassa/MLPP/tests/neuralNetwork_ut.cpp.o"
+  "CMakeFiles/tests_mlpp.dir/home/muzaodamassa/MLPP/tests/neuralNetwork_ut.cpp.o.d"
   "tests_mlpp"
   "tests_mlpp.pdb"
 )
