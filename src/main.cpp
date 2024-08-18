@@ -36,13 +36,17 @@ int main1()
     // auto pos = find<string>(data, "http://www.hatfield-saunders.net/");
     // auto pos = find<string>(data, "2020-03-11");
 
+    auto hot_encoded_label = DataAnalysis::gen_hot_encoded_label<double>(3, 2);
+
+    DataAnalysis::display_all(hot_encoded_label);
+
     cout << "========================================" << endl;
-    DataAnalysis::display_rows(data, rows);
+    //DataAnalysis::display_rows(data, rows);
     //DataAnalysis::display_columns(data, cols);
     // cout << el << endl;
     // cout << pos[0] << ", " << pos[1] << endl;
     //DataAnalysis::display_all(data);
-    DataAnalysis::display_head(data, 20);
+    //DataAnalysis::display_head(data, 20);
     //DataAnalysis::display_bottom(data, 5);
 
     return 0;
@@ -71,8 +75,8 @@ int main2()
     //vector<u_int8_t> v {255, 255, 255};
     //cout << to_string(NumPP::get_sum_of_vector<u_int8_t, u_int16_t>(v)) << endl;
 
-    DataAnalysis::display_all(r);
-    std::cout << to_string(NumPP::get_average(r)) << std::endl;
+    //DataAnalysis::display_all(r);
+    //std::cout << to_string(NumPP::get_average(r)) << std::endl;
     std::cout << "-------------------------------------------------------------" << std::endl;
     //DataAnalysis::display_all(r1);
 
@@ -227,9 +231,9 @@ int main4()
 }
 
 // Mini tests for Sequential neural network with open cv
-int main()
+int main5()
 {
-    auto params = OpenCvIntegration::TrainingDataParameters("../tests/Training", true, {28, 28}, true, true, true);
+    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Downloads/training_set", true, {24,24}, true, false, false);
 
     auto training_data = OpenCvIntegration::prepare_training_data<double>(params); 
 
@@ -249,17 +253,19 @@ int main()
     } 
 
     NeuralNetwork model;
-    // testing                                   0       1       2       3       4       5       6       7       8
-    const Mat2d<double> hot_encoded_labels = {{0,0,1},{0,1,0},{1,0,0},{0,1,0},{0,1,0},{0,0,1},{0,1,0},{0,1,0},{1,0,0}};
 
+    auto true_labels = DataAnalysis::one_hot_label_encoding<double>("/home/muzaodamassa/Downloads/training_set");
+
+    DataAnalysis::display_shape(true_labels);
+    
     model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(5, 3, RELU, SAME));
     model.add_layer(new AveragePooling2d<Mat4d<double>, Mat4d<double>, double>(2,2));
     model.add_layer(new Flatten<Mat4d<double>, Mat2d<double>, double>());
     model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(120, RELU));
-    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(3, SOFTMAX));
+    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(2, SOFTMAX));
 
     auto t1 = startBenchmark();
-    Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 150, 0.01);
+    Mat2d<double> result = model.fit<double>(training_data, true_labels, 32, 40, 0.00001);
     auto t2 = stopBenchmark();
 
     cout << "================================" << endl;
@@ -271,13 +277,18 @@ int main()
     cout << "Output layer shape = ";
     cout << "(" << shape.first << ", " << shape.second << ")" << endl; 
 
-    for (size_t i = 0; i < result.size(); i++) {
+    /*for (size_t i = 0; i < result.size(); i++) {
         cout << i << ", ";
         for (size_t j = 0; j < result[i].size(); j++) {
             cout << std::to_string(result[i][j]) << ", ";
         }
         cout << endl;
     } 
+     */
+    
+    auto acc = model.compute_accuracy<double>(result, true_labels);
+
+    std::cout << "Predictions Accuracy: " << acc*100 << "%" << std::endl;
 
     return 0;
     
@@ -336,7 +347,7 @@ int main6()
     model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(3, SOFTMAX));
 
     auto t1 = startBenchmark();
-    Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 1, 0.01);
+    Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 9, 1, 0.01);
     auto t2 = stopBenchmark();
 
     cout << "================================" << endl;
@@ -346,6 +357,89 @@ int main6()
     DataAnalysis::display_head(result);
  
     return 0;
+}
+
+// Mini tests for Sequential neural network with open cv (Multithreading)
+int main()
+{
+    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Downloads/training_set", true, {8,8}, true, false, false);
+
+    auto training_data = OpenCvIntegration::prepare_training_data<double>(params); 
+
+    cout << "Input shape = ";
+    cout << "(" << to_string(training_data.size()) << "," << to_string(training_data[0].size()) << ",";
+    cout << to_string(training_data[0][0].size()) << "," << to_string(training_data[0][0][0].size()) << ")" << endl;
+
+    // Data normalization, since max value is 255, all values will be between 0 and 1
+    for (size_t i = 0; i < training_data.size(); i++) {
+        for (size_t j = 0; j < training_data[i].size(); j++) {
+            for (size_t k = 0; k < training_data[i][j].size(); k++) {
+                for (size_t l = 0; l < training_data[i][j][k].size(); l++) {
+                    training_data[i][j][k][l] /= 255.0;
+                }
+            }
+        }
+    } 
+
+    NeuralNetwork model;
+
+    auto true_labels = DataAnalysis::one_hot_label_encoding<double>("/home/muzaodamassa/Downloads/training_set");
+
+    DataAnalysis::display_shape(true_labels);
+    
+    model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(5, 3, RELU, SAME));
+    model.add_layer(new AveragePooling2d<Mat4d<double>, Mat4d<double>, double>(2,2));
+    model.add_layer(new Flatten<Mat4d<double>, Mat2d<double>, double>());
+    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(120, RELU));
+    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(2, SOFTMAX));
+
+    auto t1 = startBenchmark();
+    Mat2d<double> result = model.fit_multithreaded<double>(training_data, true_labels, 64, 1, 0.00001);
+    auto t2 = stopBenchmark();
+
+    cout << "================================" << endl;
+    cout << getDuration(t1, t2, Seconds) << endl;
+    cout << "================================" << endl;
+
+    auto shape = NumPP::get_shape(result);
+
+    cout << "Output layer shape = ";
+    cout << "(" << shape.first << ", " << shape.second << ")" << endl; 
+
+    /*for (size_t i = 0; i < result.size(); i++) {
+        cout << i << ", ";
+        for (size_t j = 0; j < result[i].size(); j++) {
+            cout << std::to_string(result[i][j]) << ", ";
+        }
+        cout << endl;
+    } 
+     */
+    
+    auto acc = model.compute_accuracy<double>(result, true_labels);
+
+    std::cout << "Predictions Accuracy: " << acc*100 << "%" << std::endl;
+
+    return 0;
+    
+    /* Halt Execution
+    char input;
+    std::cout << "Program is running. Press 'q' to quit, or any other key to continue." << endl;
+    
+    while (true) {
+        input = cin.get();
+
+        if (input == 'q' || input == 'Q') {
+            cout << "Program ended" << endl;
+            return 0;
+        }
+        if (input != 'q' || input != 'Q') {
+            break;
+        }
+    }
+    
+    cout << "Program resumed" << endl;
+    return 0;
+    */
 }
 
 /*  Mini tests for Neural Network unit

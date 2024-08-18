@@ -28,14 +28,17 @@ SOFTWARE.
 #include <algorithm>
 #include <any>
 #include <cmath>
+#include <condition_variable>
 #include <cstdlib>
 #include <ctime>
-#include <iostream>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
+#include <mutex>
 #include <random>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <type_traits>
 #include <typeinfo>
 #include <valarray>
@@ -1584,6 +1587,29 @@ namespace MLPP
             return element;
         }
         
+        // Method that generates hot-encoded-label, used for classification tasks
+        // Hot Enconded Label is nothing more than a vector filled with zeros
+        // Except for one position, which has the value of one
+        template <typename T>
+        static std::vector<T> gen_hot_encoded_label(const size_t& size, const size_t& pos)
+        {
+            if (size <= 0 || pos < 0 || pos >= size) {
+                std::cerr << "Error: Invalid Parameters" << std::endl;
+                return std::vector<T>();
+            }
+
+            std::vector<T> hot_encoded_label(size, 0);
+
+            for (size_t i = 0; i < hot_encoded_label.size(); i++) {
+                if (i == pos) {
+                    hot_encoded_label[i] = static_cast<T>(1);
+                    break;
+                }
+            }
+
+            return hot_encoded_label;
+        }
+
         // Method to convert string to differnt data type, returns new 2d matrix with passed type
         template<typename T> 
         static Mat2d<T> matrix_converter(const Mat2d<std::string>& stringMatrix)
@@ -1853,27 +1879,49 @@ namespace MLPP
         }
         
         // Method that encondes given dataset into one hot label format
+        // This method will go through all directories inside root directory, and create the 
+        // appropiate data structure to fit directory structure, i.e, vector will be sized
+        // based on number of directories and matrix size will be based on elements inside 
+        // sub directories P.S = Data musted be sorted, elements from class 0 must be inside
+        // first sub-directory and so on. 
         template <typename T>
-        static Mat2d<T> one_hot_label_encoding(const std::string& dir_path)
+        static Mat2d<T> one_hot_label_encoding(const std::string& root_directory_path)
         {
-            if (!std::filesystem::exists(dir_path) && !std::filesystem::is_directory(dir_path)) {
+            if (!std::filesystem::exists(root_directory_path) && !std::filesystem::is_directory(root_directory_path)) {
                 std::cerr << "Error: Directory not valid" << std::endl;
                 return Mat2d<T>();
             }
 
-            Mat2d<T> labels = {{1,0,0},{0,1,0},{0,0,1}}; // Testing only
-            std::srand(time(0)); // Testing only
-            Mat2d<T> hot_enconded_labels;
+            std::vector<std::filesystem::directory_entry> directories; // Create vector to store all directoies in root directory
 
-            for (const auto &entry : std::filesystem::directory_iterator(dir_path)) {
-                //std::cout << entry.path() << std::endl;
-                if (entry.path().extension() == ".jpg" || entry.path().extension() == ".png") {
-                    std::vector<T> current_label = labels[std::rand() % 3];
-                    hot_enconded_labels.push_back(current_label);
-                }
+            // Store all entries
+            for (const auto &entry : std::filesystem::directory_iterator(root_directory_path)) {
+                directories.push_back(entry);
             }
 
-            return hot_enconded_labels;
+            const size_t num_of_directories = directories.size(); // Get number of directories present
+            size_t index_tracker = 0; // Variable to correctly track which index to place "1" in one-hot-encoded label
+
+            // Sort entries by path
+            std::sort(directories.begin(), directories.end(), [](const std::filesystem::directory_entry &a,
+                const std::filesystem::directory_entry &b) {
+                    return a.path() < b.path();
+            });
+
+            Mat2d<T> one_hot_encoded_labels;
+
+            for (const auto &directory : directories) { // Loop through all directories
+                std::cout << directory.path() << std::endl;
+                // Loop through all elements in current directory
+                for (const auto &element : std::filesystem::directory_iterator(directory.path())) {
+                    // Generate one-hot-encoded label and store it in return matrix
+                    one_hot_encoded_labels.push_back(gen_hot_encoded_label<T>(num_of_directories, index_tracker));
+                }
+
+                index_tracker++; // Move on to next index
+            }
+
+            return one_hot_encoded_labels;
         }
 
         // Method to parse CSV line with quoted fields and blank spaces
@@ -1948,8 +1996,6 @@ namespace MLPP
             // Return data in matrix
             return data;
         }
-        
-        // Further methods to be implemented
     }; 
 
 #pragma endregion
@@ -2095,7 +2141,7 @@ namespace MLPP
         std::vector<DataType> m_bias_vector; // Member variable to holl bias vector
         Mat3d<DataType> m_feature_maps; // Member Variable to hold current created feature map
         Mat3d<DataType> m_activated_feature_maps; // Member Variable to hold current activated feature map
-        //Mat2d<DataType> m_filter{{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}}; // !!! Testing only !!!
+        Mat2d<DataType> m_filter{{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}}; // !!! Testing only !!!
         InputType m_input; // !!! Testing only !!!
 
         // Method that applies activation function 
@@ -2316,6 +2362,8 @@ namespace MLPP
         // Specialized override of layer forward method declared in base class (LayerBase)
         void forward(std::any& input, std::any& output, std::any& linear_output, std::any& weights, std::any& bias) override
         {
+            
+
             if (!input.has_value()) {
                 std::cerr << "Error: Input is empty" << std::endl;
                 return;
@@ -2338,18 +2386,19 @@ namespace MLPP
             size_t size = typed_input->size();
             Mat3d<DataType>* weights_input = std::any_cast<Mat3d<DataType>>(&weights);       
             std::vector<DataType>* biases_input = std::any_cast<std::vector<DataType>>(&bias);
-
+       
             if (weights_input->size() == 0) {
                  for (size_t i = 0; i < m_number_of_filters; i++) {
-                    weights_input->push_back(NumPP::rand<DataType>(m_kernel_size, m_kernel_size, 0.0, 0.5));
+                    weights_input->push_back(NumPP::rand<DataType>(m_kernel_size, m_kernel_size, 0.0, 1.0));
+                    //weights_input->push_back(m_filter); // Testing
                 }
-            } 
+            }     
 
             if (biases_input->size() == 0) {
                 for (size_t i = 0; i < m_number_of_filters; i++) {
                     biases_input->push_back(0);
                 }
-            } 
+            }
      
             // Loop through image and apply convolution process
             for (size_t i = 0; i < size; i++) {
@@ -2358,8 +2407,9 @@ namespace MLPP
                 typed_output->push_back(m_activated_feature_maps);
                 non_activated_output.push_back(m_feature_maps);
             }
-
-            linear_output = non_activated_output;           
+  
+            linear_output = non_activated_output;  
+                    
         }
     };
 
@@ -3016,6 +3066,7 @@ namespace MLPP
             for (auto &layer : m_layers) {
                 m_current_output.reset(); // Clear current output for next layer
                 m_current_linear_output.reset(); // Clear current linear output for next layer
+            
                 // Call current layer forward method
                 layer->forward(m_current_input, m_current_output, m_current_linear_output, m_weights[w_and_b_counter], m_biases[w_and_b_counter]); 
                 m_current_input.reset(); // Clear current input for next layer
@@ -3056,35 +3107,79 @@ namespace MLPP
 
         // Method that applies training to created neural network
         template <typename T>
-        Mat2d<T> fit(std::any input, const std::any target_labels, const size_t &epochs, const T& learning_rate) 
+        Mat2d<T> fit(std::any input, const std::any target_labels, const size_t& batch_size, const size_t& epochs, const T& learning_rate) 
         {
             std::any output; // Create null any class container
-            T epoch_batch_loss = 0; // Initialize batch loss variable with network data type
+            T epoch_loss = 0; // Initialize batch loss variable with network data type
+            Mat4d<T>* original_input = std::any_cast<Mat4d<T>>(&input); // Get and store original input matrix
+            const Mat2d<T>* true_target_labels = std::any_cast<Mat2d<T>>(&target_labels); // Get and store original labels matrix
+            const size_t num_of_batches = original_input->size() / batch_size; // Get total num of num_of_batches
+            int num_of_threads = std::thread::hardware_concurrency(); // Determine the number of threads for current machine
 
             // Perform training steps for declared number of epochs
             for (size_t epoch = 0; epoch < epochs; epoch++) {
-                output.reset(); // Reset output for each iteration
-                
-                //auto t1 = Benchmark::startBenchmark(); // Performance benchmarking
+                output.reset(); // Reset output for each epoch
+                output = Mat3d<T>(1, Mat2d<T>(true_target_labels->size(), std::vector<T>((*true_target_labels)[0].size())));
+                // Create typed pointer to store all num_of_batches outputs for loss calculation
+                Mat3d<T>* current_epoch_output = std::any_cast<Mat3d<T>>(&output);
 
-                forward_pass(input, output); // Apply forward pass
+                auto t1 = Benchmark::startBenchmark(); // Performance benchmarking
+                // Separate dataset into num_of_batches, for faster execution and better learning
+                for (size_t batch = 0; batch < num_of_batches; batch++) {
+                    std::any current_batch_input; // Empty container to store current batch input
+                    std::any current_batch_labels_input; // Empty container to store curren batch labels for input
+                    std::any current_batch_output; // Empty container to store current batch output
+                    current_batch_input = Mat4d<T>(); // Create empty 4d matrix at empty container adress regarding input
+                    current_batch_labels_input = Mat2d<T>(); // Create empty 2d matrix at empty container adress regarding labels input
+                    const size_t start_row = batch * batch_size;
+                    const size_t end_row = start_row + batch_size;
 
-                // !!! NEED TO LOOK DEEPER INTO LOSS CALCULATION !!!
-                epoch_batch_loss = calc_batch_loss<T>(output, target_labels); // Get batch loss for performance checking
-                std::cout << "Epoch " << (epoch + 1) << " Loss: " << std::to_string(epoch_batch_loss) << std::endl;
-                
-                // !!! STILL IN PROGRESS !!!
-                backward_pass(target_labels, learning_rate); // Apply backward pass
-                
-                //auto t2 = Benchmark::stopBenchmark(); // Performance benchmarking
-                //std::cout << "Epoch " << epoch << " " << Benchmark::getDuration(t1, t2, Benchmark::Seconds) << std::endl; // Performance benchmarking   
+                    // Create typed pointer variable pointing to current batch input for operations
+                    Mat4d<T>* typed_current_batch_input = std::any_cast<Mat4d<T>>(&current_batch_input);
+                    // Create typed pointer varible pointing to current batch labels input
+                    Mat2d<T>* typed_current_batch_input_labels = std::any_cast<Mat2d<T>>(&current_batch_labels_input); 
+                    
+                    // Fill current batch input with correct window of data from unbatched input
+                    // and true target labels matrix
+                    for (size_t i = start_row; i < end_row; i++) {
+                        typed_current_batch_input->push_back((*original_input)[i]);
+                        typed_current_batch_input_labels->push_back((*true_target_labels)[i]);
+                    }
+
+                    forward_pass(current_batch_input, current_batch_output); // Apply forward pass
+                    backward_pass(current_batch_labels_input, learning_rate); // Apply backward pass
+
+                    // Create typed pointer varible pointing to current batch labels input
+                    Mat2d<T>* typed_current_batch_output = std::any_cast<Mat2d<T>>(&current_batch_output);
+
+                    for (size_t i = 0; i < typed_current_batch_output->size(); i++) {
+                        for (size_t j = 0; j < (*typed_current_batch_output)[0].size(); j++) {
+                            (*current_epoch_output)[0][i+start_row][j] = (*typed_current_batch_output)[i][j];
+                        }
+                    }
+
+                    current_batch_input.reset(); // Reset current batch input memory space for each iteration
+                    current_batch_labels_input.reset(); // Reset current batch labels input memory space for each iteration
+                    current_batch_output.reset(); // Reset current batch output memory space for each iteration 
+                } 
+
+                output = (*current_epoch_output)[0];
+
+                auto t2 = Benchmark::stopBenchmark(); // Performance benchmarkingx
+                epoch_loss = calc_batch_loss<T>(output, target_labels); // Get batch loss for performance checking
+                std::cout << "Epoch " << (epoch + 1) << " Loss: " << std::to_string(epoch_loss) << " ";
+                std::cout << Benchmark::getDuration(t1, t2, Benchmark::Seconds) << std::endl;
+
+                //output.reset(); // Reset output for each iteration
+                //forward_pass(input, output); // Apply forward pass
+                //backward_pass(target_labels, learning_rate); // Apply backward pass  
 
                 //Debugging code
                 //Mat2d<T>* epoch_result = std::any_cast<Mat2d<T>>(&output);
                 //auto shape = NumPP::get_shape(*epoch_result);
                 //std::cout << "-------------------" << std::endl;
                 //DataAnalysis::display_all(*epoch_result);
-                //std::cout << "-------------------" << std::endl;                
+                //std::cout << "-------------------" << std::endl;       
             }  
 
             /* Debugging code
@@ -3113,6 +3208,143 @@ namespace MLPP
             Mat2d<T>* result = std::any_cast<Mat2d<T>>(&output);
 
             return *result;
+        }
+
+        // Overload of fit method with multi-threading 
+        template <typename T>
+        Mat2d<T> fit_multithreaded(std::any input, const std::any target_labels, const size_t& batch_size, const size_t& epochs, const T& learning_rate)
+        {
+            // Shared resourcers
+            std::mutex mtx; // Used to protect updates to shared variables
+            std::any output; // Empty memory space to store output
+            Mat4d<T>* original_input = std::any_cast<Mat4d<T>>(&input); // Store received input matrix
+            const Mat2d<T>* true_target_labels = std::any_cast<Mat2d<T>>(&target_labels); // Store received labels matrix
+            const size_t num_of_batches = original_input->size() / batch_size; // Get number of batches (If batch size is 10 and input size 100 = 10 batches)
+            const int num_of_threads = std::min(static_cast<unsigned int>(num_of_batches), std::thread::hardware_concurrency()); // Get current hardward available threads
+            T epoch_loss = 0; // Initialize batch loss variable with network data type
+
+            std::vector<std::thread> threads(num_of_threads); // Thread pool or vector of threads
+
+            for (size_t epoch = 0; epoch < epochs; epoch++) {
+                auto t1 = Benchmark::startBenchmark(); // Performance benchmarking
+                // Reset output for each epoch
+                output.reset();
+                // Create 3d matrix at output memory address to store predicted labels for all examples in training data
+                output = Mat3d<T>(1, Mat2d<T>(true_target_labels->size(), std::vector<T>((*true_target_labels)[0].size()))); 
+                // Create epoch output pointer to user matrix methods
+                Mat3d<T>* current_epoch_output = std::any_cast<Mat3d<T>>(&output);
+
+                std::any testing;
+                std::any testing2;
+
+                auto process_batch = [&](size_t batch_start, size_t batch_end) {
+                    for (size_t batch = batch_start; batch < batch_end; batch++) {
+                        // Process each batch independtly
+                        const std::any current_batch_input_address; // Store current batch input selection
+                        const std::any current_batch_labels_input_address; // Store current batch assigned labels
+                        const std::any current_batch_output_address; // Store current batch output
+                        //current_batch_input = Mat4d<T>(); // Create empty 4d matrix at empty container adress regarding input
+                        //current_batch_labels_input = Mat2d<T>(); // Create empty 2d matrix at empty container adress regarding labels input
+                        const size_t start_row = batch * batch_size;
+                        const size_t end_row = start_row + batch_size;
+                        // Create typed pointer variable pointing to current batch input for operations
+                        //current_batch_input_address = Mat4d<T>();
+                        // Create typed pointer varible pointing to current batch labels input
+                        //current_batch_labels_input_address = Mat2d<T>();
+
+                        Mat4d<T> current_batch_input = std::any_cast<Mat4d<T>>(current_batch_input);
+                        Mat2d<T> current_batch_labels_input = std::any_cast<Mat2d<T>>(current_batch_labels_input_address);
+                        Mat2d<T> current_batch_output = std::any_cast<Mat2d<T>>(current_batch_output_address);
+
+                        // Prepare batch data
+                        for (size_t i = 0; i < end_row; i++) {
+                            current_batch_input.push_back((*original_input)[i]);
+                            current_batch_labels_input.push_back((*true_target_labels)[i]);
+                        }   
+
+                        DataAnalysis::display_shape(current_batch_input);
+                        std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+                        DataAnalysis::display_shape(current_batch_labels_input);
+                        std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+
+                        //forward_pass(current_batch_input, current_batch_output); // Apply forward pass
+                        //DataAnalysis::display_shape(current_batch_labels_input);
+                        //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+                        //backward_pass(current_batch_labels_input, learning_rate); // Apply backward pass
+
+                        // Create typed pointer varible pointing to current batch labels input
+                        //Mat2d<T>* typed_current_batch_output = std::any_cast<Mat2d<T>>(&current_batch_output);
+
+                        // Aggregate results safely
+                        std::lock_guard<std::mutex> lock(mtx);
+                        for (size_t i = 0; i < current_epoch_output->size(); i++) {
+                            for (size_t j = 0;j < (*current_epoch_output)[i].size(); j++) {
+                                (*current_epoch_output)[0][i+start_row][j] = current_batch_output[i][j];
+                            }
+                        }
+                        
+                    }
+                };
+            
+                // Determine workload for each thread
+                size_t batches_per_thread = num_of_batches / num_of_threads;
+                for (size_t t = 0; t < num_of_threads; t++) {
+                    size_t batch_start = t * batches_per_thread;
+                    size_t batch_end = (t == num_of_threads - 1) ? num_of_batches : batch_start + batches_per_thread;
+                    threads[t] = std::thread(process_batch, batch_start, batch_end);
+                }
+                
+
+                // Join threads
+                for (auto &t : threads) {
+                    if (t.joinable()) {
+                        t.join();
+                    }
+                }
+                
+                
+
+                output = (*current_epoch_output)[0];
+
+                auto t2 = Benchmark::stopBenchmark(); // Performance benchmarkingx
+                epoch_loss = calc_batch_loss<T>(output, target_labels); // Get batch loss for performance checking
+                std::cout << "Epoch " << (epoch + 1) << " Loss: " << std::to_string(epoch_loss) << " ";
+                std::cout << Benchmark::getDuration(t1, t2, Benchmark::Seconds) << std::endl;
+
+            }
+
+            Mat2d<T>* result = std::any_cast<Mat2d<T>>(&output);
+
+            return *result;
+        }
+
+        // Method that calculates accuracy of training process
+        template <typename T>
+        T compute_accuracy(const std::any predicted_labels, const std::any target_labels)
+        {
+            if (!target_labels.has_value()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return 0;
+            }
+
+            const Mat2d<T>* predictions = std::any_cast<Mat2d<T>>(&predicted_labels); // Get training result labels predictions
+            const Mat2d<T>* true_target_labels = std::any_cast<Mat2d<T>>(&target_labels); // Get correct label for all examples in dataset
+            const T num_of_examples = true_target_labels->size(); // Get number of examples in dataset
+            T incorrect_predictions = 0; // Variable to store number of incorrect predictions 
+
+            // Loop over all predictions and check against correct class for current example
+            for (size_t i = 0; i < num_of_examples; i++) {
+                // Extract detected class from result and compare to original class
+                auto og_class = NumPP::get_max_element_pos((*true_target_labels)[i]);
+                auto pred_class = NumPP::get_max_element_pos((*predictions)[i]);
+                if (og_class != pred_class) {
+                    incorrect_predictions++;
+                }
+            }
+
+            T correct_predictions = num_of_examples - incorrect_predictions; // Get number of correct predictions
+            
+            return correct_predictions / num_of_examples; // return accuracy of model in decimal format
         }
 
         ~NeuralNetwork()
@@ -3241,8 +3473,7 @@ namespace MLPP
                 shape(shape),
                 gray_scale(gray_scale),
                 apply_blurring(apply_blurring), 
-                apply_edge_detection(apply_edge_detection)
-            
+                apply_edge_detection(apply_edge_detection)  
             {}
         };
 
@@ -3444,26 +3675,70 @@ namespace MLPP
 
             cv::Mat* imagePtr = new cv::Mat(); // Create pointer to store open cv matrices read from each image    
             Mat4d<T> training_data_mat; // Create 4d matrix that will hold all images matrices
+            cv::Mat p_image; // Create pointer to store image after pre-processing  
+            bool multiple_directories = false; // Create bool variable to control which block of code to execute
 
-            cv::Mat p_image; // Create pointer to store image after pre-processing
+            // Check root directory for more directories
+            for (const auto &entry : std::filesystem::directory_iterator(params.dir_path)) {
+                if (std::filesystem::is_directory(entry.path())) {
+                    multiple_directories = true;
+                    break;
+                }
+            }
 
-            // Iterate over the contents of the directory
+            // If root directory contains more directories inside
+            if (multiple_directories) {
+                std::vector<std::filesystem::directory_entry> entries; // Create vector to store all directoies in root directory
+
+                // Store all entries
+                for (const auto &entry : std::filesystem::directory_iterator(params.dir_path)) {
+                    entries.push_back(entry);
+                }
+
+                // Sort entries by path
+                std::sort(entries.begin(), entries.end(), [](const std::filesystem::directory_entry& a,
+                    const std::filesystem::directory_entry& b) {
+                        return a.path() < b.path();
+                });
+
+                // Iterate over the contents of directories
+                for (const auto &entry : entries) {
+                    std::cout << entry.path() << std::endl;
+                    for (const auto &sub_entry : std::filesystem::directory_iterator(entry.path())) {
+                        //std::cout << sub_entry.path() << std::endl;
+
+                        if (sub_entry.path().extension() == ".jpg" || sub_entry.path().extension() == ".png") {
+                            *imagePtr = cv::imread(sub_entry.path()); // Read current entry image in directory into pointer
+                            p_image = pre_process_image(imagePtr, params.resize, params.shape, params.gray_scale, params.apply_blurring, params.apply_edge_detection);
+                            Mat3d<T>* converted_image_mat = convert_gray_image<T>(&p_image); // Convert opencv matrix to Mat3d
+                            training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
+
+                            delete converted_image_mat;
+                        }  
+                    }
+                }
+
+                delete imagePtr;
+
+                return training_data_mat;
+            }
+
+            // Block of code to execute if there are no more directories inside root directory
             for (const auto &entry : std::filesystem::directory_iterator(params.dir_path)) {
                 std::cout << entry.path() << std::endl;
+
                 if (entry.path().extension() == ".jpg" || entry.path().extension() == ".png") {
                     *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
                     p_image = pre_process_image(imagePtr, params.resize, params.shape, params.gray_scale, params.apply_blurring, params.apply_edge_detection);
                     Mat3d<T>* converted_image_mat = convert_gray_image<T>(&p_image); // Convert opencv matrix to Mat3d
                     training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
-
                     delete converted_image_mat;
-                }            
+                }  
             }
 
             delete imagePtr;
 
-            return training_data_mat;
-        
+            return training_data_mat;       
         }
 
         // Further methods to be implemented
