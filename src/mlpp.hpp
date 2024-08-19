@@ -3555,6 +3555,51 @@ namespace MLPP
             return nMatPtr;
         }
 
+        // Method that transform individual frames in video file and save them as images
+        static void convert_video_frame_to_image(std::string& path)
+        {
+            if (path.empty()) {
+                std::cerr << "Error: Input parameter is empty" << std::endl;
+                return;
+            }
+
+            cv::VideoCapture video(path); // Get video file and store it in video file
+
+            if(!video.isOpened()) {
+                std::cerr << "Error: Video file failed to open" << std::endl;
+                return;
+            }
+
+
+            cv::Mat* framePtr = new cv::Mat(); // Create pointer to store current frame 
+            size_t frame_counter = 0; // Create variable to count number of frames
+
+            // Loop while video has frames remaining 
+            while (video.isOpened())
+            {
+                std::string image_path = "/home/muzaodamassa/Downloads/AC_Dataset/Img-"; // Image path to be saved
+
+                video >> *framePtr; // Store current frame in created pointer 
+
+                if (framePtr->empty()) {
+                    std::cerr << "Error: Frame data is empty" << std::endl;
+                    break;
+                }
+                
+                image_path.append(std::to_string(frame_counter));
+                image_path.append(".jpg");
+
+                cv::imwrite(image_path, *framePtr);
+
+                std::cout << image_path << std::endl;
+                frame_counter++;
+            }
+
+            delete framePtr; // Delete pointer created
+
+            video.release(); // Close video file or camera opened
+        }
+
         // Convert open cv matrix, to 2d matrix, where each element will be the sum
         // Of Blue, Green and Red values
         static Mat2d<int16_t>* get_sum_pixels(const cv::Mat* image)

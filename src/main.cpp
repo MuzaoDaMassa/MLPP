@@ -360,7 +360,7 @@ int main6()
 }
 
 // Mini tests for Sequential neural network with open cv (Multithreading)
-int main()
+int main7()
 {
     auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Downloads/training_set", true, {8,8}, true, false, false);
 
@@ -442,58 +442,12 @@ int main()
     */
 }
 
-/*  Mini tests for Neural Network unit
-int main6()
+// Mini tests for open cv integration module
+int main()
 {
-    cv::Mat* imagePtr = new cv::Mat(cv::imread("../tests/Images/Exterior.jpeg"));
-	if (!imagePtr->data) { 
-		std::cerr << "Error: No image data" << std::endl; 
-		return -1; 
-	}  
-
-    cv::Mat resizedImage;  
-    cv::resize(*imagePtr, resizedImage, cv::Size(1000, 1000));
-    cv::Mat* rImagePtr = new cv::Mat(resizedImage);
-
-    cv::Mat grayImage;
-    cv::cvtColor(*rImagePtr, grayImage, cv::COLOR_BGR2GRAY);
-    cv::Mat* grayPtr = new cv::Mat(grayImage);
-
-    cv::namedWindow("Original Image", cv::WINDOW_AUTOSIZE);
-    cv::imshow("Original Image", *grayPtr);
-    cv::waitKey(0);
-
-    Mat2d<int8_t> filter_1{{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}};
-    Mat2d<int8_t> filter_2{{-1, -1, -1}, {0, 0, 0}, {1, 1, 1}};
-    Mat2d<int8_t> filter_3{{-1, -2, -1}, {0, 0, 0}, {1, 2, 1}};
-
-    auto nImagePtr = OpenCvIntegration::convert_gray_image(grayPtr);
-    //auto nImagePtr = OpenCvIntegration::convert_color_image(rImagePtr);
-    //auto fImage = ComputerVision::conv_2d<int16_t, u_int8_t>(*nImagePtr, filter_1, 3);
-    //auto fImage = NeuralNetwork::conv_2d<u_int8_t, u_int8_t>(*nImagePtr, filter_1, NeuralNetwork::SAME, 3);
-    //auto rImage = NumPP::tanh(fImage);
-    //auto rImage = NumPP::relu(fImage);
-    //auto cv2Image = OpenCvIntegration::get_open_cv_color_mat<u_int8_t>(nImagePtr);
-    auto cv2Image = OpenCvIntegration::get_open_cv_gray_mat<u_int8_t>(nImagePtr);
-    //auto cv2Image = OpenCvIntegration::get_open_cv_gray_mat<u_int8_t>(&fImage);
-    //auto cv2Image = OpenCvIntegration::get_open_cv_gray_mat<u_int8_t>(&rImage);
-    //auto cv2Image = OpenCvIntegration::get_open_cv_color_mat<int16_t>(&fImage);
-    //auto cv2Image = OpenCvIntegration::get_open_cv_color_mat<u_int8_t>(&fImage);
-    //auto cv2Image = OpenCvIntegration::get_open_cv_color_mat<int16_t>(&rImage);
-
-    cv::namedWindow("Convolution Result Image", cv::WINDOW_AUTOSIZE);
-    cv::imshow("Convolution Result Image", cv2Image);
-    cv::waitKey(0);
-
-    //auto pImage = ComputerVision::pooling(fImage);
-    //auto pImage = NeuralNetwork::pooling(rImage);
-    //auto cv2Image_2 = OpenCvIntegration::get_open_cv_gray_mat<u_int8_t>(&pImage);
-    //auto cv2Image_2 = OpenCvIntegration::get_open_cv_color_mat<int16_t>(&pImage);
-
-    //cv::namedWindow("Pooling Result Image", cv::WINDOW_AUTOSIZE);
-    //cv::imshow("Pooling Result Image", cv2Image_2);
-    //cv::waitKey(0);
+    std::string path_to_video = "/home/muzaodamassa/Downloads/VideosPista/WIN_20240819_17_34_14_Pro.mp4";
+    
+    OpenCvIntegration::convert_video_frame_to_image(path_to_video);
 
     return 0;
 }
- */
