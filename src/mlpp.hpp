@@ -34,6 +34,7 @@ SOFTWARE.
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <random>
 #include <sstream>
@@ -70,12 +71,17 @@ namespace MLPP
 #pragma endregion
 
 #pragma region Enums
-    // Formatter utility enum to help with method overload
-    enum Formatter { ROW, COLUMN, ROWANDCOLUMN };
     // Activation functions enum for neural networks
     enum Activation { RELU, TANH, SIGMOID, SOFTMAX };
+    // Formatter utility enum to help with method overload
+    enum Formatter { ROW, COLUMN, ROWANDCOLUMN };
+    // Matrix type enums, easier to keep track of matrices typing
+    enum MatrixType { MAT_2D, MAT_3D, MAT_4D };
     // Padding enum for convolution layers
     enum Padding { SAME, VALID };
+    // Layer type enum used to identify layers in serialization
+    enum LayerType { AVERAGEPOOLING2D, CONV2D, DENSE, FLATTEN, MAXPOOLING2D, NONE };
+    
 #pragma endregion
 
 #pragma region NumPP
@@ -2091,9 +2097,18 @@ namespace MLPP
         // Declaration of virtual backward method, every layer has own method implementation
         virtual void backward(std::vector<std::any>& layer_output, std::vector<std::any>& layer_linear_outputs, std::vector<std::any>& layer_weights, 
                                 std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const std::any& target_labels, const std::any& learning_rate) = 0;
+        // Declaration of virtual de-serialization method, every layer has own method implementation
+        virtual void deserialize_layer_data(std::ifstream& in) = 0;
         // Declaration of virtual forward method, every layer has own method implementation
         virtual void forward(std::any& input, std::any& output, std::any& linear_output, std::any& weights, std::any& bias) = 0;
+        // Declaration of virtual get type method
+        virtual LayerType get_layer_type() { return NONE; }
         bool get_w_and_b() {return m_use_weights_and_biases;} // testing only
+        // Declaration fo virtual predict method, every layer has own method implementation
+
+        // Declaration of virtual serialization method, every layer has own method implementation
+        // Serialize data in array of bytes so we can export each layers relevant info into binary file
+        virtual void serialize_layer_data(std::ofstream& out) = 0;
     };
 
     // Basic layer class, which will be the base for specialized layers
@@ -2107,26 +2122,32 @@ namespace MLPP
         // Basic empty backward overrirde from LayerBase, so correct method gets called in specialized layer 
         void backward(std::vector<std::any>& layer_output, std::vector<std::any>& layer_linear_outputs, std::vector<std::any>& layer_weights, 
                         std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const std::any& target_labels, const std::any& learning_rate) override {}
+        // Basic empty override from LayerBase, so correct method gets called in specialized layer
+        void deserialize_layer_data(std::ifstream& in) override {}
         // Basic empty forward overrirde from LayerBase, so correct method gets called in specialized layer
         void forward(std::any& input, std::any& output, std::any& linear_output, std::any& weights, std::any& bias) override {}
         // Virtual declaration of activation function application, to be implemented in applicable specialized layers
         virtual Mat3d<DataType> activation_process(const Mat3d<DataType>& mat, const Activation& activation_function) {return Mat3d<DataType>();}
         // Virtual method override declaration of activation function application(std::vector)
         virtual std::vector<DataType> activation_process(const std::vector<DataType>& vec, const Activation& activation_function) {return std::vector<DataType>();}
+        // Virtual declaration of average pooling process for average pooling layer, implemented in average pooling specialized layer
+        virtual Mat3d<DataType> average_pool_process(const Mat3d<DataType>& mat, const int& size, const int& stride, const int& depth) {return Mat3d<DataType>();}
         // Virtual declaration of convolution process for convolutional layer, implemented in convolutional specialized layer
         virtual Mat3d<DataType> conv_2d_process(const Mat3d<DataType>& mat, const Mat3d<DataType>& kernel_mats, const std::vector<DataType>& bias_vec, 
                                                 const Padding& padding, const int& kernel_size, const int& number_of_filters) {return Mat3d<DataType>();}
         // Virtual declaration of flattening process for flatten layer, implemented in flattening specialized layer
         virtual std::vector<DataType> flatten_process(const Mat3d<DataType>& mat) {return std::vector<DataType>();}
+        // Declaration of virtual get type method
+        virtual LayerType get_layer_type() { return NONE; }
         // Virtual declaration of method that cuts 2d matrix from given 3d matrix, implemented on applicable specialized layers
         virtual Mat2d<DataType> get_2d_block_from_mat(const Mat3d<DataType>& mat, const int& block_size, const size_t& offset, 
                                                         std::pair<size_t, size_t>& output_loc, const size_t& depth) {return Mat2d<DataType>();}
         // Virtual declaration of max pooling process for max pooling layer, implemented in max pooling specialized layer
         virtual Mat3d<DataType> max_pool_process(const Mat3d<DataType>& mat, const int& size, const int& stride, const int& depth) {return Mat3d<DataType>();}
-        // Virtual declaration of average pooling process for average pooling layer, implemented in average pooling specialized layer
-        virtual Mat3d<DataType> average_pool_process(const Mat3d<DataType>& mat, const int& size, const int& stride, const int& depth) {return Mat3d<DataType>();}
         // Virtual declaration of method to update weights and biases for layer during backward propagation, implemented on specialized layers
         //virtual void update_weights_and_biases(std::any& weights, std::any& biases) = 0;
+        // Basic empty serialize override from LayerBase, so correct method gets called in specialized layer
+        void serialize_layer_data(std::ofstream& out) override {}
     };
 
     // Specialized Layer Class that creates Convolutional layer
@@ -2134,10 +2155,11 @@ namespace MLPP
     class Conv2D : public Layer<InputType,OutputType,DataType>
     {
     private:
-        const int m_number_of_filters; // Member Variable to hold passed number of filters
-        const int m_kernel_size; // Member Variable to hold kernel matrix size, square matrix so only 1 value needed
-        const Activation m_activation_function; // Member Variable to hold passed activation function method
-        const Padding m_padding; // Member Variable to hold passed padding to layer
+        LayerType m_layer_type = CONV2D; // Member variable to hold layer typing
+        Activation m_activation_function; // Member Variable to hold passed activation function method
+        Padding m_padding; // Member Variable to hold passed padding to layer
+        int m_number_of_filters; // Member Variable to hold passed number of filters
+        int m_kernel_size; // Member Variable to hold kernel matrix size, square matrix so only 1 value needed
         std::vector<DataType> m_bias_vector; // Member variable to holl bias vector
         Mat3d<DataType> m_feature_maps; // Member Variable to hold current created feature map
         Mat3d<DataType> m_activated_feature_maps; // Member Variable to hold current activated feature map
@@ -2358,12 +2380,58 @@ namespace MLPP
             // Update weights and biases for next forward pass
             update_weights_and_biases(layer_weights[0], layer_biases[0], dW_L_4, db_L_4, learning_rate);
         }
+        
+        // Specialized override of layer deserialize data method declared in base class (LayerBase)
+        void deserialize_layer_data(std::ifstream& in) override 
+        {
+            std::streampos stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+            in.seekg(stream_pos);
+
+            in.read(reinterpret_cast<char*>(&m_number_of_filters), sizeof(m_number_of_filters)); // Read and assign number of filters to member variable
+
+            if (!in) {
+                throw std::runtime_error("Error reading from file.");
+            }
+
+            std::cout << "Number of filters Read: " << std::to_string(m_number_of_filters) << std::endl;
+
+            stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+            in.seekg(stream_pos);
+
+            in.read(reinterpret_cast<char*>(&m_kernel_size), sizeof(m_kernel_size)); // Read and assign kernel size to member variable
+
+            if (!in) {
+                throw std::runtime_error("Error reading from file.");
+            }
+
+            std::cout << "Kernel Size Read: " << std::to_string(m_kernel_size) << std::endl;
+
+            stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+            in.seekg(stream_pos);
+
+            in.read(reinterpret_cast<char*>(&m_activation_function), sizeof(m_activation_function)); // Read and assign Layer's Activation function to member variable
+
+            if (!in) {
+                throw std::runtime_error("Error reading from file.");
+            }
+
+            std::cout << "Activation function Read: " << std::to_string(m_activation_function) << std::endl;
+
+            stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+            in.seekg(stream_pos);
+
+            in.read(reinterpret_cast<char*>(&m_padding), sizeof(m_padding)); // Read and assign Padding type to member variable
+
+            if (!in) {
+                throw std::runtime_error("Error reading from file.");
+            }
+
+            std::cout << "Padding Read: " << std::to_string(m_padding) << std::endl; 
+        }
 
         // Specialized override of layer forward method declared in base class (LayerBase)
         void forward(std::any& input, std::any& output, std::any& linear_output, std::any& weights, std::any& bias) override
         {
-            
-
             if (!input.has_value()) {
                 std::cerr << "Error: Input is empty" << std::endl;
                 return;
@@ -2411,6 +2479,53 @@ namespace MLPP
             linear_output = non_activated_output;  
                     
         }
+
+        // Override for get layer type method declared in base class (LayerBase)
+        LayerType get_layer_type() override
+        {
+            return m_layer_type;
+        }
+
+        // Specialize override of layer serializatin method declared base class (LayerBase)
+        void serialize_layer_data(std::ofstream& out) override 
+        {
+            // Write data into passed binary file
+            out.write(reinterpret_cast<const char*>(&m_number_of_filters), sizeof(m_number_of_filters)); // Write number of filters data
+
+            // Check if data stream is in a good state (No errors occured)
+            if (!out) {
+                throw std::runtime_error("Output stream is in a bad state. Cannot serialize Conv2D layer");
+            }
+
+            std::cout << "Number of filters Write: " << std::to_string(m_number_of_filters) << std::endl;
+
+            out.write(reinterpret_cast<const char*>(&m_kernel_size), sizeof(m_kernel_size)); // Write number of filters data
+
+            // Check if data stream is in a good state (No errors occured)
+            if (!out) {
+                throw std::runtime_error("Output stream is in a bad state. Cannot serialize Conv2D layer");
+            }
+
+            std::cout << "Kernel Size Write: " << std::to_string(m_kernel_size) << std::endl;
+
+            out.write(reinterpret_cast<const char*>(&m_activation_function), sizeof(m_activation_function)); // Write selected activation function data
+
+            // Check if data stream is in a good state (No errors occured)
+            if (!out) {
+                throw std::runtime_error("Output stream is in a bad state. Cannot serialize Conv2D layer");
+            }
+
+            std::cout << "Activation function Write: " << std::to_string(m_activation_function) << std::endl;
+
+            out.write(reinterpret_cast<const char*>(&m_padding), sizeof(m_padding)); // Write selected padding data
+            
+            // Check if data stream is in a good state (No errors occured)
+            if (!out) {
+                throw std::runtime_error("Output stream is in a bad state. Cannot serialize Conv2D layer");
+            } 
+
+            std::cout << "Padding Write: " << std::to_string(m_padding) << std::endl;
+        }
     };
 
     // Specialized Layer Class that creates Max Pooling layer
@@ -2418,6 +2533,7 @@ namespace MLPP
     class MaxPooling2D : public Layer<InputType,OutputType,DataType>
     {
     private:
+        const LayerType m_layer_type = MAXPOOLING2D; // Member variable to hold layer typing
         const int m_size; // Member variable that stores how many pixels to pool
         const int m_stride; // Member variable that stores stride to traverse through matrix
         int m_depth; // Member variable that stores matrix depth
@@ -2508,41 +2624,6 @@ namespace MLPP
             m_stride(stride)
         {}
 
-       /*  // Specialized override of layer backward method declared in base class (LayerBase)
-        void backward(std::vector<std::any>& layer_output, std::vector<std::any>& layer_linear_outputs, std::vector<std::any>& layer_weights,
-                        std::vector<std::any>& layer_biases, const std::any& target_labels, const std::any& learning_rate) override
-        {
-              !!! Basic steps for backward propagation that layers without weights and biases go through (For testing example) !!!
-                A few things to consider first:
-                    a)  For now we have a lot of parts hard coded and kind of set to debugging example, these will be optimized in the future, so the 
-                        methods we have now used to compute gradients for each layer, most likely won't be the same for every network architecture
-                        and activation functions  
-                    b)  Let's consider that we're traversing the layers in reverse order, so next layer will mean previous in forward propagation, and vice versa.
-
-                Generic steps:           
-                    For each layer backward propagation, we need to perform a few steps:
-                        1 - Get gradient of loss with respect to previous layer output 
-                            Step 1 will return in dA_previous
-                        2 - Get gradient of loss with respect to current layer output 
-                            Step 2 will return in dA_current
-                        3 - Reshape gradient to match layer input shape
-                            Step 3 will return da_current_origianl
-            
-
-            if (layer_output.empty() || layer_weights.empty() || layer_biases.empty() || !target_labels.has_value()) {
-                std::cerr << "Error: Input is empty" << std::endl;
-                return;
-            }  
-
-            OutputType* pool_layer_output = std::any_cast<OutputType>(&layer_output[1]); // Get output of pooling layer, for now hard coded (Max Pooling 2d layer)
-            InputType* conv_layer_output = std::any_cast<InputType>(&layer_output[0]); // Get output of convolutional layer, for now hard coded (Conv 2d layer)
-
-            // Actual pooling backward propagation
-            InputType a_previous = *conv_layer_output;
-            OutputType dA_current = *pool_layer_output;
-            InputType dA_previous = backward_process(a_previous, dA_current);
-        } */
-
         // Specialized override of layer forward method declared in base class (LayerBase)
         void forward(std::any& input, std::any& output, std::any& linear_output, std::any& weights, std::any& bias) override
         {
@@ -2565,6 +2646,13 @@ namespace MLPP
                 typedOutput->push_back(m_pooled_mat);
             }
         } 
+
+        // Override for get layer type method declared in base class (LayerBase)
+        LayerType get_layer_type() override
+        {
+            return m_layer_type;
+        }
+   
     };
 
     // Specialized Layer Class that creates Average Pooling layer
@@ -2572,8 +2660,9 @@ namespace MLPP
     class AveragePooling2d : public Layer<InputType,OutputType,DataType>
     {
     private:
-        const int m_size; // Member variable that stores how many pixels to pool
-        const int m_stride; // Member variable that stores stride to traverse through matrix 
+        LayerType m_layer_type = AVERAGEPOOLING2D; // Member variable to hold layer typing
+        int m_size; // Member variable that stores how many pixels to pool
+        int m_stride; // Member variable that stores stride to traverse through matrix 
         int m_depth; // Member variable that stores depth of current matrix 
         Mat3d<DataType> m_pooled_mat; // Member variable that stores current pooled matrix 
 
@@ -2697,6 +2786,32 @@ namespace MLPP
             // greatly impacting performance, look into optimizing later
             gradients.push_back(dA_L_4);
         }
+        
+        // Specialized override of layer deserialize data method declared in base class (LayerBase)
+        void deserialize_layer_data(std::ifstream& in) override 
+        {
+            std::streampos stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+            in.seekg(stream_pos);
+
+            in.read(reinterpret_cast<char*>(&m_size), sizeof(m_size)); // Read and assign number of filters to member variable
+
+            if (!in) {
+                throw std::runtime_error("Error reading from file.");
+            }
+
+            std::cout << "Pooling Window Size Read: " << std::to_string(m_size) << std::endl;
+
+            stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+            in.seekg(stream_pos);
+
+            in.read(reinterpret_cast<char*>(&m_stride), sizeof(m_stride)); // Read and assign kernel size to member variable
+
+            if (!in) {
+                throw std::runtime_error("Error reading from file.");
+            }
+
+            std::cout << "Pooling Stride Read: " << std::to_string(m_stride) << std::endl;
+        }
 
         // Specialized override of layer forward method declared in base class (LayerBase)
         void forward(std::any& input, std::any& output, std::any& linear_output, std::any& weights, std::any& bias) override
@@ -2720,6 +2835,36 @@ namespace MLPP
             }
             
         }   
+    
+        // Override for get layer type method declared in base class (LayerBase)
+        LayerType get_layer_type() override
+        {
+            return m_layer_type;
+        }
+
+        // Specialize override of layer serializatin method declared base class (LayerBase)
+        void serialize_layer_data(std::ofstream& out) override 
+        {
+            // Write data into passed binary file
+            out.write(reinterpret_cast<const char*>(&m_size), sizeof(m_size)); // Write number of filters data
+
+            // Check if data stream is in a good state (No errors occured)
+            if (!out) {
+                throw std::runtime_error("Output stream is in a bad state. Cannot serialize Conv2D layer");
+            }
+
+            std::cout << "Pooling Window Size Write: " << std::to_string(m_size) << std::endl;
+
+            out.write(reinterpret_cast<const char*>(&m_stride), sizeof(m_stride)); // Write number of filters data
+
+            // Check if data stream is in a good state (No errors occured)
+            if (!out) {
+                throw std::runtime_error("Output stream is in a bad state. Cannot serialize Conv2D layer");
+            }
+
+            std::cout << "Pooling Stride Write: " << std::to_string(m_stride) << std::endl;
+        }
+
     };
 
     // Specialized Layer Class that creates Flattening layer
@@ -2727,6 +2872,7 @@ namespace MLPP
     class Flatten : public Layer<InputType,OutputType,DataType>
     {
     private:
+        const LayerType m_layer_type = FLATTEN; // Member variable to hold layer typing
         std::vector<DataType> m_image_vector; // Member variable to store current image vector
 
         //Method that flattens 3d matrix into vector
@@ -2790,6 +2936,13 @@ namespace MLPP
                 typedOutput->push_back(m_image_vector);
             }
         }  
+   
+        // Override for get layer type method declared in base class (LayerBase)
+        LayerType get_layer_type() override
+        {
+            return m_layer_type;
+        }
+
     };
 
     // Specialized Layer Class that creates Max Pooling layer
@@ -2797,8 +2950,9 @@ namespace MLPP
     class Dense : public Layer<InputType,OutputType,DataType>
     {
     private:
-        const int m_output_size; // Member Variable to hold layer output size
-        const Activation m_activation_function; // Member Variable to hold passed activation function method
+        LayerType m_layer_type = DENSE; // Member variable to hold layer typing
+        int m_output_size; // Member Variable to hold layer output size
+        Activation m_activation_function; // Member Variable to hold passed activation function method
         std::vector<DataType> m_transformed_vector; // Member variable to store current result of linear transformation
         std::vector<DataType> m_activated_vector; // Member variable to store current result of activation function
 
@@ -2918,6 +3072,32 @@ namespace MLPP
             gradients.push_back(dA_L_2);  
         }
 
+        // Specialized override of layer deserialize data method declared in base class (LayerBase)
+        void deserialize_layer_data(std::ifstream& in) override 
+        {
+            std::streampos stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+            in.seekg(stream_pos);
+
+            in.read(reinterpret_cast<char*>(&m_output_size), sizeof(m_output_size)); // Read and assign number of filters to member variable
+
+            if (!in) {
+                throw std::runtime_error("Error reading from file.");
+            }
+
+            std::cout << "Dense Output Size Read: " << std::to_string(m_output_size) << std::endl;
+
+            stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+            in.seekg(stream_pos);
+
+            in.read(reinterpret_cast<char*>(&m_activation_function), sizeof(m_activation_function)); // Read and assign kernel size to member variable
+
+            if (!in) {
+                throw std::runtime_error("Error reading from file.");
+            }
+
+            std::cout << "Activation Function Read: " << std::to_string(m_activation_function) << std::endl;
+        }
+
         // Specialized override of layer forward method declared in base class (LayerBase)
         void forward(std::any& input, std::any& output, std::any& linear_output, std::any& weights, std::any& bias) override 
         {
@@ -2960,6 +3140,36 @@ namespace MLPP
 
             linear_output = non_activated_output; // testing
         } 
+    
+        // Override for get layer type method declared in base class (LayerBase)
+        LayerType get_layer_type() override
+        {
+            return m_layer_type;
+        }
+    
+        // Specialize override of layer serializatin method declared base class (LayerBase)
+        void serialize_layer_data(std::ofstream& out) override 
+        {
+            // Write data into passed binary file
+            out.write(reinterpret_cast<const char*>(&m_output_size), sizeof(m_output_size)); // Write number of filters data
+
+            // Check if data stream is in a good state (No errors occured)
+            if (!out) {
+                throw std::runtime_error("Output stream is in a bad state. Cannot serialize Conv2D layer");
+            }
+
+            std::cout << "Dense Output Size Write: " << std::to_string(m_output_size) << std::endl;
+
+            out.write(reinterpret_cast<const char*>(&m_activation_function), sizeof(m_activation_function)); // Write number of filters data
+
+            // Check if data stream is in a good state (No errors occured)
+            if (!out) {
+                throw std::runtime_error("Output stream is in a bad state. Cannot serialize Conv2D layer");
+            }
+
+            std::cout << "Activation Function Write: " << std::to_string(m_activation_function) << std::endl;
+        }
+
     };
  
     // Class to create, train and export neural network models
@@ -3085,6 +3295,445 @@ namespace MLPP
             output = m_current_output; // Assign output of final layer to passed output reference
         }
 
+        // Method that serialize biases of neural network so we can store it in binary format
+        void serialize_biases(std::ofstream& out)
+        {
+            // Write the number of weight tensors (matrices) present in network
+            size_t number_of_biases_tensors = m_weights.size();
+            out.write(reinterpret_cast<const char*>(&number_of_biases_tensors), sizeof(number_of_biases_tensors));
+
+            if (!out) {
+                throw std::runtime_error("Error: Couldn't write data to file");
+            }
+
+            std::cout << "Number of Bias Tensors Write: " << number_of_biases_tensors << std::endl;
+            
+            // Iterate through each bias tensor (1D tensor = Vector)
+            for (const auto& bias : m_biases) {
+                const auto& vec = std::any_cast<const std::vector<double>&>(bias);
+                size_t vector_size = vec.size();
+
+                out.write(reinterpret_cast<const char*>(&vector_size), sizeof(vector_size));
+
+                if (!out) {
+                    throw std::runtime_error("Error: Couldn't write data to file");
+                }
+
+                std::cout << "Size of Bias Tensor Write: " << vector_size << std::endl;
+
+                out.write(reinterpret_cast<const char*>(vec.data()), vector_size * sizeof(double));
+
+                if (!out) {
+                    throw std::runtime_error("Error: Couldn't write data to file");
+                }
+            }
+        }
+
+        // Method that serialize layers to be able to store in binary format
+        void serialize_layers(std::ofstream& out)
+        {
+            // Write to file number of layers in network
+            size_t number_of_layers = m_layers.size();
+            out.write(reinterpret_cast<const char*>(&number_of_layers), sizeof(number_of_layers));
+
+            if (!out) {
+                throw std::runtime_error("Error: Couldn't write data to file");
+            }
+
+            std::cout << "Number of layers Write: " << number_of_layers << std::endl;
+
+            // Loop through each layer in network to serialize and write to file any relevant data
+            for (const auto &layer : m_layers) {
+                LayerType type = layer->get_layer_type();
+                out.write(reinterpret_cast<const char*>(&type), sizeof(type));
+                std::cout << "Layer ID Write: " << std::to_string(type) << std::endl;
+                if (!out) {
+                    throw std::runtime_error("Error: Couldn't write data to file");
+                }
+                layer->serialize_layer_data(out);
+            }
+        }
+
+        // Mathod that serialize weights of neural network so we can store it in binary format
+        void serialize_weights(std::ofstream& out)
+        {   
+            // Write the number of weight tensors (matrices) present in network
+            size_t number_of_weight_tensors = m_weights.size();
+            out.write(reinterpret_cast<const char*>(&number_of_weight_tensors), sizeof(number_of_weight_tensors));
+
+            if (!out) {
+                throw std::runtime_error("Error: Couldn't write data to file");
+            }
+
+            std::cout << "Number of Weight Tensors Write: " << number_of_weight_tensors << std::endl;
+
+            // Iterate through each weight tensor
+            for (const auto &weight : m_weights) {
+                // Determine shape of weight tensor
+                if (weight.type() == typeid(Mat2d<double>)) {
+                    // Serialize weight typing for faster loading
+                    MatrixType type = MatrixType::MAT_2D;
+                    out.write(reinterpret_cast<const char*>(&type), sizeof(type));
+
+                    if (!out) {
+                        throw std::runtime_error("Error: Couldn't write data to file");
+                    }
+
+                    std::cout << "Tensor Type Write: " << type << std::endl;
+
+                    // Serialize the weight tensor data
+                    const auto& tensor = std::any_cast<const Mat2d<double>&>(weight);
+                    size_t rows = tensor.size();
+                    size_t cols = tensor[0].size();
+                    // Save tensor spacial dimensions for faster loading
+                    out.write(reinterpret_cast<const char*>(&rows), sizeof(rows)); 
+                    out.write(reinterpret_cast<const char*>(&cols), sizeof(cols));
+
+                    if (!out) {
+                        throw std::runtime_error("Error: Couldn't write data to file");
+                    }
+
+                    std::cout << "Tensor Rows Size Write: " << rows << std::endl;
+                    std::cout << "Tensor Columns Size Write: " << cols << std::endl;
+
+                    /// Loop through tensor to serialize data
+                    for (size_t i = 0; i < rows; i++) {
+                        // Write current row data into binary file
+                        out.write(reinterpret_cast<const char*>(tensor[i].data()), cols * sizeof(double));
+
+                        if (!out) {
+                            throw std::runtime_error("Error: Couldn't write data to file");
+                        }
+                    } 
+                }
+                // Determine shape of weight tensor
+                if (weight.type() == typeid(Mat3d<double>)) {
+                    // Serialize weight typing for faster loading
+                    MatrixType type = MatrixType::MAT_3D;
+                    out.write(reinterpret_cast<const char*>(&type), sizeof(type));
+
+                    if (!out) {
+                        throw std::runtime_error("Error: Couldn't write data to file");
+                    }
+
+                    std::cout << "Tensor Type Write: " << type << std::endl;
+
+                    // Serialize the weight tensor data
+                    const auto& tensor = std::any_cast<const Mat3d<double>&>(weight);
+                    size_t rows = tensor.size();
+                    size_t cols = tensor[0].size();
+                    size_t depth = tensor[0][0].size();
+                    // Save tensor spacial dimensions for faster loading
+                    out.write(reinterpret_cast<const char*>(&rows), sizeof(rows)); 
+                    out.write(reinterpret_cast<const char*>(&cols), sizeof(cols));
+                    out.write(reinterpret_cast<const char*>(&depth), sizeof(depth));
+
+                    if (!out) {
+                        throw std::runtime_error("Error: Couldn't write data to file");
+                    }
+
+                    std::cout << "Tensor Rows Size Write: " << rows << std::endl;
+                    std::cout << "Tensor Columns Size Write: " << cols << std::endl;
+                    std::cout << "Tensor Depth Size Write: " << depth << std::endl;
+
+                    // Loop through current tensor to serialize data
+                    for (size_t i = 0; i < rows; i++) {
+                        for (size_t j = 0; j < cols; j++) {
+                            // Write data of vector at row i and column j into binary file
+                            out.write(reinterpret_cast<const char*>(tensor[i][j].data()), depth * sizeof(double));
+
+                            if (!out) {
+                                throw std::runtime_error("Error: Couldn't write data to file");
+                            }
+                        }
+                    }
+                }
+            }
+            
+        }
+
+        // Method that serialize biases of neural network so we can store it in binary format
+        std::vector<std::any> deserialize_biases(std::ifstream& in)
+        {
+            // Get current position in data stream
+            std::streampos stream_pos = in.tellg();
+
+            // Get number of layers in network
+            size_t number_of_bias_tensors;
+            in.read(reinterpret_cast<char*>(&number_of_bias_tensors), sizeof(number_of_bias_tensors));
+
+            if (!in) {
+                throw std::runtime_error("Error reading from file.");
+            }
+
+            std::cout << "Number of Bias Tensors Read: " << number_of_bias_tensors << std::endl;
+
+            stream_pos = in.tellg();
+
+            std::vector<std::any> biases;
+
+            for (size_t i = 0; i < number_of_bias_tensors; i++) {
+                std::any bias;
+
+                // Set starting reading position of data stream for each weight
+                in.seekg(stream_pos);
+
+                size_t size_of_bias_tensor;
+                in.read(reinterpret_cast<char*>(&size_of_bias_tensor), sizeof(size_of_bias_tensor));
+
+                if (!in) {
+                    throw std::runtime_error("Error reading from file.");
+                }
+
+                std::cout << "Size of Bias Tensor Read: " << size_of_bias_tensor << std::endl;
+
+                stream_pos = in.tellg();
+                in.seekg(stream_pos);
+
+                std::vector<double> typed_bias(size_of_bias_tensor);
+
+                in.read(reinterpret_cast<char *>(typed_bias.data()), size_of_bias_tensor * sizeof(double));
+
+                if (!in) {
+                    throw std::runtime_error("Error reading from file.");
+                }
+
+                stream_pos = in.tellg();
+                in.seekg(stream_pos);
+
+                bias = typed_bias;
+
+                if (bias.has_value()) {
+                    biases.push_back(bias);
+                }
+
+                stream_pos = in.tellg();
+            }
+
+            return biases;
+        }
+
+        // Method that de-serialize layers to be able to store in binary format
+        std::vector<LayerBase*> deserialize_layers(std::ifstream& in)
+        {
+            // Get number of layers in network
+            size_t number_of_layers;
+            in.read(reinterpret_cast<char*>(&number_of_layers), sizeof(number_of_layers));
+
+            if (!in) {
+                throw std::runtime_error("Error reading from file.");
+            }
+
+            std::cout << "Number of layers Read: " << number_of_layers << std::endl;
+
+            // Record position of data stream
+            std::streampos stream_pos = in.tellg();
+
+            std::vector<LayerBase*> layers;
+
+            // Loop through detected layers to detect and deserialize specific layer data
+            for (size_t i = 0; i < number_of_layers; i++) {
+                // Move pointer to current stream position
+                in.seekg(stream_pos);
+
+                LayerType type;
+                in.read(reinterpret_cast<char*>(&type), sizeof(type));
+
+                if (!in) {
+                    throw std::runtime_error("Error reading from file.");
+                }
+
+                std::cout << "Layer " << i << " ID Read: " << std::to_string(type) << std::endl;
+
+                stream_pos = in.tellg();
+
+                LayerBase* layer = nullptr; // Create empty pointer to store layer type
+
+                switch (type)
+                {
+                case LayerType::AVERAGEPOOLING2D:
+                    layer = new AveragePooling2d<Mat4d<double>, Mat4d<double>, double>(0,0);
+                    break;
+                case LayerType::CONV2D:
+                    layer = new Conv2D<Mat4d<double>, Mat4d<double>, double>(0, 0, Activation::SIGMOID, Padding::VALID);
+                    break;
+                case LayerType::DENSE:
+                    layer = new Dense<Mat2d<double>, Mat2d<double>, double>(0, Activation::SIGMOID);
+                    break;
+                case LayerType::FLATTEN:
+                    layer = new Flatten<Mat4d<double>, Mat2d<double>, double>();
+                    break;
+                case LayerType::MAXPOOLING2D:
+                    layer = new MaxPooling2D<Mat4d<double>, Mat4d<double>, double>(0,0);
+                    break;
+                default:
+                    break;
+                }
+
+                if (layer) {
+                    layer->deserialize_layer_data(in);
+                    layers.push_back(layer);
+                }
+
+                stream_pos = in.tellg();
+            }
+
+            return layers;
+        }
+
+        // Method that de-serialize layers to be able to store in binary format
+        std::vector<std::any> deserialize_weights(std::ifstream& in) 
+        {
+            // Get current position in data stream
+            std::streampos stream_pos = in.tellg();
+
+            // Get number of layers in network
+            size_t number_of_weight_tensors;
+            in.read(reinterpret_cast<char*>(&number_of_weight_tensors), sizeof(number_of_weight_tensors));
+
+            if (!in) {
+                throw std::runtime_error("Error reading from file.");
+            }
+
+            std::cout << "Number of Weight Tensors Read: " << number_of_weight_tensors << std::endl;
+
+            stream_pos = in.tellg();
+
+            std::vector<std::any> weights;
+
+            // Loop through detected weight tensors to detect and deserialize specific layer data
+            for (size_t i = 0; i < number_of_weight_tensors; i++) {
+                // Set starting reading position of data stream for each weight
+                in.seekg(stream_pos);
+
+                // Serialize weight typing for faster loading
+                MatrixType type;
+                in.read(reinterpret_cast<char*>(&type), sizeof(type));
+
+                if (!in) {
+                    throw std::runtime_error("Error reading from file.");
+                }
+
+                std::cout << "Tensor Type Read: " << type << std::endl;
+
+                stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+                
+                std::any tensor;
+                Mat3d<double> tensor_1; // Testing only
+                Mat2d<double> tensor_2; // Testing only 
+
+                switch (type)
+                {
+                    case MatrixType::MAT_2D:
+                        in.seekg(stream_pos);
+                        size_t rows;
+                        size_t cols;
+
+                        in.read(reinterpret_cast<char*>(&rows), sizeof(rows));
+
+                        if (!in) {
+                            throw std::runtime_error("Error reading from file.");
+                        }   
+
+                        stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+
+                        in.seekg(stream_pos);
+                        in.read(reinterpret_cast<char*>(&cols), sizeof(cols));
+
+                        if (!in) {
+                            throw std::runtime_error("Error reading from file.");
+                        }
+                        
+                        stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+                        in.seekg(stream_pos);  
+
+                        std::cout << "Tensor Rows Size Read: " << rows << std::endl;
+                        std::cout << "Tensor Columns Size Read: " << cols << std::endl;
+
+                        tensor_2 = Mat2d<double>(rows, std::vector<double>(cols));
+
+                        for (size_t i = 0; i < rows; i++) {
+                            in.read(reinterpret_cast<char *>(tensor_2[i].data()), cols * sizeof(double));
+
+                            if (!in) {
+                                throw std::runtime_error("Error reading from file.");
+                            }
+
+                            stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+                            in.seekg(stream_pos);  
+                        }
+
+                        tensor = tensor_2;
+                        break;
+                    case MatrixType::MAT_3D:
+                        in.seekg(stream_pos);
+
+                        size_t rows_1;
+                        size_t cols_1;
+                        size_t depth_1;
+
+                        in.read(reinterpret_cast<char*>(&rows_1), sizeof(rows_1));
+
+                        if (!in) {
+                            throw std::runtime_error("Error reading from file.");
+                        }   
+
+                        stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+                        in.seekg(stream_pos);
+
+                        in.read(reinterpret_cast<char*>(&cols_1), sizeof(cols_1));
+
+                        if (!in) {
+                            throw std::runtime_error("Error reading from file.");
+                        }
+
+                        stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+                        in.seekg(stream_pos);   
+
+                        in.read(reinterpret_cast<char*>(&depth_1), sizeof(depth_1));
+
+                        if (!in) {
+                            throw std::runtime_error("Error reading from file.");
+                        }
+
+                        std::cout << "Tensor Rows Size Read: " << rows_1 << std::endl;
+                        std::cout << "Tensor Columns Size Read: " << cols_1 << std::endl;
+                        std::cout << "Tensor Depth Size Read: " << depth_1 << std::endl;
+
+                        tensor_1 = Mat3d<double>(rows_1, Mat2d<double>(cols_1, std::vector<double>(depth_1)));
+
+                        stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+                        in.seekg(stream_pos);  
+                        
+                        // Loop through current tensor to serialize data
+                        for (size_t i = 0; i < rows_1; i++) {
+                            for (size_t j = 0; j < cols_1; j++) {
+                                in.read(reinterpret_cast<char *>(tensor_1[i][j].data()), depth_1 * sizeof(double));
+
+                                if (!in) {
+                                    throw std::runtime_error("Error reading from file.");
+                                }
+
+                                stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
+                                in.seekg(stream_pos); 
+                            }
+                        }
+                        tensor = tensor_1;                
+                        break;
+                    default:
+                        break;
+                }
+
+                if (tensor.has_value()) {
+                    weights.push_back(tensor);
+                }
+
+                stream_pos = in.tellg(); 
+            }
+
+            return weights;
+        }
+
     public:
         // Method that creates and add layer to sequence
         void add_layer(LayerBase* layerPtr)
@@ -3105,6 +3754,50 @@ namespace MLPP
             }
         }
 
+        // Method that exports trained model and saves it into binary file 
+        void export_model(const std::string& fileName)
+        {
+            if (fileName.empty()) {
+                throw std::runtime_error("Error: Cannot create file with empty name");
+            }
+
+            std::ofstream out(fileName, std::ios::binary);
+
+            if (!out.is_open()) {
+                throw std::runtime_error("Error: Failed to open file to export model");
+            }
+
+            serialize_layers(out);
+            serialize_weights(out);
+            serialize_biases(out);
+
+            Mat3d<double>* tensor_1 = std::any_cast<Mat3d<double>>(&m_weights[0]);
+            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            DataAnalysis::display_all((*tensor_1)[0]);
+            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            DataAnalysis::display_all((*tensor_1)[1]);
+            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            DataAnalysis::display_all((*tensor_1)[2]);
+            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            DataAnalysis::display_all((*tensor_1)[3]);
+            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            DataAnalysis::display_all((*tensor_1)[4]);
+            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+
+            std::vector<double>* bias_0 = std::any_cast<std::vector<double>>(&m_biases[0]);
+            std::vector<double>* bias_1 = std::any_cast<std::vector<double>>(&m_biases[1]);
+            std::vector<double>* bias_2 = std::any_cast<std::vector<double>>(&m_biases[2]);
+
+            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            DataAnalysis::display_all(*bias_0);
+            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            DataAnalysis::display_all(*bias_1);
+            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            DataAnalysis::display_all(*bias_2);
+
+            out.close();            
+        }
+
         // Method that applies training to created neural network
         template <typename T>
         Mat2d<T> fit(std::any input, const std::any target_labels, const size_t& batch_size, const size_t& epochs, const T& learning_rate) 
@@ -3114,7 +3807,6 @@ namespace MLPP
             Mat4d<T>* original_input = std::any_cast<Mat4d<T>>(&input); // Get and store original input matrix
             const Mat2d<T>* true_target_labels = std::any_cast<Mat2d<T>>(&target_labels); // Get and store original labels matrix
             const size_t num_of_batches = original_input->size() / batch_size; // Get total num of num_of_batches
-            int num_of_threads = std::thread::hardware_concurrency(); // Determine the number of threads for current machine
 
             // Perform training steps for declared number of epochs
             for (size_t epoch = 0; epoch < epochs; epoch++) {
@@ -3168,42 +3860,8 @@ namespace MLPP
                 auto t2 = Benchmark::stopBenchmark(); // Performance benchmarkingx
                 epoch_loss = calc_batch_loss<T>(output, target_labels); // Get batch loss for performance checking
                 std::cout << "Epoch " << (epoch + 1) << " Loss: " << std::to_string(epoch_loss) << " ";
-                std::cout << Benchmark::getDuration(t1, t2, Benchmark::Seconds) << std::endl;
-
-                //output.reset(); // Reset output for each iteration
-                //forward_pass(input, output); // Apply forward pass
-                //backward_pass(target_labels, learning_rate); // Apply backward pass  
-
-                //Debugging code
-                //Mat2d<T>* epoch_result = std::any_cast<Mat2d<T>>(&output);
-                //auto shape = NumPP::get_shape(*epoch_result);
-                //std::cout << "-------------------" << std::endl;
-                //DataAnalysis::display_all(*epoch_result);
-                //std::cout << "-------------------" << std::endl;       
+                std::cout << Benchmark::getDuration(t1, t2, Benchmark::Seconds) << std::endl;  
             }  
-
-            /* Debugging code
-            Mat4d<T>* conv2d_output = std::any_cast<Mat4d<T>>(&m_outputs[0]);
-            std::cout << "Convolution Output shape = ";
-            std::cout << "(" << std::to_string((*conv2d_output).size()) << "," << std::to_string((*conv2d_output)[0].size()) << ",";
-            std::cout << std::to_string((*conv2d_output)[0][0].size()) << "," << std::to_string((*conv2d_output)[0][0][0].size()) << ")" << std::endl;
-            Mat4d<T>* max_pooling_output = std::any_cast<Mat4d<T>>(&m_outputs[1]);
-            std::cout << "Max Pooling Output shape = ";
-            std::cout << "(" << std::to_string((*max_pooling_output).size()) << "," << std::to_string((*max_pooling_output)[0].size()) << ",";
-            std::cout << std::to_string((*max_pooling_output)[0][0].size()) << "," << std::to_string((*max_pooling_output)[0][0][0].size()) << ")" << std::endl;
-            Mat2d<T>* flatten_output = std::any_cast<Mat2d<T>>(&m_outputs[2]);
-            auto shape = NumPP::get_shape(*flatten_output);
-            std::cout << "Flatten layer shape = ";
-            std::cout << "(" << shape.first << ", " << shape.second << ")" << std::endl;
-            Mat2d<T>* dense_output = std::any_cast<Mat2d<T>>(&m_outputs[3]);
-            shape = NumPP::get_shape(*dense_output);
-            std::cout << "Dense layer shape = ";
-            std::cout << "(" << shape.first << ", " << shape.second << ")" << std::endl;
-            Mat2d<T>* output_output = std::any_cast<Mat2d<T>>(&m_outputs[4]);
-            shape = NumPP::get_shape(*output_output);
-            std::cout << "Output layer shape = ";
-            std::cout << "(" << shape.first << ", " << shape.second << ")" << std::endl;
-            */
 
             Mat2d<T>* result = std::any_cast<Mat2d<T>>(&output);
 
@@ -3320,7 +3978,7 @@ namespace MLPP
 
         // Method that calculates accuracy of training process
         template <typename T>
-        T compute_accuracy(const std::any predicted_labels, const std::any target_labels)
+        T get_accuracy(const std::any predicted_labels, const std::any target_labels)
         {
             if (!target_labels.has_value()) {
                 std::cerr << "Error: Input is empty" << std::endl;
@@ -3347,13 +4005,68 @@ namespace MLPP
             return correct_predictions / num_of_examples; // return accuracy of model in decimal format
         }
 
+        // Method that loads exported model back into original data structures
+        void load_model(const std::string& filePath)
+        {
+            if (filePath.empty()) {
+                throw std::runtime_error("Error: No file path detected");
+            }
+
+            std::ifstream in(filePath, std::ios::binary); // Open binary file at given path
+
+            if (!in.is_open()) {
+                throw std::runtime_error("Error: Failed to open model binary file");
+            }
+
+            m_layers = deserialize_layers(in);
+            m_weights = deserialize_weights(in);
+            m_biases = deserialize_biases(in);
+            
+            // Debugging Code
+            //Mat3d<double>* tensor_1 = std::any_cast<Mat3d<double>>(&m_weights[0]);
+            //Mat2d<double>* tensor_2 = std::any_cast<Mat2d<double>>(&m_weights[1]);
+            //Mat2d<double>* tensor_3 = std::any_cast<Mat2d<double>>(&m_weights[2]);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_shape(*tensor_1);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_shape(*tensor_2);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_shape(*tensor_3);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all((*tensor_1)[0]);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all((*tensor_1)[1]);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all((*tensor_1)[2]);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all((*tensor_1)[3]);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all((*tensor_1)[4]);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //std::vector<double>* bias_0 = std::any_cast<std::vector<double>>(&m_biases[0]);
+            //std::vector<double>* bias_1 = std::any_cast<std::vector<double>>(&m_biases[1]);
+            //std::vector<double>* bias_2 = std::any_cast<std::vector<double>>(&m_biases[2]);
+            //std::cout << bias_0->size() << std::endl;
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //std::cout << bias_1->size() << std::endl;
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //std::cout << bias_2->size() << std::endl;
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all(*bias_0);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all(*bias_1);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all(*bias_2);
+    
+            in.close();
+        }
+
         ~NeuralNetwork()
         {
             for (auto &layer : m_layers) {
                 delete layer;
             }
         }
-
     };
 
 #pragma endregion
@@ -3556,14 +4269,14 @@ namespace MLPP
         }
 
         // Method that transform individual frames in video file and save them as images
-        static void convert_video_frame_to_image(std::string& path)
+        static void convert_video_to_images(std::string& video_path, std::string& save_path)
         {
-            if (path.empty()) {
+            if (video_path.empty()) {
                 std::cerr << "Error: Input parameter is empty" << std::endl;
                 return;
             }
 
-            cv::VideoCapture video(path); // Get video file and store it in video file
+            cv::VideoCapture video(video_path); // Get video file and store it in video file
 
             if(!video.isOpened()) {
                 std::cerr << "Error: Video file failed to open" << std::endl;
@@ -3573,11 +4286,12 @@ namespace MLPP
 
             cv::Mat* framePtr = new cv::Mat(); // Create pointer to store current frame 
             size_t frame_counter = 0; // Create variable to count number of frames
+            save_path = save_path.append("/Frame-"); // Add Img- to differentiate frames 
 
             // Loop while video has frames remaining 
             while (video.isOpened())
             {
-                std::string image_path = "/home/muzaodamassa/Downloads/AC_Dataset/Img-"; // Image path to be saved
+                std::string image_path = save_path; // Create local variable to complete image path every frame
 
                 video >> *framePtr; // Store current frame in created pointer 
 
@@ -3586,13 +4300,13 @@ namespace MLPP
                     break;
                 }
                 
-                image_path.append(std::to_string(frame_counter));
-                image_path.append(".jpg");
+                image_path.append(std::to_string(frame_counter)); // Add current frame number to image name
+                image_path.append(".jpg"); // Add which compression type to use to store image
 
-                cv::imwrite(image_path, *framePtr);
+                cv::imwrite(image_path, *framePtr); // Save image to correct path using data in frame pointer
 
                 std::cout << image_path << std::endl;
-                frame_counter++;
+                frame_counter++; // Increase frame counter
             }
 
             delete framePtr; // Delete pointer created
@@ -3786,7 +4500,7 @@ namespace MLPP
             return training_data_mat;       
         }
 
-        // Further methods to be implemented
+        
     };
 
 #pragma endregion
