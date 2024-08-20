@@ -2105,7 +2105,7 @@ namespace MLPP
         virtual LayerType get_layer_type() { return NONE; }
         bool get_w_and_b() {return m_use_weights_and_biases;} // testing only
         // Declaration fo virtual predict method, every layer has own method implementation
-
+        virtual void predict(std::any& input, std::any& output, std::any& weights, std::any& bias) = 0;
         // Declaration of virtual serialization method, every layer has own method implementation
         // Serialize data in array of bytes so we can export each layers relevant info into binary file
         virtual void serialize_layer_data(std::ofstream& out) = 0;
@@ -2144,8 +2144,8 @@ namespace MLPP
                                                         std::pair<size_t, size_t>& output_loc, const size_t& depth) {return Mat2d<DataType>();}
         // Virtual declaration of max pooling process for max pooling layer, implemented in max pooling specialized layer
         virtual Mat3d<DataType> max_pool_process(const Mat3d<DataType>& mat, const int& size, const int& stride, const int& depth) {return Mat3d<DataType>();}
-        // Virtual declaration of method to update weights and biases for layer during backward propagation, implemented on specialized layers
-        //virtual void update_weights_and_biases(std::any& weights, std::any& biases) = 0;
+        // Basic empty predict override from LayerBase, so correct method gets called in specialized layer
+        void predict(std::any& input, std::any& output, std::any& weights, std::any& bias) override {}
         // Basic empty serialize override from LayerBase, so correct method gets called in specialized layer
         void serialize_layer_data(std::ofstream& out) override {}
     };
@@ -2484,6 +2484,26 @@ namespace MLPP
         LayerType get_layer_type() override
         {
             return m_layer_type;
+        }
+
+        // Override for predict method declared in base class (LayerBase)
+        void predict(std::any& input, std::any& output, std::any& weights, std::any& bias) override 
+        {
+            if (!input.has_value()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return;
+            } 
+
+            // For now hardcoded to image predctions 
+            Mat3d<DataType>* typed_input = std::any_cast<Mat3d<DataType>>(&input);
+            size_t size = typed_input->size();
+            Mat3d<DataType>* weights_input = std::any_cast<Mat3d<DataType>>(&weights);       
+            std::vector<DataType>* biases_input = std::any_cast<std::vector<DataType>>(&bias);
+
+            m_feature_maps = conv_2d_process(*typed_input, *weights_input, *biases_input, m_padding, m_kernel_size, m_number_of_filters); 
+            m_activated_feature_maps = activation_process(m_feature_maps, m_activation_function);
+
+            output = m_activated_feature_maps;
         }
 
         // Specialize override of layer serializatin method declared base class (LayerBase)
@@ -2842,6 +2862,24 @@ namespace MLPP
             return m_layer_type;
         }
 
+        // Override for predict method declared in base class (LayerBase)
+        void predict(std::any& input, std::any& output, std::any& weights, std::any& bias) override 
+        {
+            if (!input.has_value()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return;
+            } 
+
+            // For now hardcoded
+            Mat3d<DataType>* typedInput = std::any_cast<Mat3d<DataType>>(&input);
+            m_depth = (*typedInput)[0][0].size();
+            size_t size = typedInput->size();
+
+            m_pooled_mat = average_pool_process(*typedInput, m_size, m_stride, m_depth);
+
+            output = m_pooled_mat;
+        }
+
         // Specialize override of layer serializatin method declared base class (LayerBase)
         void serialize_layer_data(std::ofstream& out) override 
         {
@@ -2936,7 +2974,22 @@ namespace MLPP
                 typedOutput->push_back(m_image_vector);
             }
         }  
-   
+
+        // Override for predict method declared in base class (LayerBase)
+        void predict(std::any& input, std::any& output, std::any& weights, std::any& bias) override 
+        {
+            if (!input.has_value()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return;
+            } 
+
+            // For now hardcoded to image predctions 
+            Mat3d<DataType>* typed_input = std::any_cast<Mat3d<DataType>>(&input);
+            m_image_vector = flatten_process(*typed_input);
+
+            output = m_image_vector;
+        }
+
         // Override for get layer type method declared in base class (LayerBase)
         LayerType get_layer_type() override
         {
@@ -3146,7 +3199,26 @@ namespace MLPP
         {
             return m_layer_type;
         }
-    
+
+        // Override for predict method declared in base class (LayerBase)
+        void predict(std::any& input, std::any& output, std::any& weights, std::any& bias) override 
+        {
+            if (!input.has_value()) {
+                std::cerr << "Error: Input is empty" << std::endl;
+                return;
+            } 
+
+            // For now hardcoded to image predctions 
+            std::vector<DataType>* typed_input = std::any_cast<std::vector<DataType>>(&input);
+            Mat2d<DataType>* weights_input = std::any_cast<Mat2d<DataType>>(&weights);
+            std::vector<DataType>* biases_input = std::any_cast<std::vector<DataType>>(&bias); 
+
+            m_transformed_vector = NumPP::add(NumPP::dot(*typed_input, *weights_input), *biases_input);
+            m_activated_vector = activation_process(m_transformed_vector, m_activation_function);
+
+            output = m_activated_vector;
+        }
+
         // Specialize override of layer serializatin method declared base class (LayerBase)
         void serialize_layer_data(std::ofstream& out) override 
         {
@@ -3508,6 +3580,7 @@ namespace MLPP
                 }
 
                 stream_pos = in.tellg();
+                in.seekg(stream_pos);
             }
 
             return biases;
@@ -3771,29 +3844,28 @@ namespace MLPP
             serialize_weights(out);
             serialize_biases(out);
 
-            Mat3d<double>* tensor_1 = std::any_cast<Mat3d<double>>(&m_weights[0]);
-            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
-            DataAnalysis::display_all((*tensor_1)[0]);
-            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
-            DataAnalysis::display_all((*tensor_1)[1]);
-            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
-            DataAnalysis::display_all((*tensor_1)[2]);
-            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
-            DataAnalysis::display_all((*tensor_1)[3]);
-            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
-            DataAnalysis::display_all((*tensor_1)[4]);
-            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
-
-            std::vector<double>* bias_0 = std::any_cast<std::vector<double>>(&m_biases[0]);
-            std::vector<double>* bias_1 = std::any_cast<std::vector<double>>(&m_biases[1]);
-            std::vector<double>* bias_2 = std::any_cast<std::vector<double>>(&m_biases[2]);
-
-            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
-            DataAnalysis::display_all(*bias_0);
-            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
-            DataAnalysis::display_all(*bias_1);
-            std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
-            DataAnalysis::display_all(*bias_2);
+            // Debugging code
+            //Mat3d<double>* tensor_1 = std::any_cast<Mat3d<double>>(&m_weights[0]);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all((*tensor_1)[0]);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all((*tensor_1)[1]);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all((*tensor_1)[2]);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all((*tensor_1)[3]);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all((*tensor_1)[4]);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //std::vector<double>* bias_0 = std::any_cast<std::vector<double>>(&m_biases[0]);
+            //std::vector<double>* bias_1 = std::any_cast<std::vector<double>>(&m_biases[1]);
+            //std::vector<double>* bias_2 = std::any_cast<std::vector<double>>(&m_biases[2]);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all(*bias_0);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all(*bias_1);
+            //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+            //DataAnalysis::display_all(*bias_2);
 
             out.close();            
         }
@@ -4060,6 +4132,64 @@ namespace MLPP
     
             in.close();
         }
+
+        // Method that loads single input to be analysed by network
+        template <typename T>
+        size_t predict(std::any input) 
+        {
+            if (!input.has_value()) {
+                throw std::runtime_error("Error: Input parameter is empty");
+            }
+
+            std::any output; // Create null any class container
+
+            m_current_input = input; // Assign current input to initial input data
+            m_current_output = output; // Assign output reference ot current output
+            int w_and_b_counter = 0; // Determine which element of weights and biases vectors
+            int it_counter = 0; // Counts layer iterations to assign correct layer output to layer results vector
+
+            for (auto &layer : m_layers) {
+                m_current_output.reset(); // Clear current output for next layer 
+
+                // Call current layer forward method
+                layer->predict(m_current_input, m_current_output, m_weights[w_and_b_counter], m_biases[w_and_b_counter]); 
+                m_current_input.reset(); // Clear current input for next layer
+                m_current_input = m_current_output; // Update input for next layer 
+
+                // Check if layer has weights and biases flag, if so add to counter
+                if (layer->get_w_and_b()) {
+                    w_and_b_counter++;
+                }  
+
+                /*  Debugging Code        
+                    if (layer->get_layer_type() == LayerType::CONV2D) {
+                    Mat3d<T>* typedInput = std::any_cast<Mat3d<T>>(&m_current_input);
+                    DataAnalysis::display_shape(*typedInput);
+                }
+                if (layer->get_layer_type() == LayerType::AVERAGEPOOLING2D) {
+                    Mat3d<T>* typedInput = std::any_cast<Mat3d<T>>(&m_current_input);
+                    DataAnalysis::display_shape(*typedInput);
+                }
+                if (layer->get_layer_type() == LayerType::FLATTEN) {
+                    std::vector<T>* typedInput = std::any_cast<std::vector<T>>(&m_current_input);
+                    std::cout << typedInput->size() << std::endl;
+                }
+                if (layer->get_layer_type() == LayerType::DENSE) {
+                    std::vector<T>* typedInput = std::any_cast<std::vector<T>>(&m_current_input);
+                    std::cout << typedInput->size() << std::endl;
+                } */
+
+            }
+            
+            output = m_current_output;
+            std::vector<T>* result = std::any_cast<std::vector<T>>(&output);
+
+            //DataAnalysis::display_all(*result);
+
+            size_t prediction = NumPP::get_max_element_pos(*result);
+            return prediction;
+        }
+
 
         ~NeuralNetwork()
         {

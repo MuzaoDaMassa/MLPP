@@ -230,7 +230,7 @@ int main4()
     return 0;	
 }
 
-// Mini tests for Sequential neural network with open cv
+// Mini tests for Sequential neural network with open cv (AC_Project)
 int main5()
 {
     auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Downloads/AC_Training_Data/Video1", true, {16,16}, true, true, true);
@@ -258,14 +258,14 @@ int main5()
 
     DataAnalysis::display_shape(true_labels);
     
-    model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(5, 3, RELU, SAME));
+    model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(8, 3, RELU, SAME));
     model.add_layer(new AveragePooling2d<Mat4d<double>, Mat4d<double>, double>(2,2));
     model.add_layer(new Flatten<Mat4d<double>, Mat2d<double>, double>());
-    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(120, RELU));
+    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(160, RELU));
     model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(2, SOFTMAX));
 
     auto t1 = startBenchmark();
-    Mat2d<double> result = model.fit<double>(training_data, true_labels, 40, 100, 0.001);
+    Mat2d<double> result = model.fit<double>(training_data, true_labels, 40, 150, 0.0001);
     auto t2 = stopBenchmark();
 
     cout << "================================" << endl;
@@ -289,6 +289,9 @@ int main5()
     auto acc = model.get_accuracy<double>(result, true_labels);
 
     std::cout << "Predictions Accuracy: " << acc*100 << "%" << std::endl;
+
+    string fileName = "model_150.bin";
+    model.export_model(fileName);
 
     return 0;
     
@@ -454,7 +457,7 @@ int main8()
 }
 
 // Mini tests for exporting neural network model
-int main()
+int main9()
 {
     auto params = OpenCvIntegration::TrainingDataParameters("../tests/Training", true, {28, 28}, true, true, true);
     //auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Downloads/training_set", true, {8, 8}, true, false, false);
@@ -488,7 +491,7 @@ int main()
     model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(120, RELU));
     model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(3, SOFTMAX));
     auto t1 = startBenchmark();
-    Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 9, 10, 0.001);
+    Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 9, 40, 0.001);
     auto t2 = stopBenchmark();
     std::cout << "================================" << std::endl;
     std::cout << getDuration(t1, t2, Seconds) << std::endl;
@@ -500,10 +503,46 @@ int main()
 }
 
 // Mini tests for loading neural network model
-int main0()
+int main()
 {
+    cv::Mat* class_0_image_ptr = new cv::Mat();
+    cv::Mat* class_1_image_ptr = new cv::Mat();
+
+    *class_0_image_ptr = cv::imread("/home/muzaodamassa/Downloads/AC_Training_Data/Video2/Class_0 (Straight)/Frame-505.jpg");
+    cv::Mat* p_image = class_0_image_ptr;
+    cv::resize(*p_image, *p_image, cv::Size(16,16)); 
+    cv::cvtColor(*p_image, *p_image, cv::COLOR_BGR2GRAY);
+    cv::GaussianBlur(*p_image, *p_image, cv::Size(5, 5), 0);
+    cv::Canny(*p_image, *p_image, 50, 250);
+
+    *class_1_image_ptr = cv::imread("/home/muzaodamassa/Downloads/AC_Training_Data/Video2/Class_1 (Curve)/Frame-0.jpg");
+    cv::Mat* p_image_1 = class_1_image_ptr;
+    cv::resize(*p_image_1, *p_image_1, cv::Size(16,16)); 
+    cv::cvtColor(*p_image_1, *p_image_1, cv::COLOR_BGR2GRAY);
+    cv::GaussianBlur(*p_image_1, *p_image_1, cv::Size(5, 5), 0);
+    cv::Canny(*p_image_1, *p_image_1, 50, 250);
+
+    Mat3d<double>* mat_0 = OpenCvIntegration::convert_gray_image<double>(p_image);
+    Mat3d<double>* mat_1 = OpenCvIntegration::convert_gray_image<double>(p_image_1);
+
+    // Data normalization, since max value is 255, all values will be between 0 and 1
+    for (size_t i = 0; i < (*mat_0).size(); i++) {
+        for (size_t j = 0; j < (*mat_0)[i].size(); j++) {
+            for (size_t k = 0; k < (*mat_0)[i][j].size(); k++) {
+                (*mat_0)[i][j][k] /= 255.0;
+                (*mat_1)[i][j][k] /= 255.0;
+            }
+        }
+    } 
+
     NeuralNetwork model;
-    cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
-    model.load_model("/home/muzaodamassa/MLPP/bin/model.bin");
+    model.load_model("/home/muzaodamassa/MLPP/bin/model_150.bin");
+
+    double prediction_0 = model.predict<double>(*mat_0);
+    double prediction_1 = model.predict<double>(*mat_1);
+
+    std::cout << "True class = 0, Predicted class = " << prediction_0 << std::endl;
+    std::cout << "True class = 1, Predicted class = " << prediction_1 << std::endl;
+
     return 0;
 }
