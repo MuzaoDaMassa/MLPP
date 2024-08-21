@@ -231,9 +231,9 @@ int main4()
 }
 
 // Mini tests for Sequential neural network with open cv (AC_Project)
-int main5()
+int main()
 {
-    auto params = OpenCvIntegration::TrainingDataParameters("../tests/Training", true, {16,16}, true, true, true);
+    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Downloads/AC_Training_Data/Video1", true, {16,16}, true, true, true);
 
     auto training_data = OpenCvIntegration::prepare_training_data<double>(params); 
 
@@ -254,18 +254,17 @@ int main5()
 
     NeuralNetwork model;
 
-    //auto true_labels = DataAnalysis::one_hot_label_encoding<double>("/home/muzaodamassa/Downloads/AC_Training_Data/Video1");
-    const Mat2d<double> hot_encoded_labels = {{0,0,1},{0,1,0},{1,0,0},{0,1,0},{0,1,0},{0,0,1},{0,1,0},{0,1,0},{1,0,0}};
-    //DataAnalysis::display_shape(true_labels);
+    auto true_labels = DataAnalysis::one_hot_label_encoding<double>("/home/muzaodamassa/Downloads/AC_Training_Data/Video1");
+    DataAnalysis::display_shape(true_labels);
     
     model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(8, 3, RELU, SAME));
     model.add_layer(new AveragePooling2d<Mat4d<double>, Mat4d<double>, double>(2,2));
     model.add_layer(new Flatten<Mat4d<double>, Mat2d<double>, double>());
     model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(160, RELU));
-    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(3, SOFTMAX));
+    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(2, SOFTMAX));
 
     auto t1 = startBenchmark();
-    Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 9, 150, 0.0001);
+    Mat2d<double> result = model.fit<double>(training_data, true_labels, 40, 100, 0.0001);
     auto t2 = stopBenchmark();
 
     cout << "================================" << endl;
@@ -286,11 +285,11 @@ int main5()
     } 
      */
     
-    auto acc = model.get_accuracy<double>(result, hot_encoded_labels);
+    auto acc = model.get_accuracy<double>(result, true_labels);
 
     std::cout << "Predictions Accuracy: " << acc*100 << "%" << std::endl;
 
-    string fileName = "model_150.bin";
+    string fileName = "model_100.bin";
     model.export_model(fileName);
 
     return 0;
@@ -579,7 +578,7 @@ void send_data_through_serial_port(const std::string& serial_port_path, const st
     }
 }
 
-int main()
+int main11()
 {
     // Open default camera
     //cv::VideoCapture cap(0); // Embeded webcam
