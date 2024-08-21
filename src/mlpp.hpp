@@ -4129,10 +4129,12 @@ namespace MLPP
             //DataAnalysis::display_all(*bias_1);
             //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
             //DataAnalysis::display_all(*bias_2);
-    
-            in.close();
-        }
 
+            in.close();
+
+            std::cout << "Model Parameters Loaded!" << std::endl;
+        }
+        
         // Method that loads single input to be analysed by network
         template <typename T>
         size_t predict(std::any input) 
@@ -4190,6 +4192,62 @@ namespace MLPP
             return prediction;
         }
 
+        // Real time detection using open cv
+        // Method used to read frame data from video feed 
+        // And use said frame as input for network real time image classification
+        template <typename T>
+        size_t predict_frame(const std::any& input)
+        {
+            if (!input.has_value()) {
+                throw std::runtime_error("Error: Frame data is empty");
+            }
+            
+            std::any output; // Create null any class container
+
+            m_current_input = input; // Assign current input to initial input data
+            m_current_output = output; // Assign output reference ot current output
+            int w_and_b_counter = 0; // Determine which element of weights and biases vectors
+            int it_counter = 0; // Counts layer iterations to assign correct layer output to layer results vector
+
+            for (auto &layer : m_layers) {
+                m_current_output.reset(); // Clear current output for next layer 
+
+                // Call current layer forward method
+                layer->predict(m_current_input, m_current_output, m_weights[w_and_b_counter], m_biases[w_and_b_counter]); 
+                m_current_input.reset(); // Clear current input for next layer
+                m_current_input = m_current_output; // Update input for next layer 
+
+                // Check if layer has weights and biases flag, if so add to counter
+                if (layer->get_w_and_b()) {
+                    w_and_b_counter++;
+                }  
+
+                /*  Debugging Code        
+                    if (layer->get_layer_type() == LayerType::CONV2D) {
+                    Mat3d<T>* typedInput = std::any_cast<Mat3d<T>>(&m_current_input);
+                    DataAnalysis::display_shape(*typedInput);
+                }
+                if (layer->get_layer_type() == LayerType::AVERAGEPOOLING2D) {
+                    Mat3d<T>* typedInput = std::any_cast<Mat3d<T>>(&m_current_input);
+                    DataAnalysis::display_shape(*typedInput);
+                }
+                if (layer->get_layer_type() == LayerType::FLATTEN) {
+                    std::vector<T>* typedInput = std::any_cast<std::vector<T>>(&m_current_input);
+                    std::cout << typedInput->size() << std::endl;
+                }
+                if (layer->get_layer_type() == LayerType::DENSE) {
+                    std::vector<T>* typedInput = std::any_cast<std::vector<T>>(&m_current_input);
+                    std::cout << typedInput->size() << std::endl;
+                } */
+
+            }
+            
+            output = m_current_output;
+            std::vector<T>* result = std::any_cast<std::vector<T>>(&output);
+            
+            size_t prediction = NumPP::get_max_element_pos(*result);            
+            return prediction;
+        }
 
         ~NeuralNetwork()
         {
@@ -4628,9 +4686,8 @@ namespace MLPP
             delete imagePtr;
 
             return training_data_mat;       
-        }
+        }       
 
-        
     };
 
 #pragma endregion

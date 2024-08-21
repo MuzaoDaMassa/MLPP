@@ -233,7 +233,7 @@ int main4()
 // Mini tests for Sequential neural network with open cv (AC_Project)
 int main5()
 {
-    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Downloads/AC_Training_Data/Video1", true, {16,16}, true, true, true);
+    auto params = OpenCvIntegration::TrainingDataParameters("../tests/Training", true, {16,16}, true, true, true);
 
     auto training_data = OpenCvIntegration::prepare_training_data<double>(params); 
 
@@ -254,18 +254,18 @@ int main5()
 
     NeuralNetwork model;
 
-    auto true_labels = DataAnalysis::one_hot_label_encoding<double>("/home/muzaodamassa/Downloads/AC_Training_Data/Video1");
-
-    DataAnalysis::display_shape(true_labels);
+    //auto true_labels = DataAnalysis::one_hot_label_encoding<double>("/home/muzaodamassa/Downloads/AC_Training_Data/Video1");
+    const Mat2d<double> hot_encoded_labels = {{0,0,1},{0,1,0},{1,0,0},{0,1,0},{0,1,0},{0,0,1},{0,1,0},{0,1,0},{1,0,0}};
+    //DataAnalysis::display_shape(true_labels);
     
     model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(8, 3, RELU, SAME));
     model.add_layer(new AveragePooling2d<Mat4d<double>, Mat4d<double>, double>(2,2));
     model.add_layer(new Flatten<Mat4d<double>, Mat2d<double>, double>());
     model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(160, RELU));
-    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(2, SOFTMAX));
+    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(3, SOFTMAX));
 
     auto t1 = startBenchmark();
-    Mat2d<double> result = model.fit<double>(training_data, true_labels, 40, 150, 0.0001);
+    Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 9, 150, 0.0001);
     auto t2 = stopBenchmark();
 
     cout << "================================" << endl;
@@ -286,7 +286,7 @@ int main5()
     } 
      */
     
-    auto acc = model.get_accuracy<double>(result, true_labels);
+    auto acc = model.get_accuracy<double>(result, hot_encoded_labels);
 
     std::cout << "Predictions Accuracy: " << acc*100 << "%" << std::endl;
 
@@ -503,19 +503,19 @@ int main9()
 }
 
 // Mini tests for loading neural network model
-int main()
+int main10()
 {
     cv::Mat* class_0_image_ptr = new cv::Mat();
     cv::Mat* class_1_image_ptr = new cv::Mat();
 
-    *class_0_image_ptr = cv::imread("/home/muzaodamassa/Downloads/AC_Training_Data/Video2/Class_0 (Straight)/Frame-505.jpg");
+    *class_0_image_ptr = cv::imread("../tests/Training/test_img.jpg");
     cv::Mat* p_image = class_0_image_ptr;
     cv::resize(*p_image, *p_image, cv::Size(16,16)); 
     cv::cvtColor(*p_image, *p_image, cv::COLOR_BGR2GRAY);
     cv::GaussianBlur(*p_image, *p_image, cv::Size(5, 5), 0);
     cv::Canny(*p_image, *p_image, 50, 250);
 
-    *class_1_image_ptr = cv::imread("/home/muzaodamassa/Downloads/AC_Training_Data/Video2/Class_1 (Curve)/Frame-0.jpg");
+    *class_1_image_ptr = cv::imread("../tests/Training/Pista99.jpg");
     cv::Mat* p_image_1 = class_1_image_ptr;
     cv::resize(*p_image_1, *p_image_1, cv::Size(16,16)); 
     cv::cvtColor(*p_image_1, *p_image_1, cv::COLOR_BGR2GRAY);
@@ -526,23 +526,168 @@ int main()
     Mat3d<double>* mat_1 = OpenCvIntegration::convert_gray_image<double>(p_image_1);
 
     // Data normalization, since max value is 255, all values will be between 0 and 1
-    for (size_t i = 0; i < (*mat_0).size(); i++) {
-        for (size_t j = 0; j < (*mat_0)[i].size(); j++) {
-            for (size_t k = 0; k < (*mat_0)[i][j].size(); k++) {
-                (*mat_0)[i][j][k] /= 255.0;
-                (*mat_1)[i][j][k] /= 255.0;
-            }
-        }
-    } 
+    Mat3d<double> normalized_input = ComputerVision::normalize_pixels<double>(mat_0);
+    Mat3d<double> normalized_input_1 = ComputerVision::normalize_pixels<double>(mat_1);
 
     NeuralNetwork model;
-    model.load_model("/home/muzaodamassa/MLPP/bin/model_150.bin");
+    model.load_model("../bin/model_150.bin");
 
-    double prediction_0 = model.predict<double>(*mat_0);
-    double prediction_1 = model.predict<double>(*mat_1);
+    double prediction_0 = model.predict<double>(normalized_input);
+    double prediction_1 = model.predict<double>(normalized_input_1);
 
     std::cout << "True class = 0, Predicted class = " << prediction_0 << std::endl;
     std::cout << "True class = 1, Predicted class = " << prediction_1 << std::endl;
 
     return 0;
+}
+
+// Mini testing for real time image classification
+// This will be moved later to AC_Project
+#include <termios.h> // Serial communication
+#include <fcntl.h> // File control options
+#include <unistd.h> // sleep()
+
+void send_data_through_serial_port(const std::string& serial_port_path, const std::string& data_to_send, const bool& send)
+{
+    if (send) {
+        // Open the serial port
+        int serial_port = open("/dev/ttyUSB0", O_RDWR);
+
+        // Check if serial port was correctly opened, if not exit the method
+        if (serial_port < 0) {
+            std::cerr << "Error: Failed to open serial port" << std::endl;
+            return;
+        }
+
+        // Set serial port settings (baud rate)
+        struct termios tty;
+        tcgetattr(serial_port, &tty);
+        cfsetospeed(&tty, B115200); // Set baud rate to 9600
+        cfsetispeed(&tty, B115200);
+        tcsetattr(serial_port, TCSANOW, &tty);
+
+        // Send data to arduino
+        write(serial_port, data_to_send.c_str(), data_to_send.length());
+
+        // Close serial port
+        close(serial_port);
+
+        // Give some time for arduino to process data
+        sleep(1.5);
+
+        return;
+    }
+}
+
+int main()
+{
+    // Open default camera
+    //cv::VideoCapture cap(0); // Embeded webcam
+    cv::VideoCapture cap(2); // External webcam
+
+    // Check if camera opened successfully
+    if (!cap.isOpened())
+    {
+        cerr << "Error opening video stream or file" << endl;
+        return -1;
+    }
+
+    // Create a window to display the video
+    cv::namedWindow("Video Stream", cv::WINDOW_AUTOSIZE);
+    
+	// Set capture resolution
+	cap.set(cv::CAP_PROP_FRAME_WIDTH, 512);
+	cap.set(cv::CAP_PROP_FRAME_HEIGHT, 512);
+
+	// Variables for fps calculation
+    double fps;
+    cv::TickMeter tm;
+
+    // Start neural network
+    NeuralNetwork cnn;
+    cnn.load_model("../bin/model_150.bin");
+
+    // Serial port communication testing
+    const std::string serial_port_path = "/dev/ttyACM0";
+    std::string data_to_send = "";
+    //bool send = false;
+    int loopIterationsSinceLastWrite = 0;
+	int writeInterval = 10;
+
+    while (true)
+    {
+		tm.start();
+
+		// Capture frame-by-frame
+		cv::Mat* frame = new cv::Mat;
+        cap >> *frame;
+		
+		// If the frame is empty, break immediately
+		if (frame->empty())
+		{
+			break;
+		}
+
+        // Pre process frame
+        cv::Mat* processed_frame = new cv::Mat();
+        cv::resize(*frame, *processed_frame, cv::Size(16,16));
+        cv::cvtColor(*processed_frame, *processed_frame, cv::COLOR_BGR2GRAY);
+        cv::GaussianBlur(*processed_frame, *processed_frame, cv::Size(5, 5), 4);
+        cv::Canny(*processed_frame, *processed_frame, 50, 250);
+
+        // Convert frame into our matrix data structure
+        Mat3d<double>* converted_frame = OpenCvIntegration::convert_gray_image<double>(processed_frame);
+        // Normalize pixel data
+        Mat3d<double> normalized_frame = ComputerVision::normalize_pixels<double>(converted_frame);
+        // Feed converted frame data into neural network model so it can predict its class
+        size_t frame_predicted_class = cnn.predict_frame<double>(normalized_frame);   
+
+        // Serial Testing
+        //send = !normalized_frame.empty();
+        data_to_send = std::to_string(frame_predicted_class);
+    
+        if (loopIterationsSinceLastWrite >= writeInterval) {
+            // Send signal to Arduino to stop motors only if writeToSerialPort
+            
+            // method has not been called yet
+            data_to_send = std::to_string(frame_predicted_class);
+            send_data_through_serial_port(serial_port_path, data_to_send, true);
+            loopIterationsSinceLastWrite = 0; // Reset counter
+        } 
+		else {
+            loopIterationsSinceLastWrite++; // Increment counter
+        }   
+
+        // Calculate FPS
+		tm.stop();
+		fps = 1.0 / tm.getTimeSec();
+		tm.reset();
+
+        cv::cvtColor(*frame, *frame, cv::COLOR_BGR2GRAY);
+        cv::GaussianBlur(*frame, *frame, cv::Size(5, 5), 4);
+        cv::Canny(*frame, *frame, 50, 250);
+
+        // Put detected frame class on Video Stream window
+        cv::putText(*frame, "Frame Class: " + to_string(frame_predicted_class), cv::Point(350, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+
+		// Put FPS text on the frame
+		cv::putText(*frame, "FPS: " + to_string(fps), cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+
+		// Dispay the resulting frame
+		cv::imshow("Video Stream", *frame);
+
+		// Press q to exit the loop
+		if (cv::waitKey(1) == 'q')
+		{			
+			break;
+		}	
+    }
+
+	// Whene everything is done, release the video capture and video writer objects
+	cap.release();
+
+    // Close all windows
+	cv::destroyAllWindows();
+
+    return 0;	
 }
