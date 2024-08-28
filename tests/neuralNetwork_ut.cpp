@@ -6,6 +6,10 @@ using namespace MLPP;
 using namespace Utils;
 using namespace Benchmark;
 
+#ifdef CUDA_AVAILABLE
+    #include <cuda_runtime.h>
+#endif
+
 TEST_CASE("NEURAL_NETWORK_TRAINING")
 {
     SECTION("ORIGINAL_ARCHITECTURE")
@@ -40,7 +44,7 @@ TEST_CASE("NEURAL_NETWORK_TRAINING")
         model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(3, SOFTMAX));
 
         auto t1 = startBenchmark();
-        Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 9, 150, 0.001);
+        Mat2d<double> result = model.fit<double>(training_data, hot_encoded_labels, 9, 1, 0.001);
         auto t2 = stopBenchmark();
 
         std::cout << "================================" << std::endl;

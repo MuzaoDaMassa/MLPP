@@ -1,4 +1,0 @@
-/home/muzaodamassa/MLPP/bin/CMakeFiles/mlpp.dir
-/home/muzaodamassa/MLPP/bin/CMakeFiles/tests_mlpp.dir
-/home/muzaodamassa/MLPP/bin/CMakeFiles/edit_cache.dir
-/home/muzaodamassa/MLPP/bin/CMakeFiles/rebuild_cache.dir

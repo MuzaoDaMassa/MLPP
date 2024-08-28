@@ -48,6 +48,7 @@ SOFTWARE.
 #include <opencv2/videoio.hpp>
 #include "../tests/testUtils.hpp" // Used for benchmarking
 
+
 #pragma endregion
 
 namespace MLPP 
@@ -1974,7 +1975,7 @@ namespace MLPP
             std::cerr << "Error: Line provided is empty" << std::endl;
             return row;
         }
-        
+
         // Method to read CSV files into 2d string matrix
         static Mat2d<std::string> read_csv_file(const std::string& filePath)
         {
@@ -2002,6 +2003,101 @@ namespace MLPP
             // Return data in matrix
             return data;
         }
+    
+        // Method that verifies integrity of two vectors, i.e, check if all values match
+        template <typename T>
+        static bool verify_integrity_between_matrices(const std::vector<T>& a, const std::vector<T>& b)
+        {
+            if (a.empty() || b.empty()) {
+                throw std::runtime_error("Error: Input parameters is empty");
+            }
+
+            if (a.size() != b.size()) {
+                throw std::runtime_error("Error: Incompatible sizes");
+            }
+
+            for (size_t i = 0; i < a.size(); i++) {
+                if (a[i] != b[i]) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // Method that verifies integrity of two 2d matrices, i.e, check if all values match
+        template <typename T>
+        static bool verify_integrity_between_matrices(const Mat2d<T>& a, const Mat2d<T>& b)
+        {
+            if (a.empty() || b.empty()) {
+                throw std::runtime_error("Error: Input parameters is empty");
+            }
+
+            if ((a.size() != b.size()) || a[0].size() != b[0].size()) {
+                throw std::runtime_error("Error: Incompatible sizes");
+            }
+
+            for (size_t i = 0; i < a.size(); i++) {
+                bool check = verify_integrity_between_matrices(a[i], b[i]);
+                if (!check) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // Method that verifies integrity of two 3d matrices, i.e, check if all values match
+        template <typename T>
+        static bool verify_integrity_between_matrices(const Mat3d<T>& a, const Mat3d<T>& b)
+        {
+            if (a.empty() || b.empty()) {
+                throw std::runtime_error("Error: Input parameters is empty");
+            }
+
+            if ((a.size() != b.size()) || (a[0].size() != b[0].size()) || (a[0][0].size() != b[0][0].size())) {
+                throw std::runtime_error("Error: Incompatible sizes");
+            }
+
+            for (size_t i = 0; i < a.size(); i++) {
+                for (size_t j = 0; j < a[i].size(); j++) {
+                    bool check = verify_integrity_between_matrices(a[i][j], b[i][j]);
+                    if (!check) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        // Method that verifies integrity of two 3d matrices, i.e, check if all values match
+        template <typename T>
+        static bool verify_integrity_between_matrices(const Mat4d<T>& a, const Mat4d<T>& b)
+        {
+            if (a.empty() || b.empty()) {
+                throw std::runtime_error("Error: Input parameters is empty");
+            }
+
+            if ((a.size() != b.size()) || (a[0].size() != b[0].size()) || 
+                (a[0][0].size() != b[0][0].size()) || (a[0][0][0].size() != b[0][0][0].size())) {
+                throw std::runtime_error("Error: Incompatible sizes");
+            }
+
+            for (size_t i = 0; i < a.size(); i++) {
+                for (size_t j = 0; j < a[i].size(); j++) {
+                    for (size_t k = 0; k < a[i][j].size(); k++) {
+                        bool check = verify_integrity_between_matrices(a[i][j], b[i][j]);
+                        if (!check) {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+    
     }; 
 
 #pragma endregion
@@ -2096,7 +2192,8 @@ namespace MLPP
         virtual ~LayerBase() = default;
         // Declaration of virtual backward method, every layer has own method implementation
         virtual void backward(std::vector<std::any>& layer_output, std::vector<std::any>& layer_linear_outputs, std::vector<std::any>& layer_weights, 
-                                std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const std::any& target_labels, const std::any& learning_rate) = 0;
+                                std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const size_t& backward_pass_locator, const size_t& w_and_b_locator,
+                                 const std::any& target_labels, const std::any& learning_rate) = 0;
         // Declaration of virtual de-serialization method, every layer has own method implementation
         virtual void deserialize_layer_data(std::ifstream& in) = 0;
         // Declaration of virtual forward method, every layer has own method implementation
@@ -2121,7 +2218,8 @@ namespace MLPP
     protected:
         // Basic empty backward overrirde from LayerBase, so correct method gets called in specialized layer 
         void backward(std::vector<std::any>& layer_output, std::vector<std::any>& layer_linear_outputs, std::vector<std::any>& layer_weights, 
-                        std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const std::any& target_labels, const std::any& learning_rate) override {}
+                        std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const size_t& backward_pass_locator, const size_t& w_and_b_locator, 
+                        const std::any& target_labels, const std::any& learning_rate) override {}
         // Basic empty override from LayerBase, so correct method gets called in specialized layer
         void deserialize_layer_data(std::ifstream& in) override {}
         // Basic empty forward overrirde from LayerBase, so correct method gets called in specialized layer
@@ -2365,10 +2463,11 @@ namespace MLPP
 
         // Specialized override of layer backward method declared in base class (LayerBase)
         void backward(std::vector<std::any>& layer_output, std::vector<std::any>& layer_linear_outputs, std::vector<std::any>& layer_weights, 
-                        std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const std::any& target_labels, const std::any& learning_rate) override 
+                        std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const size_t& backward_pass_locator, const size_t& w_and_b_locator,
+                        const std::any& target_labels, const std::any& learning_rate) override 
         {
-            OutputType* dA_L_4 = std::any_cast<OutputType>(&gradients[3]); // Get gradient propagated from previously executed layer (Avrg Pooling Layer)
-            OutputType* Z_L_4 = std::any_cast<OutputType>(&layer_linear_outputs[0]); // Get the linear output of current layer (ReLU Conv Layer L-4)
+            OutputType* dA_L_4 = std::any_cast<OutputType>(&gradients[gradients.size()-1]); // Get gradient propagated from previously executed layer (Avrg Pooling Layer)
+            OutputType* Z_L_4 = std::any_cast<OutputType>(&layer_linear_outputs[backward_pass_locator]); // Get the linear output of current layer (ReLU Conv Layer L-4)
             InputType A_L_5 = m_input; // Get input of current layer, for now, training batch
 
             // Compute gradient of the loss with respect to Convolutional Layer Linear Output (L-4)
@@ -2378,7 +2477,7 @@ namespace MLPP
             // Compute gradient of the loss with respect to to biases of convolutional layer (L-4)
             std::vector<DataType> db_L_4 = compute_db(dZ_L_4);
             // Update weights and biases for next forward pass
-            update_weights_and_biases(layer_weights[0], layer_biases[0], dW_L_4, db_L_4, learning_rate);
+            update_weights_and_biases(layer_weights[w_and_b_locator], layer_biases[w_and_b_locator], dW_L_4, db_L_4, learning_rate);
         }
         
         // Specialized override of layer deserialize data method declared in base class (LayerBase)
@@ -2786,15 +2885,16 @@ namespace MLPP
 
         // Specialized override of layer backward method declared in base class (LayerBase)
         void backward(std::vector<std::any>& layer_output, std::vector<std::any>& layer_linear_outputs, std::vector<std::any>& layer_weights, 
-                        std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const std::any& target_labels, const std::any& learning_rate) override 
+                        std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const size_t& backward_pass_locator, const size_t& w_and_b_locator, 
+                        const std::any& target_labels, const std::any& learning_rate) override 
         {
             if (layer_output.empty() || layer_weights.empty() || layer_biases.empty() || !target_labels.has_value()) {
                 std::cerr << "Error: Input is empty" << std::endl;
                 return;
             }  
 
-            InputType* A_L_4 = std::any_cast<InputType>(&layer_output[0]); // Get output of previous layer output (Conv 2d Layer L-4)
-            OutputType* dA_L_3 = std::any_cast<OutputType>(&gradients[2]); // Get reshaped gradient calculated in previously executed layer (Flatten Layer L-3)
+            InputType* A_L_4 = std::any_cast<InputType>(&layer_output[backward_pass_locator-1]); // Get output of previous layer output (Conv 2d Layer L-4)
+            OutputType* dA_L_3 = std::any_cast<OutputType>(&gradients[gradients.size()-1]); // Get reshaped gradient calculated in previously executed layer (Flatten Layer L-3)
             auto input_shape = NumPP::get_shape<DataType>(*A_L_4); // Get shape of input to current layer, used to initialize gradient to be propagated
 
             // Initialize gradient of loss with respect to output of previous layer (Conv 2d Layer L-4)
@@ -2940,15 +3040,16 @@ namespace MLPP
 
         // Specialized override of layer backward method declared in base class (LayerBase)
         void backward(std::vector<std::any>& layer_output, std::vector<std::any>& layer_linear_outputs, std::vector<std::any>& layer_weights, 
-                        std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const std::any& target_labels, const std::any& learning_rate) override 
+                        std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const size_t& backward_pass_locator, const size_t& w_and_b_locator,
+                        const std::any& target_labels, const std::any& learning_rate) override 
         {
             if (layer_output.empty() || layer_weights.empty() || layer_biases.empty() || !target_labels.has_value()) {
                 std::cerr << "Error: Input is empty" << std::endl;
                 return;
             }  
 
-            InputType* A_L_3 = std::any_cast<InputType>(&layer_output[1]); // Get output from previous forward pass layer (Average Pooling Layer L-3)
-            OutputType* dA_L_2 = std::any_cast<OutputType>(&gradients[1]); // Get propagated gradient calculated in previously executed layer (ReLU dense layer = L-1)
+            InputType* A_L_3 = std::any_cast<InputType>(&layer_output[backward_pass_locator-1]); // Get output from previous forward pass layer (Average Pooling Layer L-3)
+            OutputType* dA_L_2 = std::any_cast<OutputType>(&gradients[gradients.size()-1]); // Get propagated gradient calculated in previously executed layer (ReLU dense layer = L-1)
             InputType dA_L_3 = NumPP::reshape<DataType>(*dA_L_2, NumPP::get_shape(*A_L_3)); // Reshape gradient into original shape
             // Store gradients calculated in this layer to propagate backwards to previous layers
             // This is important, otherwise we will need to make the same calculations over and over again, 
@@ -3065,7 +3166,8 @@ namespace MLPP
 
         // Specialized override of layer backward method declared in base class (LayerBase)
         void backward(std::vector<std::any>& layer_output, std::vector<std::any>& layer_linear_outputs, std::vector<std::any>& layer_weights, 
-                        std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const std::any& target_labels, const std::any& learning_rate) override 
+                        std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const size_t& backward_pass_locator, const size_t& w_and_b_locator, 
+                        const std::any& target_labels, const std::any& learning_rate) override 
         {
             if (layer_output.empty() || layer_weights.empty() || layer_biases.empty() || !target_labels.has_value()) {
                 std::cerr << "Error: Input is empty" << std::endl;
@@ -3076,10 +3178,10 @@ namespace MLPP
             if (m_activation_function == SOFTMAX) {
                 const OutputType* Y = std::any_cast<OutputType>(&target_labels); // Get true labels matrix
                 const DataType batch_size = Y->size(); // Get number of samples in batch, used for data normalization
-                OutputType* W_L = std::any_cast<OutputType>(&layer_weights[2]); // Get weights matrix for softmax layer (L)
-                InputType* A_L_1 = std::any_cast<InputType>(&layer_output[3]); // Get activated output of previous layer (L-1)
-                OutputType* A_L = std::any_cast<OutputType>(&layer_output[4]); // Get activated output of sofmax layer (L)         
-                
+                OutputType* W_L = std::any_cast<OutputType>(&layer_weights[w_and_b_locator]); // Get weights matrix for softmax layer (L)
+                InputType* A_L_1 = std::any_cast<InputType>(&layer_output[backward_pass_locator-1]); // Get activated output of previous layer (L-1)
+                OutputType* A_L = std::any_cast<OutputType>(&layer_output[backward_pass_locator]); // Get activated output of sofmax layer (L)         
+
                 // Calculate gradient of loss with respect to output
                 // In this case, Softmax Activation function + Cross-Entropy Loss, the gradients of loss
                 // with respect to linear and activated outputs are the same
@@ -3091,7 +3193,7 @@ namespace MLPP
                 // Calculate gradient of loss with respect to previous forward pass layer activated input
                 Mat2d<DataType> dA_L_1 = NumPP::dot(dZ_L, NumPP::transpose(*W_L));
                 // Update weights and biases for next pass
-                update_weights_and_biases(layer_weights[2], layer_biases[2], dW_L, db_L, learning_rate);
+                update_weights_and_biases(layer_weights[w_and_b_locator], layer_biases[w_and_b_locator], dW_L, db_L, learning_rate);
                 
                 // Store gradients calculated in this layer to propagate backwards to previous layers
                 // This is important, otherwise we will need to make the same calculations over and over again, 
@@ -3103,10 +3205,10 @@ namespace MLPP
             // Dense 1 layer backward propagation, will be optimized in the future
             const OutputType* Y = std::any_cast<OutputType>(&target_labels); // Get true labels matrix
             const DataType batch_size = Y->size(); // Get number of samples in batch, used for data normalization
-            OutputType* W_L_1 = std::any_cast<OutputType>(&layer_weights[1]); // Get weights matrix for ReLu dense layer (L-1)
-            OutputType* dA_L_1 = std::any_cast<OutputType>(&gradients[0]); // Get propagated gradient calculated in previously executed layer (Output layer = L)
-            OutputType* Z_L_1 = std::any_cast<OutputType>(&layer_linear_outputs[3]); // Get linear output for current layer (ReLU dense layer = L-1)
-            InputType* A_L_2 = std::any_cast<InputType>(&layer_output[2]); // Get activated output from forward pass previous layer (Flatten Layer = L-2)
+            OutputType* W_L_1 = std::any_cast<OutputType>(&layer_weights[w_and_b_locator]); // Get weights matrix for ReLu dense layer (L-1)
+            OutputType* dA_L_1 = std::any_cast<OutputType>(&gradients[gradients.size()-1]); // Get propagated gradient calculated in previously executed layer (Output layer = L)
+            OutputType* Z_L_1 = std::any_cast<OutputType>(&layer_linear_outputs[backward_pass_locator]); // Get linear output for current layer (ReLU dense layer = L-1)
+            InputType* A_L_2 = std::any_cast<InputType>(&layer_output[backward_pass_locator-1]); // Get activated output from forward pass previous layer (Flatten Layer = L-2)
 
             // Calculate gradient of loss with respect to linear output of current layer
             OutputType dZ_L_1 = NumPP::mat_mul_matching_elements(*dA_L_1, NumPP::relu_derivative(*Z_L_1));
@@ -3117,7 +3219,7 @@ namespace MLPP
             // Calculate gradient of loss with respect to previous forward pass layer activated output
             Mat2d<DataType> dA_L_2 = NumPP::dot(dZ_L_1, NumPP::transpose(*W_L_1));
             // Update weights and biases for next pass
-            update_weights_and_biases(layer_weights[1], layer_biases[1], dW_L_1, db_L_1, learning_rate);
+            update_weights_and_biases(layer_weights[w_and_b_locator], layer_biases[w_and_b_locator], dW_L_1, db_L_1, learning_rate);
 
             // Store gradients calculated in this layer to propagate backwards to previous layers
             // This is important, otherwise we will need to make the same calculations over and over again, 
@@ -3268,10 +3370,17 @@ namespace MLPP
             
             m_loss_gradients.clear(); // Clear loss gradients between passes
 
+            size_t w_and_b_counter = m_weights.size() -1; // Determine which element of weights and biases vectors
+            size_t backward_pass_locator = m_layers.size() - 1;
+
             // Iterate through layers in reverse order for backward propagation
             for (auto i = m_layers.rbegin(); i != m_layers.rend(); i++) {   
                 auto& layer = *i;
-                layer->backward(m_outputs, m_linear_outputs, m_weights, m_biases, m_loss_gradients, target_labels, learning_rate);
+                layer->backward(m_outputs, m_linear_outputs, m_weights, m_biases, m_loss_gradients, backward_pass_locator, w_and_b_counter, target_labels, learning_rate);
+                if (layer->get_w_and_b() && w_and_b_counter > 0) {
+                    w_and_b_counter--;
+                }
+                backward_pass_locator--;
             }
         }
 
@@ -3348,14 +3457,14 @@ namespace MLPP
             for (auto &layer : m_layers) {
                 m_current_output.reset(); // Clear current output for next layer
                 m_current_linear_output.reset(); // Clear current linear output for next layer
-            
+
                 // Call current layer forward method
                 layer->forward(m_current_input, m_current_output, m_current_linear_output, m_weights[w_and_b_counter], m_biases[w_and_b_counter]); 
                 m_current_input.reset(); // Clear current input for next layer
                 m_current_input = m_current_output; // Update input for next layer  
                 
                 // Check if layer has weights and biases flag, if so add to counter
-                if (layer->get_w_and_b()) {
+                if (layer->get_w_and_b() && w_and_b_counter < m_weights.size()) {
                     w_and_b_counter++;
                 }  
 
@@ -3735,7 +3844,6 @@ namespace MLPP
                             stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
                             in.seekg(stream_pos);  
                         }
-
                         tensor = tensor_2;
                         break;
                     case MatrixType::MAT_3D:
@@ -3790,8 +3898,8 @@ namespace MLPP
                                 stream_pos = in.tellg(); // Get current data stream position, so we can read the correct data from file
                                 in.seekg(stream_pos); 
                             }
-                        }
-                        tensor = tensor_1;                
+                        }          
+                        tensor = tensor_1; 
                         break;
                     default:
                         break;
@@ -3872,10 +3980,11 @@ namespace MLPP
 
         // Method that applies training to created neural network
         template <typename T>
-        Mat2d<T> fit(std::any input, const std::any target_labels, const size_t& batch_size, const size_t& epochs, const T& learning_rate) 
+        Mat2d<T> fit(std::any input, const std::any target_labels, const size_t& batch_size, const size_t& epochs, const T& learning_rate)
         {
             std::any output; // Create null any class container
             T epoch_loss = 0; // Initialize batch loss variable with network data type
+            T lr = learning_rate; // Testing
             Mat4d<T>* original_input = std::any_cast<Mat4d<T>>(&input); // Get and store original input matrix
             const Mat2d<T>* true_target_labels = std::any_cast<Mat2d<T>>(&target_labels); // Get and store original labels matrix
             const size_t num_of_batches = original_input->size() / batch_size; // Get total num of num_of_batches
@@ -3911,7 +4020,7 @@ namespace MLPP
                     }
 
                     forward_pass(current_batch_input, current_batch_output); // Apply forward pass
-                    backward_pass(current_batch_labels_input, learning_rate); // Apply backward pass
+                    backward_pass(current_batch_labels_input, lr); // Apply backward pass
 
                     // Create typed pointer varible pointing to current batch labels input
                     Mat2d<T>* typed_current_batch_output = std::any_cast<Mat2d<T>>(&current_batch_output);
@@ -3939,8 +4048,9 @@ namespace MLPP
 
             return *result;
         }
-
+        
         // Overload of fit method with multi-threading 
+        /* 
         template <typename T>
         Mat2d<T> fit_multithreaded(std::any input, const std::any target_labels, const size_t& batch_size, const size_t& epochs, const T& learning_rate)
         {
@@ -4022,8 +4132,7 @@ namespace MLPP
                     size_t batch_start = t * batches_per_thread;
                     size_t batch_end = (t == num_of_threads - 1) ? num_of_batches : batch_start + batches_per_thread;
                     threads[t] = std::thread(process_batch, batch_start, batch_end);
-                }
-                
+                }       
 
                 // Join threads
                 for (auto &t : threads) {
@@ -4032,8 +4141,6 @@ namespace MLPP
                     }
                 }
                 
-                
-
                 output = (*current_epoch_output)[0];
 
                 auto t2 = Benchmark::stopBenchmark(); // Performance benchmarkingx
@@ -4046,7 +4153,7 @@ namespace MLPP
             Mat2d<T>* result = std::any_cast<Mat2d<T>>(&output);
 
             return *result;
-        }
+        } */
 
         // Method that calculates accuracy of training process
         template <typename T>
@@ -4244,6 +4351,8 @@ namespace MLPP
             
             output = m_current_output;
             std::vector<T>* result = std::any_cast<std::vector<T>>(&output);
+
+            DataAnalysis::display_all(*result);
             
             size_t prediction = NumPP::get_max_element_pos(*result);            
             return prediction;
@@ -4265,54 +4374,6 @@ namespace MLPP
     class OpenCvIntegration
     {
     private:
-        // Method that caculate parameters necessary to apply warp perspective method
-        static cv::Mat calc_params_for_warp_perspective(const cv::Mat& src_image, const int& adjustable_center_x = 0, 
-                                                        const int& reduction_factor = 3, const bool& rectangular_perspective = false)
-        {
-            if (src_image.empty()) {
-                std::cerr << "Error: Input is null" << std::endl;
-                return cv::Mat();
-            }
-
-            int xfd = (550 / reduction_factor); // Horizontal displacement in relation to image center
-            int yf = (450 / reduction_factor); // Veritcal position of origin points
-            int offset_x = 0; // Horizontal displacement of origin points in relation to image borders
-            int img_height = src_image.rows;
-            int img_width = src_image.cols;
-
-            // Get horizontal position of image center adding a adjustable displacement
-            int center_x = (img_width / 2) + adjustable_center_x;
-
-            std::vector<cv::Point2f> src(4); // Create vector of Point2f type to store origin coordinates
-            std::vector<cv::Point2f> dst(4); // Create vector of Point2f type to store destination coordinates
-            
-            if (rectangular_perspective) {
-                src[0] = cv::Point2f(offset_x, img_height); // Top left
-                src[1] = cv::Point2f(offset_x, yf); // Bottom left
-                src[2] = cv::Point2f((img_width - offset_x), yf); // Bottom right
-                src[3] = cv::Point2f((img_width - offset_x), img_height); // Top right
-
-                dst[0] = cv::Point2f(offset_x, img_height);
-                dst[1] = cv::Point2f(offset_x, yf); 
-                dst[2] = cv::Point2f((img_height - offset_x), yf); 
-                dst[3] = cv::Point2f((img_height - offset_x), img_height);
-
-                return cv::getPerspectiveTransform(src, dst);
-            }
-
-            src[0] = cv::Point2f(offset_x, img_height); // Top left
-            src[1] = cv::Point2f((center_x - xfd), yf); // Bottom left
-            src[2] = cv::Point2f((center_x + xfd), yf); // Bottom right
-            src[3] =cv::Point2f((img_width - offset_x), img_height); // Top right
-
-            dst[0] = cv::Point2f(offset_x, img_height);
-            dst[1] = cv::Point2f(offset_x, yf);
-            dst[2] = cv::Point2f((img_height - offset_x), yf);
-            dst[3] = cv::Point2f((img_height - offset_x), img_height);
-
-            return cv::getPerspectiveTransform(src, dst);
-        }
-
         // Get sum of a open cv Vec3b data type, returns the sum in declared data type
         template <typename T>
         static T get_sum_of_vector(const cv::Vec3b& vec)
@@ -4338,20 +4399,20 @@ namespace MLPP
             
             cv::Mat p_image = *src_image_ptr; // Create variable to store processed image data
 
-            if (resize) {
-                cv::resize(p_image, p_image, cv::Size(shape.first, shape.second)); // Re-scale image based on shape parameter
-            }
-
             if (gray_scale) {
                 cv::cvtColor(p_image, p_image, cv::COLOR_BGR2GRAY); // Convert image to gray scale
             }
 
             if (apply_blurring) {
-                cv::GaussianBlur(p_image, p_image, cv::Size(5, 5), 0);
+                cv::GaussianBlur(p_image, p_image, cv::Size(5, 5), 0, 0);
             }
 
             if (apply_edge_detection) {
-                cv::Canny(p_image, p_image, 50, 250);
+                cv::Canny(p_image, p_image, 150, 300);
+            }
+
+            if (resize) {
+                cv::resize(p_image, p_image, cv::Size(shape.first, shape.second)); // Re-scale image based on shape parameter
             }
 
             return p_image;
@@ -4380,19 +4441,39 @@ namespace MLPP
 
         // Method that applies Warp perspective to image and return image in 
         // Bird's Eye View (bev) perspective
-        static cv::Mat change_perspective_to_bev(const cv::Mat& src_image)
+        static cv::Mat change_perspective_to_birds_eye_view(const cv::Mat& original_image)
         {
-            if (src_image.empty()) {
+            if (original_image.empty()) {
                 std::cerr << "Error: Input is null" << std::endl;
                 return cv::Mat();
             }
 
-            cv::Mat bev_image;
-            cv::Mat parameters = calc_params_for_warp_perspective(src_image, 0, 3, false);
-            cv::Size img_dimensions(src_image.cols, src_image.rows);
-            cv::warpPerspective(src_image, bev_image, parameters, img_dimensions, cv::INTER_LINEAR);
+            // Get image dimensions
+            int img_width = original_image.cols;
+            int img_height = original_image.rows;
 
-            return bev_image;
+            // Calculate source points in original image
+            std::vector<cv::Point2f> src_points;
+            src_points.push_back(cv::Point2f(250, 250));  // top-left corner
+            src_points.push_back(cv::Point2f(750, 750));  // top-right corner
+            src_points.push_back(cv::Point2f(750, 250));  // bottom-right corner
+            src_points.push_back(cv::Point2f(750, 250));  // bottom-left corner
+
+            // Define destination points for bird's eye view perspective
+            std::vector<cv::Point2f> dst_points;
+            dst_points.push_back(cv::Point2f(0, 0));  // top-left corner
+            dst_points.push_back(cv::Point2f(500, 0));  // top-right corner
+            dst_points.push_back(cv::Point2f(500, 500));  // bottom-right corner
+            dst_points.push_back(cv::Point2f(0, 500));  // bottom-left corner
+
+            // Compute perpective transform matrix
+            cv::Mat perspective_mat = cv::getPerspectiveTransform(src_points, dst_points);
+
+            // Apply perspective transform to return matrix
+            cv::Mat birds_eye_view_image;
+            cv::warpPerspective(original_image, birds_eye_view_image, perspective_mat, cv::Size(500, 500));
+
+            return birds_eye_view_image;
         }
 
         // Get open cv color image matrix and convert it to our 3d matrix data structure
