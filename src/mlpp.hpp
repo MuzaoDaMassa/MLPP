@@ -36,6 +36,7 @@ SOFTWARE.
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <numeric>
 #include <random>
 #include <sstream>
 #include <string>
@@ -285,6 +286,49 @@ namespace MLPP
 
             return result;
         }
+
+        // Method that rotates given matrix along given axis
+        // Flip matrix vertically, Axis = 0
+        // Flip matrix horizontally, Axis = 1
+        template <typename T>
+        static Mat2d<T> flip_matrix(const Mat2d<T>& mat, const bool& vertical, const bool& horizontal = false)
+        {
+            if (mat.empty()) {
+                std::cerr << "Error: Input empty" << std::endl;
+                return Mat2d<T>();
+            }
+
+            // Create matrix of zeros of same dimensions as original matrix
+            Mat2d<T> flipped_matrix = zeros<T>(mat.size(), mat[0].size());
+            const size_t rows = flipped_matrix.size(); // Store number of rows
+            const size_t cols = flipped_matrix[0].size(); // Store number of columns
+
+            // Check for vertical axis flag
+            if (vertical) {
+                // If horizontal flag is also set to true, flip on both axis
+                if (horizontal) {
+                    for (size_t i = 0; i < rows; i++) {
+                        for (size_t j = 0; j < cols; j++) {
+                            flipped_matrix[i][j] = mat[rows-1-i][cols-1-j];
+                        }
+                    }
+                    return flipped_matrix;
+                }
+                // Flip matrix vertically
+                for (size_t i = 0; i < rows; i++) {
+                    flipped_matrix[i] = mat[rows-1-i];
+                }
+                return flipped_matrix;
+            }
+            // Flix matrix horizontally
+            for (size_t i = 0; i < cols; i++) {
+                for (size_t j = 0; j < rows; j++) {
+                    flipped_matrix[j][i] = mat[j][cols-1-i];
+                }
+            }
+            return flipped_matrix;
+
+        } 
 
         // Method that calculates and returns average of given vector
         template <typename T>
@@ -2248,11 +2292,23 @@ namespace MLPP
         void serialize_layer_data(std::ofstream& out) override {}
     };
 
+    // Specialized Layer Class that creates Batch Normalization layer
+    template <typename InputType, typename OutputType, typename DataType>
+    class BatchNormalization : public Layer<InputType,OutputType,DataType>
+    {
+    private:
+
+    public:
+
+
+    };
+
     // Specialized Layer Class that creates Convolutional layer
     template <typename InputType, typename OutputType, typename DataType>
     class Conv2D : public Layer<InputType,OutputType,DataType>
     {
     private:
+        const bool m_is_input_layer; // Member variable that flags if constructed layer is the input layer
         LayerType m_layer_type = CONV2D; // Member variable to hold layer typing
         Activation m_activation_function; // Member Variable to hold passed activation function method
         Padding m_padding; // Member Variable to hold passed padding to layer
@@ -2281,6 +2337,65 @@ namespace MLPP
             default:
                 return Mat3d<DataType>();
             }
+        }
+
+        // Method that computes and returns gradient of loss with respect to input of Layer 
+        // Not necessary if current layer is the input layer for network
+        InputType compute_dA(const OutputType& dZ_L_4, const Mat3d<DataType>& weights, const InputType& A_L_5)
+        {
+            if (dZ_L_4.empty() || weights.empty() || A_L_5.empty()) {
+                std::cerr << "Error: Input is empyt" << std::endl;
+                return InputType();
+            }
+
+            // Rotate weight by 180 degrees 
+            Mat3d<DataType> flipped_weights;
+            for (size_t i = 0; i < weights.size(); i++) {
+                flipped_weights.push_back(NumPP::flip_matrix<DataType>(weights[i], true, true));
+            }
+
+            const size_t batch_size = A_L_5.size(); // Get number of examples in current batch
+            const size_t height = A_L_5[0].size(); // Get number of height (rows) of examples in batch
+            const size_t width = A_L_5[0][0].size(); // Get number of width (columns) of examples in batch
+            const size_t input_channels = A_L_5[0][0][0].size(); // Get number of channels (depth) of examples in batch
+            InputType dA = NumPP::zeros<DataType>(batch_size, height, width, input_channels); // Initialize dA with zeros matrix of same dimensions as layer input
+
+            // Iterate over batch
+            for (size_t i = 0; i < batch_size; i++) {
+                // Iterate over dA rows (height)
+                for (size_t h = 0; h < height; h++) {
+                    // Iterate over dA columns (width)
+                    for (size_t w = 0; w < width; w++) {
+                        // Iterate over dA channels
+                        for (size_t c = 0; c < input_channels; c++) {
+                            // Iterate each filter for current layer
+                            for (size_t f = 0; f < m_number_of_filters; f++) {
+                                // Iterate through filters rows (height)
+                                for (size_t h_prime = 0; h_prime < m_kernel_size; h_prime++) {
+                                    // Iterate through filters columns (witdth)
+                                    for (size_t w_prime = 0; w_prime < m_kernel_size; w_prime++) {
+                                        // Calculate corresponding position in dZ_L_4
+                                        size_t h_z = h + h_prime - 1;
+                                        size_t w_z = w + w_prime - 1;
+                                        // Ensure we are within bounds of dZ_L_4
+                                        if ((h_z >= 0 && h_z < height) && (w_z >= 0 && w_z < width)) {
+                                            // Get corresponding value in dZ_L_4 for current position (i,h_z,w_z,f)
+                                            DataType dZ_value = dZ_L_4[i][h_z][w_z][f];
+                                            // Get corresponding value in rotated filter W_L
+                                            DataType w_value = flipped_weights[f][h_prime][w_prime];
+                                            // Accumulate gradient value at position (i,h,w,c)
+                                            dA[i][h][w][c] += (dZ_value * w_value);  
+                                        }
+                                    }       
+                                }
+                            }    
+                        }
+                    }
+                }
+            }
+            
+            // Return computed gradient
+            return dA;
         }
 
         // Method that computes and returns gradient of loss with respect to bias
@@ -2318,15 +2433,14 @@ namespace MLPP
 
             Mat3d<DataType> dW = NumPP::zeros<DataType>(m_number_of_filters, m_kernel_size, m_kernel_size); // Initialize dW with zeros and same dimensions as layer weight matrix
             const size_t batch_size = dZ_L_4.size(); // Get number of examples in current batch
-            const size_t examples_height = dZ_L_4[0].size(); // Get number of height (rows) of examples in batch
-            const size_t examples_width = dZ_L_4[0][0].size(); // Get number of width (columns) of examples in batch
+            const size_t height = dZ_L_4[0].size(); // Get number of height (rows) of examples in batch
+            const size_t width = dZ_L_4[0][0].size(); // Get number of width (columns) of examples in batch
 
             for (size_t f = 0; f < dW.size(); f++) { // Loop over each filter f
                 for (size_t i = 0; i < batch_size; i++) { // Loop over each example in batch 
-                    for (size_t h_prime = 0; h_prime < examples_height; h_prime++) { // Loop over height of gradient upstream (dZ_L_4)
-                        for (size_t w_prime = 0; w_prime < examples_width; w_prime++) { // Loop over width of gradient upstream (dZ_L_4)
+                    for (size_t h_prime = 0; h_prime < height; h_prime++) { // Loop over height of gradient upstream (dZ_L_4)
+                        for (size_t w_prime = 0; w_prime < width; w_prime++) { // Loop over width of gradient upstream (dZ_L_4)
                             DataType dZ_value = dZ_L_4[i][h_prime][w_prime][f]; // Extract the current value of gradient at (i,h',w',f) pos
-
                             for (size_t h = 0; h < dW[f].size(); h++) { // Loop over each position in current filter
                                 for (size_t w = 0; w < dW[f][h].size(); w++) {
                                     // Calculate the corresponding position in the input A_L_5
@@ -2336,9 +2450,8 @@ namespace MLPP
                                     // the weights for next pass of forward propagation
                                     size_t h_input = h_prime - h; 
                                     size_t w_input = w_prime - w;
-
                                     // Ensure we are within bounds of input matrix
-                                    if ((h_input >= 0 && h_input < examples_height) && (w_input >= 0 && w_input < examples_width)) {
+                                    if ((h_input >= 0 && h_input < height) && (w_input >= 0 && w_input < width)) {
                                         DataType A_value = A_L_5[i][h_input][w_input][0]; // Corresponding value from input
                                         dW[f][h][w] += (dZ_value * A_value); // Update gradient for current filter at position (h,w)
                                     }
@@ -2453,12 +2566,14 @@ namespace MLPP
     public:
         // Class constructor to receive correct hyperparameters
         Conv2D(const int& number_of_filters, const int& kernel_size,
-        const Activation& activation_function, const Padding& padding):
+                const Activation& activation_function, const Padding& padding,
+                    const bool& input_layer_flag = false):
             Layer<InputType, OutputType, DataType>(true), 
             m_number_of_filters(number_of_filters),
             m_kernel_size(kernel_size),
             m_activation_function(activation_function),
-            m_padding(padding)
+            m_padding(padding),
+            m_is_input_layer(input_layer_flag)
         {}
 
         // Specialized override of layer backward method declared in base class (LayerBase)
@@ -2466,18 +2581,43 @@ namespace MLPP
                         std::vector<std::any>& layer_biases, std::vector<std::any>& gradients, const size_t& backward_pass_locator, const size_t& w_and_b_locator,
                         const std::any& target_labels, const std::any& learning_rate) override 
         {
+            // Gradient descent for input layer
+            if (m_is_input_layer) {
+                
+                OutputType* dA_L_4 = std::any_cast<OutputType>(&gradients[gradients.size()-1]); // Get gradient propagated from previously executed layer (Avrg Pooling Layer)
+                OutputType* Z_L_4 = std::any_cast<OutputType>(&layer_linear_outputs[backward_pass_locator]); // Get the linear output of current layer (ReLU Conv Layer L-4)
+                InputType A_L_5 = m_input; // Get input of current layer, for now, training batch
+
+                // Compute gradient of the loss with respect to Convolutional Layer Linear Output (L-4)
+                OutputType dZ_L_4 = NumPP::mat_mul_matching_elements<DataType>(*dA_L_4, NumPP::relu_derivative(*Z_L_4));
+                // Compute gradient of the loss with respect to to weights of convolutional layer (L-4)
+                Mat3d<DataType> dW_L_4 = compute_dW(dZ_L_4, A_L_5);
+                // Compute gradient of the loss with respect to to biases of convolutional layer (L-4)
+                std::vector<DataType> db_L_4 = compute_db(dZ_L_4);
+                // Update weights and biases for next forward pass
+                update_weights_and_biases(layer_weights[w_and_b_locator], layer_biases[w_and_b_locator], dW_L_4, db_L_4, learning_rate);
+                return;
+            }
+            // Gradient descent for non input layers
+            Mat3d<DataType>* W_L_4 = std::any_cast<Mat3d<DataType>>(&layer_weights[w_and_b_locator]); // Get weights matrix for convolutional layer
             OutputType* dA_L_4 = std::any_cast<OutputType>(&gradients[gradients.size()-1]); // Get gradient propagated from previously executed layer (Avrg Pooling Layer)
             OutputType* Z_L_4 = std::any_cast<OutputType>(&layer_linear_outputs[backward_pass_locator]); // Get the linear output of current layer (ReLU Conv Layer L-4)
-            InputType A_L_5 = m_input; // Get input of current layer, for now, training batch
+            InputType* A_L_5 = std::any_cast<InputType>(&layer_output[backward_pass_locator-1]); // Get activated output from forward pass previous layer
 
             // Compute gradient of the loss with respect to Convolutional Layer Linear Output (L-4)
             OutputType dZ_L_4 = NumPP::mat_mul_matching_elements<DataType>(*dA_L_4, NumPP::relu_derivative(*Z_L_4));
             // Compute gradient of the loss with respect to to weights of convolutional layer (L-4)
-            Mat3d<DataType> dW_L_4 = compute_dW(dZ_L_4, A_L_5);
+            Mat3d<DataType> dW_L_4 = compute_dW(dZ_L_4, *A_L_5);
             // Compute gradient of the loss with respect to to biases of convolutional layer (L-4)
             std::vector<DataType> db_L_4 = compute_db(dZ_L_4);
+            // Compute gradient of the loss with respect to the input of previous layer 
+            InputType dA_L_5 = compute_dA(dZ_L_4, *W_L_4, *A_L_5);
             // Update weights and biases for next forward pass
             update_weights_and_biases(layer_weights[w_and_b_locator], layer_biases[w_and_b_locator], dW_L_4, db_L_4, learning_rate);
+            // Store gradients calculated in this layer to propagate backwards to previous layers
+            // This is important, otherwise we will need to make the same calculations over and over again, 
+            // greatly impacting performance, look into optimizing later
+            gradients.push_back(dA_L_5);
         }
         
         // Specialized override of layer deserialize data method declared in base class (LayerBase)
@@ -4040,7 +4180,9 @@ namespace MLPP
 
                 auto t2 = Benchmark::stopBenchmark(); // Performance benchmarkingx
                 epoch_loss = calc_batch_loss<T>(output, target_labels); // Get batch loss for performance checking
+                auto epoch_accuracy = get_accuracy<T>(output, target_labels);
                 std::cout << "Epoch " << (epoch + 1) << " Loss: " << std::to_string(epoch_loss) << " ";
+                std::cout << "Accuracy: " << std::to_string(epoch_accuracy) << " ";
                 std::cout << Benchmark::getDuration(t1, t2, Benchmark::Seconds) << std::endl;  
             }  
 
@@ -4352,10 +4494,67 @@ namespace MLPP
             output = m_current_output;
             std::vector<T>* result = std::any_cast<std::vector<T>>(&output);
 
-            DataAnalysis::display_all(*result);
+            //DataAnalysis::display_all(*result);
             
             size_t prediction = NumPP::get_max_element_pos(*result);            
             return prediction;
+        }
+
+        // Overload of predict frame method that returns the whole output vector
+        // Not the predicted class, i.e, output vector max element position
+        template <typename T>
+        std::vector<T> predict_output_vector(const std::any& input)
+        {
+            if (!input.has_value()) {
+                throw std::runtime_error("Error: Frame data is empty");
+            }
+            
+            std::any output; // Create null any class container
+
+            m_current_input = input; // Assign current input to initial input data
+            m_current_output = output; // Assign output reference ot current output
+            int w_and_b_counter = 0; // Determine which element of weights and biases vectors
+            int it_counter = 0; // Counts layer iterations to assign correct layer output to layer results vector
+
+            for (auto &layer : m_layers) {
+                m_current_output.reset(); // Clear current output for next layer 
+
+                // Call current layer forward method
+                layer->predict(m_current_input, m_current_output, m_weights[w_and_b_counter], m_biases[w_and_b_counter]); 
+                m_current_input.reset(); // Clear current input for next layer
+                m_current_input = m_current_output; // Update input for next layer 
+
+                // Check if layer has weights and biases flag, if so add to counter
+                if (layer->get_w_and_b()) {
+                    w_and_b_counter++;
+                }  
+
+                /*  Debugging Code        
+                    if (layer->get_layer_type() == LayerType::CONV2D) {
+                    Mat3d<T>* typedInput = std::any_cast<Mat3d<T>>(&m_current_input);
+                    DataAnalysis::display_shape(*typedInput);
+                }
+                if (layer->get_layer_type() == LayerType::AVERAGEPOOLING2D) {
+                    Mat3d<T>* typedInput = std::any_cast<Mat3d<T>>(&m_current_input);
+                    DataAnalysis::display_shape(*typedInput);
+                }
+                if (layer->get_layer_type() == LayerType::FLATTEN) {
+                    std::vector<T>* typedInput = std::any_cast<std::vector<T>>(&m_current_input);
+                    std::cout << typedInput->size() << std::endl;
+                }
+                if (layer->get_layer_type() == LayerType::DENSE) {
+                    std::vector<T>* typedInput = std::any_cast<std::vector<T>>(&m_current_input);
+                    std::cout << typedInput->size() << std::endl;
+                } */
+
+            }
+            
+            output = m_current_output;
+            std::vector<T>* result = std::any_cast<std::vector<T>>(&output);
+
+            //DataAnalysis::display_all(*result);
+         
+            return *result;
         }
 
         ~NeuralNetwork()
@@ -4389,7 +4588,7 @@ namespace MLPP
         }
     
         // Method that pre-process image based on parameters
-        static cv::Mat pre_process_image(const cv::Mat* src_image_ptr, const bool& resize, const std::pair<size_t, size_t>& shape, const bool& gray_scale, 
+        static cv::Mat pre_process_image(const cv::Mat* src_image_ptr, const bool& crop, const bool& resize, const std::pair<size_t, size_t>& shape, const bool& gray_scale, 
                                             const bool& apply_blurring, const bool& apply_edge_detection)
         {
             if (src_image_ptr->empty()) {
@@ -4398,6 +4597,20 @@ namespace MLPP
             }
             
             cv::Mat p_image = *src_image_ptr; // Create variable to store processed image data
+
+            if (crop) {
+                // Define the ROI coordinates
+                int x_start = 0;  // x-coordinate of the top-left corner
+                int y_start = 280;   // y-coordinate of the top-left corner
+                int x_end = 1920;    // x-coordinate of the bottom-right corner
+                int y_end = 1080;    // y-coordinate of the bottom-right corner
+
+                // Define the rectangle for the region of interest
+                cv::Rect roi(x_start, y_start, x_end - x_start, y_end - y_start);
+
+                // Crop the image
+                cv::Mat croppedImage = p_image(roi);
+            }
 
             if (gray_scale) {
                 cv::cvtColor(p_image, p_image, cv::COLOR_BGR2GRAY); // Convert image to gray scale
@@ -4408,7 +4621,7 @@ namespace MLPP
             }
 
             if (apply_edge_detection) {
-                cv::Canny(p_image, p_image, 150, 300);
+                cv::Canny(p_image, p_image, 50, 250);
             }
 
             if (resize) {
@@ -4422,15 +4635,17 @@ namespace MLPP
         struct TrainingDataParameters
         {
             const std::string dir_path;
+            const bool crop = false;
             const bool resize = false;
             const std::pair<size_t, size_t> shape = {240, 240};
             const bool gray_scale = false;
             const bool apply_blurring = false;
             const bool apply_edge_detection = false;
 
-            TrainingDataParameters(const std::string& dir_path, const bool& resize, const std::pair<size_t, size_t>& shape, 
+            TrainingDataParameters(const std::string& dir_path, const bool& crop, const bool& resize, const std::pair<size_t, size_t>& shape, 
             const bool& gray_scale, const bool& apply_blurring, const bool& apply_edge_detection):
                 dir_path(dir_path),
+                crop(crop),
                 resize(resize),
                 shape(shape),
                 gray_scale(gray_scale),
@@ -4737,7 +4952,7 @@ namespace MLPP
 
                         if (sub_entry.path().extension() == ".jpg" || sub_entry.path().extension() == ".png") {
                             *imagePtr = cv::imread(sub_entry.path()); // Read current entry image in directory into pointer
-                            p_image = pre_process_image(imagePtr, params.resize, params.shape, params.gray_scale, params.apply_blurring, params.apply_edge_detection);
+                            p_image = pre_process_image(imagePtr, params.crop, params.resize, params.shape, params.gray_scale, params.apply_blurring, params.apply_edge_detection);
                             Mat3d<T>* converted_image_mat = convert_gray_image<T>(&p_image); // Convert opencv matrix to Mat3d
                             training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
 
@@ -4757,7 +4972,7 @@ namespace MLPP
 
                 if (entry.path().extension() == ".jpg" || entry.path().extension() == ".png") {
                     *imagePtr = cv::imread(entry.path()); // Read current entry image in directory into pointer
-                    p_image = pre_process_image(imagePtr, params.resize, params.shape, params.gray_scale, params.apply_blurring, params.apply_edge_detection);
+                    p_image = pre_process_image(imagePtr, params.crop, params.resize, params.shape, params.gray_scale, params.apply_blurring, params.apply_edge_detection);
                     Mat3d<T>* converted_image_mat = convert_gray_image<T>(&p_image); // Convert opencv matrix to Mat3d
                     training_data_mat.push_back(*converted_image_mat); // Add Mat3d into training data
                     delete converted_image_mat;

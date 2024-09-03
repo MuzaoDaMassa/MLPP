@@ -68,12 +68,12 @@ int main2()
     //Mat2d<double> T = NumPP::transpose(cData);
     //Mat2d<double> r1 = NumPP::dot(T, cData);
 
-    Mat2d<int16_t> a {{-1,-1,-1}, {0,1,-1}, {0,1,1}};
-    Mat2d<int16_t> b {{0,0,0}, {0,156,155}, {0,153,154}};
-    Mat2d<int16_t>* aPtr = new Mat2d<int16_t>(a);
-    Mat2d<int16_t>* bPtr = new Mat2d<int16_t>(b);
+    //Mat2d<int16_t> a {{-1,-1,-1}, {0,1,-1}, {0,1,1}};
+    //Mat2d<int16_t> b {{0,0,0}, {0,156,155}, {0,153,154}};
+    //Mat2d<int16_t>* aPtr = new Mat2d<int16_t>(a);
+    //Mat2d<int16_t>* bPtr = new Mat2d<int16_t>(b);
     //auto r = NumPP::sum_mat_mul_matching_elements(aPtr, bPtr);
-    Mat2d<double> r = NumPP::scalar_mat_mul<int16_t, double>(b, 2.0);
+    //Mat2d<double> r = NumPP::scalar_mat_mul<int16_t, double>(b, 2.0);
     //cout << to_string(r) << endl;
 
     //vector<u_int8_t> v {255, 255, 255};
@@ -81,7 +81,21 @@ int main2()
 
     //DataAnalysis::display_all(r);
     //std::cout << to_string(NumPP::get_average(r)) << std::endl;
+
+    Mat2d<int16_t> a {{1,2,3},{4,5,6},{7,8,9}};
+    auto v_flip = NumPP::flip_matrix(a, true);
+    auto h_flip = NumPP::flip_matrix(a, false);
+    auto h_and_v_flip = NumPP::flip_matrix(a, true, true);
+    DataAnalysis::display_all(a);
     std::cout << "-------------------------------------------------------------" << std::endl;
+    DataAnalysis::display_all(v_flip);
+    std::cout << "-------------------------------------------------------------" << std::endl;
+    DataAnalysis::display_all(h_flip);
+    std::cout << "-------------------------------------------------------------" << std::endl;
+    DataAnalysis::display_all(h_and_v_flip);
+    
+    
+    
     //DataAnalysis::display_all(r1);
 
     return 0;
@@ -125,7 +139,7 @@ int main3()
     delete imagePtr;
     //delete rImagePtr; */
 
-    cv::Mat* imagePtr = new cv::Mat(cv::imread("/home/muzaodamassa/MLPP/tests/Testing/frame1176.jpg"));
+    cv::Mat* imagePtr = new cv::Mat(cv::imread("/home/muzaodamassa/Documents/AC_Training_Data/High_Angle_Data_3/Class_1(Straight)/frame1000.jpg"));
 	if (!imagePtr->data) { 
 		std::cerr << "Error: No image data" << std::endl; 
 		return -1; 
@@ -133,47 +147,29 @@ int main3()
 
     cv::namedWindow("Original Image", cv::WINDOW_FREERATIO);
     cv::imshow("Original Image", *imagePtr);
-    cv::waitKey(0);
-
-    // Constants for image dimensions
-    const int IMAGE_H = 540;
-    const int IMAGE_W = 1920;
-
-    // Define source and destination points
-    std::vector<cv::Point2f> src = {
-        cv::Point2f(0, IMAGE_H),     // Bottom-left corner
-        cv::Point2f(1800, IMAGE_H),  // Bottom-right corner
-        cv::Point2f(0, 0),           // Top-left corner
-        cv::Point2f(IMAGE_W, 0)      // Top-right corner
-    };
-
-    std::vector<cv::Point2f> dst = {
-        cv::Point2f(200, IMAGE_H),   // Bottom-left corner
-        cv::Point2f(1600, IMAGE_H),   // Bottom-right corner
-        cv::Point2f(0, 0),           // Top-left corner
-        cv::Point2f(IMAGE_W, 0)      // Top-right corner
-    };
-
-    // Compute the perspective transform matrix
-    cv::Mat M = cv::getPerspectiveTransform(src, dst);
-
+    cv::waitKey(0);   
+    
     // Read the image
-    cv::Mat img = cv::imread("/home/muzaodamassa/MLPP/tests/Testing/frame1176.jpg");
+    cv::Mat img = cv::imread("/home/muzaodamassa/Documents/AC_Training_Data/High_Angle_Data_3/Class_1(Straight)/frame1000.jpg");
     if (img.empty()) {
         std::cerr << "Error: Unable to open image!" << std::endl;
         return -1;
     }
 
-    // Crop the image to the region of interest (ROI)
-    cv::Rect roi(0, 450, IMAGE_W, IMAGE_H); // x, y, width, height
-    cv::Mat cropped_img = img(roi);
+    // Define the ROI coordinates
+    int x_start = 0;  // x-coordinate of the top-left corner
+    int y_start = 280;   // y-coordinate of the top-left corner
+    int x_end = 1920;    // x-coordinate of the bottom-right corner
+    int y_end = 1080;    // y-coordinate of the bottom-right corner
 
-    // Apply the perspective transformation
-    cv::Mat warped_img;
-    cv::warpPerspective(cropped_img, warped_img, M, cv::Size(IMAGE_W, IMAGE_H));
+    // Define the rectangle for the region of interest
+    cv::Rect roi(x_start, y_start, x_end - x_start, y_end - y_start);
+
+    // Crop the image
+    cv::Mat croppedImage = img(roi);
 
     // Display the result
-    cv::imshow("Warped Image", warped_img);
+    cv::imshow("Cropped Image", croppedImage);
     cv::waitKey(0); // Wait for a key press before closing the image window
 
     return 0;
@@ -296,7 +292,7 @@ int main4()
 // Mini tests for Sequential neural network with open cv (AC_Project)
 int main()
 {
-    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Documents/AC_Training_Data/Low_Angle_Data_5", true, {32,32}, true, true, true);
+    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Documents/AC_Training_Data/Trimmed_Low_Angle_Data_3", false, true, {24,24}, true, false, false);
 
     Mat4d<double> training_data = OpenCvIntegration::prepare_training_data<double>(params); 
 
@@ -320,22 +316,22 @@ int main()
 
     NeuralNetwork model;
 
-    auto true_labels = DataAnalysis::one_hot_label_encoding<double>("/home/muzaodamassa/Documents/AC_Training_Data/Low_Angle_Data_5");
+    auto true_labels = DataAnalysis::one_hot_label_encoding<double>("/home/muzaodamassa/Documents/AC_Training_Data/Trimmed_Low_Angle_Data_3");
 
     DataAnalysis::display_shape(true_labels);
 
-    model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(16, 3, RELU, SAME));
+    model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(16, 3, RELU, SAME, true));
     model.add_layer(new AveragePooling2d<Mat4d<double>, Mat4d<double>, double>(2,2));
-    //model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(32, 3, RELU, SAME));
+    //model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(16, 3, RELU, SAME));
     //model.add_layer(new AveragePooling2d<Mat4d<double>, Mat4d<double>, double>(2,2));
     model.add_layer(new Flatten<Mat4d<double>, Mat2d<double>, double>());
-    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(32, RELU));
-    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(64, RELU));
     model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(128, RELU));
-    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(5, SOFTMAX));
+    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(64, RELU));
+    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(32, RELU));
+    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(3, SOFTMAX));
 
     auto t1 = startBenchmark();
-    Mat2d<double> result = model.fit<double>(training_data, true_labels, 2, 50, 1.0E-5);
+    Mat2d<double> result = model.fit<double>(training_data, true_labels, 2, 25, 1.0E-5);
     auto t2 = stopBenchmark();
 
     cout << "================================" << endl;
@@ -360,7 +356,7 @@ int main()
 
     std::cout << "Predictions Accuracy: " << acc*100 << "%" << std::endl;
 
-    string fileName = "low_angle5_50_model.bin";
+    string fileName = "new_road_vision_low3_25.bin";
     model.export_model(fileName);
 
     return 0;
@@ -391,7 +387,7 @@ int main6()
 {
     NeuralNetwork model;
 
-    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Documents/School/Asignments/GS_1/AI/GS_Dataset/train", true, {14, 14}, true, false, false);
+    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Documents/School/Asignments/GS_1/AI/GS_Dataset/train", false, true, {14, 14}, true, false, false);
 
     auto training_data = OpenCvIntegration::prepare_training_data<double>(params); 
 
@@ -435,7 +431,7 @@ int main6()
 // Mini tests for Sequential neural network with open cv (Multithreading)
 int main7()
 {
-    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Downloads/training_set", true, {8,8}, true, false, false);
+    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Downloads/training_set", false, true, {8,8}, true, false, false);
 
     auto training_data = OpenCvIntegration::prepare_training_data<double>(params); 
 
@@ -519,8 +515,8 @@ int main7()
 int main8()
 {
     // Low Angle
-    std::string path_to_video = "/home/muzaodamassa/Downloads/VideosPista/Pista/Reta_4_2.mp4";
-    std::string save_location = "/home/muzaodamassa/Documents/AC_Training_Data/High_Angle_Data_5/Class_2(Straight)";
+    std::string path_to_video = "/home/muzaodamassa/Downloads/VideosPista/Pista/Curva_exterior_direita_1 (trimmed).mp4";
+    std::string save_location = "/home/muzaodamassa/Documents/AC_Training_Data/Trimmed_Low_Angle_Data_3/Class2(Right)";
 
     OpenCvIntegration::convert_video_to_images(path_to_video, save_location);
 
@@ -530,7 +526,7 @@ int main8()
 // Mini tests for creating neural network model (R2_D2)
 int main9()
 {
-    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Downloads/archive/Test", false, {28,28}, true, true, false);
+    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Downloads/archive/Test", false, false, {28,28}, true, true, false);
 
     auto training_data = OpenCvIntegration::prepare_training_data<double>(params); 
 
@@ -583,7 +579,7 @@ int main9()
 // Mini tests for exporting neural network model
 int main10()
 {
-    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/MLPP/tests/Training", true, {28,28}, true, false, false);
+    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/MLPP/tests/Training", false, true, {28,28}, true, false, false);
 
     auto training_data = OpenCvIntegration::prepare_training_data<double>(params); 
 
@@ -635,59 +631,192 @@ int main10()
     return 0;
 }
 
-// Mini tests for loading neural network model
+// Mini tests for loading and evaluating neural network models
 int main11()
 {
-    cv::Mat* class_0_image_ptr = new cv::Mat();
-    cv::Mat* class_1_image_ptr = new cv::Mat();
-    cv::Mat* class_2_image_ptr = new cv::Mat();
+    NeuralNetwork cnn;
+    cnn.load_model("../trained_models/cats_and_dogs_model_test.bin");
 
-    *class_0_image_ptr = cv::imread("/home/muzaodamassa/Documents/AC_Training_Data/Low_Angle_Data_3/Class_0(Letf)/frame142.jpg");
-    cv::Mat* p_image = class_0_image_ptr;
-    cv::resize(*p_image, *p_image, cv::Size(32,32)); 
-    cv::cvtColor(*p_image, *p_image, cv::COLOR_BGR2GRAY);
-    cv::GaussianBlur(*p_image, *p_image, cv::Size(5, 5), 0);
-    cv::Canny(*p_image, *p_image, 300, 500);
+    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Downloads/test_set", false, true, {32,32}, true, false, false);
 
-    *class_1_image_ptr = cv::imread("/home/muzaodamassa/Documents/AC_Training_Data/Low_Angle_Data_3/Class_1(Straight)/frame69.jpg");
-    cv::Mat* p_image_1 = class_1_image_ptr;
-    cv::resize(*p_image_1, *p_image_1, cv::Size(32,32)); 
-    cv::cvtColor(*p_image_1, *p_image_1, cv::COLOR_BGR2GRAY);
-    cv::GaussianBlur(*p_image_1, *p_image_1, cv::Size(5, 5), 0);
-    cv::Canny(*p_image_1, *p_image_1, 300, 500);
+    Mat4d<double> testing_data = OpenCvIntegration::prepare_training_data<double>(params); 
 
-    *class_2_image_ptr = cv::imread("/home/muzaodamassa/Documents/AC_Training_Data/Low_Angle_Data_3/Class_2(Right)/frame1089.jpg");
-    cv::Mat* p_image_2 = class_2_image_ptr;
-    cv::resize(*p_image_2, *p_image_2, cv::Size(32,32)); 
-    cv::cvtColor(*p_image_2, *p_image_2, cv::COLOR_BGR2GRAY);
-    cv::GaussianBlur(*p_image_2, *p_image_2, cv::Size(5, 5), 0);
-    cv::Canny(*p_image_2, *p_image_2, 300, 500);
-
-    Mat3d<double>* mat_0 = OpenCvIntegration::convert_gray_image<double>(p_image);
-    Mat3d<double>* mat_1 = OpenCvIntegration::convert_gray_image<double>(p_image_1);
-    Mat3d<double>* mat_2 = OpenCvIntegration::convert_gray_image<double>(p_image_2);
+    cout << "Input shape = ";
+    cout << "(" << to_string(testing_data.size()) << "," << to_string(testing_data[0].size()) << ",";
+    cout << to_string(testing_data[0][0].size()) << "," << to_string(testing_data[0][0][0].size()) << ")" << endl;
 
     // Data normalization, since max value is 255, all values will be between 0 and 1
-    Mat3d<double> normalized_input = ComputerVision::normalize_pixels<double>(mat_0);
-    Mat3d<double> normalized_input_1 = ComputerVision::normalize_pixels<double>(mat_1);
-    Mat3d<double> normalized_input_2 = ComputerVision::normalize_pixels<double>(mat_2);
+    for (size_t i = 0; i < testing_data.size(); i++) {
+        for (size_t j = 0; j < testing_data[i].size(); j++) {
+            for (size_t k = 0; k < testing_data[i][j].size(); k++) {
+                for (size_t l = 0; l < testing_data[i][j][k].size(); l++) {
+                    testing_data[i][j][k][l] /= 255.0;
 
-    NeuralNetwork model;
-    model.load_model("../bin/low_angle3_model_50.bin");
+                    if (testing_data[i][j][k][l] < 0 || testing_data[i][j][k][l] > 1.0){
+                        throw std::runtime_error("Error: Data Normalization Failed");
+                    }
+                }
+            }
+        }
+    } 
 
-    double prediction_0 = model.predict_frame<double>(normalized_input);
-    double prediction_1 = model.predict_frame<double>(normalized_input_1);
-    double prediction_2 = model.predict_frame<double>(normalized_input_2);
+    /* cv::Mat image = OpenCvIntegration::get_open_cv_gray_mat<double>(training_data[1011]);
 
-    std::cout << "True class = 0, Predicted class = " << prediction_0 << std::endl;
-    std::cout << "True class = 1, Predicted class = " << prediction_1 << std::endl;
-     std::cout << "True class = 2, Predicted class = " << prediction_2 << std::endl;
+    if (image.empty()) {
+        std::cerr << "Error: Unable to open image!" << std::endl;
+        return -1;
+    }
 
+    cv::imshow("Current Image", image);
+    cv::waitKey(0); // Wait for a key press before closing the image window */
+
+    Mat2d<double> predicted_labels;
+
+    for (size_t i = 0; i < testing_data.size(); i++)
+    {
+        predicted_labels.push_back(cnn.predict_output_vector<double>(testing_data[i]));
+    }
+    
+    DataAnalysis::display_shape(predicted_labels);
+
+    auto true_labels = DataAnalysis::one_hot_label_encoding<double>("/home/muzaodamassa/Downloads/test_set");
+    DataAnalysis::display_shape(true_labels);
+    
     return 0;
 }
 
+// Proof of concept testing (Kaggle Datasets, Cats vs Dogs)
+int main13()
+{
+    auto params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Downloads/test_set", false, true, {28,28}, true, false, false);
+
+    Mat4d<double> training_data = OpenCvIntegration::prepare_training_data<double>(params); 
+
+    cout << "Input shape = ";
+    cout << "(" << to_string(training_data.size()) << "," << to_string(training_data[0].size()) << ",";
+    cout << to_string(training_data[0][0].size()) << "," << to_string(training_data[0][0][0].size()) << ")" << endl;
+
+    // Data normalization, since max value is 255, all values will be between 0 and 1
+    for (size_t i = 0; i < training_data.size(); i++) {
+        for (size_t j = 0; j < training_data[i].size(); j++) {
+            for (size_t k = 0; k < training_data[i][j].size(); k++) {
+                for (size_t l = 0; l < training_data[i][j][k].size(); l++) {
+                    training_data[i][j][k][l] /= 255.0;
+                    if (training_data[i][j][k][l] < 0 || training_data[i][j][k][l] > 1.0){
+                        throw std::runtime_error("Error: Data Normalization Failed");
+                    }
+                }
+            }
+        }
+    } 
+
+    NeuralNetwork model;
+
+    auto true_labels = DataAnalysis::one_hot_label_encoding<double>("/home/muzaodamassa/Downloads/test_set");
+
+    DataAnalysis::display_shape(true_labels);
+
+    model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(8, 3, RELU, SAME, true));
+    model.add_layer(new AveragePooling2d<Mat4d<double>, Mat4d<double>, double>(2,2));
+    model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(16, 3, RELU, SAME));
+    model.add_layer(new AveragePooling2d<Mat4d<double>, Mat4d<double>, double>(2,2));
+    model.add_layer(new Flatten<Mat4d<double>, Mat2d<double>, double>());
+    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(128, RELU));
+    //model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(32, RELU));
+    model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(2, SOFTMAX));
+
+    auto t1 = startBenchmark();
+    Mat2d<double> result = model.fit<double>(training_data, true_labels, 2, 15, 1.0E-5);
+    auto t2 = stopBenchmark();
+
+    cout << "================================" << endl;
+    cout << getDuration(t1, t2, Seconds) << endl;
+    cout << "================================" << endl;
+
+    auto shape = NumPP::get_shape(result);
+
+    cout << "Output layer shape = ";
+    cout << "(" << shape.first << ", " << shape.second << ")" << endl; 
+
+    return 0;
+
+    /*for (size_t i = 0; i < result.size(); i++) {
+        cout << i << ", ";
+        for (size_t j = 0; j < result[i].size(); j++) {
+            cout << std::to_string(result[i][j]) << ", ";
+        }
+        cout << endl;
+    } 
+     */
+    
+    auto acc_training = model.get_accuracy<double>(result, true_labels);
+
+    std::cout << "Predictions Accuracy (Training Dataset using result of fit method): " << acc_training*100 << "%" << std::endl;
+
+    auto testing_params = OpenCvIntegration::TrainingDataParameters("/home/muzaodamassa/Downloads/test_set", false, true, {32,32}, true, false, false);
+
+    Mat4d<double> testing_data = OpenCvIntegration::prepare_training_data<double>(testing_params); 
+
+    cout << "Testing Input shape = ";
+    cout << "(" << to_string(testing_data.size()) << "," << to_string(testing_data[0].size()) << ",";
+    cout << to_string(testing_data[0][0].size()) << "," << to_string(testing_data[0][0][0].size()) << ")" << endl;
+
+    // Data normalization, since max value is 255, all values will be between 0 and 1
+    for (size_t i = 0; i < testing_data.size(); i++) {
+        for (size_t j = 0; j < testing_data[i].size(); j++) {
+            for (size_t k = 0; k < testing_data[i][j].size(); k++) {
+                for (size_t l = 0; l < testing_data[i][j][k].size(); l++) {
+                    testing_data[i][j][k][l] /= 255.0;
+                    if (testing_data[i][j][k][l] < 0 || testing_data[i][j][k][l] > 1.0){
+                        throw std::runtime_error("Error: Data Normalization Failed");
+                    }
+                }
+            }
+        }
+    } 
+
+    auto testing_labels = DataAnalysis::one_hot_label_encoding<double>("/home/muzaodamassa/Downloads/test_set");
+    DataAnalysis::display_shape(testing_labels);
+
+    Mat2d<double> predicted_labels;
+
+    for (size_t i = 0; i < testing_labels.size(); i++)
+    {
+        predicted_labels.push_back(model.predict_output_vector<double>(testing_data[i]));
+    }
+
+    auto acc_testing = model.get_accuracy<double>(predicted_labels, testing_labels);
+
+    std::cout << "Predictions Accuracy (Testing Dataset using predict method): " << acc_testing*100 << "%" << std::endl;
+
+    //string fileName = "cats_and_dogs_model_test.bin";
+    //model.export_model(fileName);
+
+    return 0;
+    
+    /* Halt Execution
+    char input;
+    std::cout << "Program is running. Press 'q' to quit, or any other key to continue." << endl;
+    
+    while (true) {
+        input = cin.get();
+
+        if (input == 'q' || input == 'Q') {
+            cout << "Program ended" << endl;
+            return 0;
+        }
+        if (input != 'q' || input != 'Q') {
+            break;
+        }
+    }
+    
+    cout << "Program resumed" << endl;
+    return 0;
+    */
+}
+
 // Mini tests for CUDA integration
-#ifdef CUDA_AVAILABLE
+/* #ifdef CUDA_AVAILABLE
     #include <cuda_runtime.h>
     extern "C" void launch_vector_add(double* A, double* B, double* C, int numElements);
     extern "C" void launch_mat_mul(double* A, double* B, double* C, int M, int N, int K);
@@ -825,3 +954,5 @@ int main12()
     
     return 0;
 }
+ */
+

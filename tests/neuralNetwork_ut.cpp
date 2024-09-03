@@ -14,7 +14,7 @@ TEST_CASE("NEURAL_NETWORK_TRAINING")
 {
     SECTION("ORIGINAL_ARCHITECTURE")
     {
-        auto params = OpenCvIntegration::TrainingDataParameters("../tests/Training", true, {28, 28}, true, true, true);
+        auto params = OpenCvIntegration::TrainingDataParameters("../tests/Training", false, true, {28, 28}, true, true, true);
 
         auto training_data = OpenCvIntegration::prepare_training_data<double>(params); 
 
@@ -37,7 +37,9 @@ TEST_CASE("NEURAL_NETWORK_TRAINING")
         // testing                                   0       1       2       3       4       5       6       7       8
         const Mat2d<double> hot_encoded_labels = {{0,0,1},{0,1,0},{1,0,0},{0,1,0},{0,1,0},{0,0,1},{0,1,0},{0,1,0},{1,0,0}};
 
-        model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(5, 3, RELU, SAME));
+        model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(5, 3, RELU, SAME, true));
+        model.add_layer(new AveragePooling2d<Mat4d<double>, Mat4d<double>, double>(2,2));
+        model.add_layer(new Conv2D<Mat4d<double>, Mat4d<double>, double>(10, 3, RELU, SAME));
         model.add_layer(new AveragePooling2d<Mat4d<double>, Mat4d<double>, double>(2,2));
         model.add_layer(new Flatten<Mat4d<double>, Mat2d<double>, double>());
         model.add_layer(new Dense<Mat2d<double>, Mat2d<double>, double>(120, RELU));
